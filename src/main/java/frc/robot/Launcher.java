@@ -41,7 +41,7 @@ public class Launcher {
     PSISetPoint = desiredPSI;
   }
 
-  public void setShootingSolenid(Boolean ShootingSolenid) {
+  private void setShootingSolenid(Boolean ShootingSolenid) {
     if (ShootingSolenid) {
       motor1.set(VictorSPXControlMode.PercentOutput, 1.0);
     } else {
@@ -49,7 +49,7 @@ public class Launcher {
     }
   }
 
-  public void setFillingSolenoid(Boolean fillSolenoid) {
+  private void setFillingSolenoid(Boolean fillSolenoid) {
     if (fillSolenoid) {
       motor1.set(VictorSPXControlMode.PercentOutput, 1.0);
     } else {
@@ -59,15 +59,12 @@ public class Launcher {
 
   public void periodic() {
 
-    
-
-
-
     if (getPSI() < PSISetPoint) {
       setFillingSolenoid(true);
     } else if (PSISetPoint <= getPSI()) {
       setFillingSolenoid(false);
     }
+
   }
 
   public void updateDashboard() {
