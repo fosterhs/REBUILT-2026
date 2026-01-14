@@ -1,5 +1,8 @@
 package frc.robot;
 
+import com.ctre.phoenix6.controls.SolidColor;
+import com.ctre.phoenix6.signals.RGBWColor;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -23,6 +26,7 @@ public class Robot extends TimedRobot {
 
   // Initializes the different subsystems of the robot.
   private final Drivetrain swerve = new Drivetrain(); // Contains the Swerve Modules, Gyro, Path Follower, Target Tracking, Odometry, and Vision Calibration.
+  private final Launcher launcher = new Launcher(); // Contains the LED, PSI Calc, Launcher triger.
   
   // Auto Variables
   private final SendableChooser<String> autoChooser = new SendableChooser<>();
@@ -45,6 +49,7 @@ public class Robot extends TimedRobot {
   public void robotPeriodic() {
     // Publishes information about the robot and robot subsystems to the Dashboard.
     swerve.updateDash();
+    launcher.updateDash();
     updateDash();
   }
 
@@ -138,6 +143,23 @@ public class Robot extends TimedRobot {
     if (driver.getRawButtonReleased(7)) swerve.pushCalibration(false, 0.0); // Updates the position of the robot on the field based on previous calculations.  
 
     if (driver.getRawButtonPressed(8)) swerve.resetGyro(); // Right center button re-zeros the angle reading of the gyro to the current angle of the robot. Should be called if the gyroscope readings are no longer well correlated with the field.
+
+    // operator controls
+
+    if (operator.getLeftTriggerAxis() > 0.5 && operator.getRightTriggerAxis() > 0.5) {
+      launcher.setFillingSolenoid(true);
+    } else {
+      launcher.setFillingSolenoid(false); 
+    }
+
+    if (operator.getRawButtonPressed(3) && operator.getRightBumperButton()) {
+      launcher.setShootingSolenid(true); 
+    } else {
+      launcher.setShootingSolenid(false); 
+    }
+
+    // Update the dashboard with the current PSI reading
+    launcher.updateDash();
   }
   
   public void disabledInit() { 
