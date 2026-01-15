@@ -24,6 +24,12 @@ public class Launcher {
     motor2.configFactoryDefault();
   }
 
+  // Called once in robotInit() on robot startup. Determines whether the launcher should start in safe mode or idle mode based on the tank pressure.
+  // Start in safe mode if the tank pressure is less than PSIMargin. Otherwise start in idle mode.
+  public void init() {
+
+  }
+
   // Operates the launcher. Expect the user to call this function each period in teleop(). This function does the following, in order of priority:
   // 1. If in the safe state, close both the fill and launch solenoids. The user should not be able to do anything until they exit the safe state into the idle state.
   // 2. If in the launching state, open the shooting solenoid for exactly 2 seconds. Return to the idle state afterwards.
@@ -31,26 +37,6 @@ public class Launcher {
   // 4. If in the idle state, close both the fill and launch solenoids.
   public void periodic() {
 
-  }
-
-  // Calculates PSI from potentiometer voltage
-  public double getPSI() {
-    return (PSI_Scale * voltRead.get()) + PSI_Offset; 
-  }
-
-  // 
-  public double getVolt() {
-    return voltRead.get();
-  }
-
-  // 
-  public void setPSI(double desiredPSI) {
-    PSISetPoint = desiredPSI;
-  }
-
-  // Returns the value of the desiredPSI
-  public double getDesiredPSI() {
-    
   }
 
   // Allows the user to command the launcher to launch a t-shirt. Refuse to launch if safe mode is enabled.
@@ -72,6 +58,27 @@ public class Launcher {
   public Mode getMode() {
 
   }
+
+  // 
+  public void setPSI(double desiredPSI) {
+    PSISetPoint = desiredPSI;
+  }
+
+  // Returns the value of the desiredPSI
+  public double getDesiredPSI() {
+    
+  }
+  
+  // Calculates PSI from potentiometer voltage
+  public double getPSI() {
+    return (PSI_Scale * voltRead.get()) + PSI_Offset; 
+  }
+
+  // 
+  public double getVolt() {
+    return voltRead.get();
+  }
+
 
   public void updateDash() {
     SmartDashboard.putNumber("Launcher PSI", getPSI());
