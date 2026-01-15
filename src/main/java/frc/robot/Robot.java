@@ -1,6 +1,7 @@
 package frc.robot;
 
 import com.ctre.phoenix6.controls.SolidColor;
+import com.ctre.phoenix6.hardware.CANdle;
 import com.ctre.phoenix6.signals.RGBWColor;
 
 import edu.wpi.first.math.MathUtil;
@@ -12,7 +13,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Robot extends TimedRobot {
   private final XboxController driver = new XboxController(0); // Initializes the driver controller.
-  private final XboxController operator = new XboxController(1); // Initializes the operator controller.
 
   // Limits the acceleration of the drivetrain by smoothing controller inputs.
   private final SlewRateLimiter xAccLimiter = new SlewRateLimiter(Drivetrain.maxAccTeleop / Drivetrain.maxVelTeleop);
@@ -23,7 +23,16 @@ public class Robot extends TimedRobot {
   private double rotationScaleFactor = 0.3; // Scales the rotational speed of the robot that results from controller inputs. 1.0 corresponds to full speed. 0.0 is fully stopped.
   private boolean boostMode = false; // Stores whether the robot is at 100% speed (boost mode), or at ~65% speed (normal mode).
   private boolean swerveLock = false; // Controls whether the swerve drive is in x-lock (for defense) or is driving. 
-
+  private final CANdle Candle = new CANdle(0, "canivore"); // Initializes the lights on the front of the robot.
+  private final RGBWColor offColor = new RGBWColor(0, 0, 0); // Represents LEDs that are off.
+  private final RGBWColor redColor = new RGBWColor(255, 0, 0); // Represents red LEDs.
+  private final RGBWColor greenColor = new RGBWColor(0, 255, 0); // Represents green LEDs.
+  private final RGBWColor yellowColor = new RGBWColor(255, 255, 0); // Represents yellow LEDs.
+ private final RGBWColor purpleColor = new RGBWColor(140, 0, 255); // Represents yellow LEDs.
+  private RGBWColor currentColor = offColor; // Stores the current color of the CANdle.
+  private SolidColor SolidColorRequest = new SolidColor(0, 307); // Used to control the CANdle lights.
+  private boolean candleStrobeState = true; // Stores whether the candles are on or off. Used to produce a stobe effect.
+  private int period = 0; // Keeps track of how many periods have elapsed since the begining of the program.
   // Initializes the different subsystems of the robot.
   private final Drivetrain swerve = new Drivetrain(); // Contains the Swerve Modules, Gyro, Path Follower, Target Tracking, Odometry, and Vision Calibration.
   private final Launcher launcher = new Launcher(); // Contains the LED, PSI Calc, Launcher triger.
@@ -51,6 +60,15 @@ public class Robot extends TimedRobot {
     swerve.updateDash();
     launcher.updateDash();
     updateDash();
+    period++;
+    if (period % 2 == 0) candleStrobeState = !candleStrobeState;
+    if (launcher.getPSI() <= 0 &&  swerveLock == true) { // if there's no pressure and wheel is locked show green LED(safe)
+      Candle.setControl(SolidColorRequest.withColor(greenColor));
+    } else if (launcher.getPSI() >= 0) { // if pressure is equals to 0 yellow color
+      Candle.setControl(SolidColorRequest.withColor(purpleColor));
+    } else if (launcher.getPSI() > 0) { // if ANY pressure, set color as red.
+      Candle.setControl(SolidColorRequest.withColor(redColor));
+  }
   }
 
   public void autonomousInit() {
@@ -144,22 +162,17 @@ public class Robot extends TimedRobot {
 
     if (driver.getRawButtonPressed(8)) swerve.resetGyro(); // Right center button re-zeros the angle reading of the gyro to the current angle of the robot. Should be called if the gyroscope readings are no longer well correlated with the field.
 
-    // operator controls
-
-    if (operator.getLeftTriggerAxis() > 0.5 && operator.getRightTriggerAxis() > 0.5) {
+    if (driver.getLeftTriggerAxis() > 0.1 ) {
       launcher.setFillingSolenoid(true);
     } else {
       launcher.setFillingSolenoid(false); 
     }
 
-    if (operator.getRawButtonPressed(3) && operator.getRightBumperButton()) {
+    if (driver.getRawButton(4)) {
       launcher.setShootingSolenid(true); 
     } else {
       launcher.setShootingSolenid(false); 
     }
-
-    // Update the dashboard with the current PSI reading
-    launcher.updateDash();
   }
   
   public void disabledInit() { 

@@ -9,11 +9,11 @@ public class Launcher {
   private static final double PSI_Scale = 49.8;
   private static final double PSI_Offset = -26.1;
   private final AnalogPotentiometer voltRead = new AnalogPotentiometer(0, 5, 0); //potentiometer on analog port 0
-  private double PSISetPoint = 30.0; 
+  private double PSISetPoint = 50.0; 
   private double PSIMargin = 1.0;
 
-  private final VictorSPX motor1 = new VictorSPX(5); //Activates VictorSPX on CAN ID 5
-  private final VictorSPX motor2 = new VictorSPX(2); //Activates VictorSPX on CAN ID 2
+  private final VictorSPX motor1 = new VictorSPX(1); //Activates VictorSPX on CAN ID 5
+  private final VictorSPX motor2 = new VictorSPX(0); //Activates VictorSPX on CAN ID 2
 
   //Constructor for the Launcher class
   public Launcher() {
@@ -45,13 +45,9 @@ public class Launcher {
   public void setFillingSolenoid(Boolean fillSolenoid) {
     if (fillSolenoid) {
       motor2.set(VictorSPXControlMode.PercentOutput, 1.0);
-    } else if (PSISetPoint+PSIMargin <= getPSI()) {
+    } else {
       motor2.set(VictorSPXControlMode.PercentOutput, 0.0);
     } 
-  }
-
-  public void periodic() {
-
   }
 
   public void updateDash() {
