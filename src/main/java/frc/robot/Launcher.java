@@ -15,26 +15,71 @@ public class Launcher {
   private final VictorSPX motor1 = new VictorSPX(1); //Activates VictorSPX on CAN ID 5
   private final VictorSPX motor2 = new VictorSPX(0); //Activates VictorSPX on CAN ID 2
 
-  //Constructor for the Launcher class
+  private enum Mode {safe, launching, filling, idle}; // A list containing all the possible modes of the launcher.
+  private Mode currState = Mode.idle; // Stores the current mode of the launcher.
+
+  // Constructor for the Launcher class
   public Launcher() {
     motor1.configFactoryDefault();
     motor2.configFactoryDefault();
   }
 
-  //Calculates PSI from potentiometer voltage
+  // Operates the launcher. Expect the user to call this function each period in teleop(). This function does the following, in order of priority:
+  // 1. If in the safe state, close both the fill and launch solenoids. The user should not be able to do anything until they exit the safe state into the idle state.
+  // 2. If in the launching state, open the shooting solenoid for exactly 2 seconds. Return to the idle state afterwards.
+  // 3. If in the filling state, open the fill solenoid until desiredPSI is reached, but no longer than 10 seconds. Return to the idle state afterwards.
+  // 4. If in the idle state, close both the fill and launch solenoids.
+  public void periodic() {
+
+  }
+
+  // Calculates PSI from potentiometer voltage
   public double getPSI() {
     return (PSI_Scale * voltRead.get()) + PSI_Offset; 
   }
 
+  // 
   public double getVolt() {
     return voltRead.get();
   }
 
+  // 
   public void setPSI(double desiredPSI) {
     PSISetPoint = desiredPSI;
   }
 
-  public void setShootingSolenid(Boolean ShootingSolenid) {
+  // Returns the value of the desiredPSI
+  public double getDesiredPSI() {
+    
+  }
+
+  // Allows the user to command the launcher to launch a t-shirt. Refuse to launch if safe mode is enabled.
+  public void launch() {
+
+  }
+
+  // Allows the user to command the launcher to fill the tank to the desiredPSI. Refuse to fill if safe mode is enabled, or if the launcher is currently launching a t-shirt.
+  public void fill() {
+
+  }
+
+  // Allows the user to command the launcher into safe mode, where no launch or fill commands will be executed. The user can only trigger safe mode if the PSI is less than PSIMargin.
+  public void safe(boolean safeMode) {
+
+  }
+
+  // Returns the current mode of the launcher.
+  public Mode getMode() {
+
+  }
+
+  public void updateDash() {
+    SmartDashboard.putNumber("Launcher PSI", getPSI());
+    SmartDashboard.putNumber("Volt Read", getVolt());
+  }
+
+  // 
+  private void setShootingSolenid(Boolean ShootingSolenid) {
     if (ShootingSolenid) {
       motor1.set(VictorSPXControlMode.PercentOutput, 1.0);
     } else {
@@ -42,16 +87,12 @@ public class Launcher {
     }
   }
 
-  public void setFillingSolenoid(Boolean fillSolenoid) {
+  // 
+  private void setFillingSolenoid(Boolean fillSolenoid) {
     if (fillSolenoid) {
       motor2.set(VictorSPXControlMode.PercentOutput, 1.0);
     } else {
       motor2.set(VictorSPXControlMode.PercentOutput, 0.0);
     } 
-  }
-
-  public void updateDash() {
-    SmartDashboard.putNumber("Launcher PSI", getPSI());
-    SmartDashboard.putNumber("Volt Read", getVolt());
   }
 }
