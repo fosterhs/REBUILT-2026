@@ -8,6 +8,11 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import com.ctre.phoenix6.CANBus;
+import com.ctre.phoenix6.controls.SolidColor;
+import com.ctre.phoenix6.hardware.CANdle;
+import com.ctre.phoenix6.signals.RGBWColor;
+
 
 public class Robot extends TimedRobot {
   private final XboxController driver = new XboxController(0); // Initializes the driver controller.
@@ -22,9 +27,15 @@ public class Robot extends TimedRobot {
   private boolean boostMode = false; // Stores whether the robot is at 100% speed (boost mode), or at ~65% speed (normal mode).
   private boolean swerveLock = false; // Controls whether the swerve drive is in x-lock (for defense) or is driving. 
   private final CANBus canbus = new CANBus("canivore"); // Initializes the canbus associated with the canivore.
-  private final CANdle candle0 = new CANdle(0, canbus); // Initializes the lights on the front of the robot.
+
   private final Drivetrain swerve = new Drivetrain(); // Contains the Swerve Modules, Gyro, Path Follower, Target Tracking, Odometry, and Vision Calibration.
   private final Launcher launcher = new Launcher(); // Contains the LED, PSI Calc, Launcher triger.
+
+  private final CANdle candle0 = new CANdle(0, canbus); // Initializes the lights on the front of the robot.
+  private final RGBWColor redColor = new RGBWColor(255, 0, 0); // Represents red LEDs.
+  private final RGBWColor greenColor = new RGBWColor(0, 255, 0); // Represents red LEDs.
+  private SolidColor SolidColorRequest = new SolidColor(0, 307); // Used to control the CANdle lights.
+
   
   // Auto Variables
   private final SendableChooser<String> autoChooser = new SendableChooser<>();
@@ -40,12 +51,19 @@ public class Robot extends TimedRobot {
     autoChooser.addOption(auto2, auto2);
     SmartDashboard.putData("Autos", autoChooser);
 
+    launcher.init();
     swerve.loadPath("Test", 0.0, 0.0, 0.0, 0.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     runAll(); // Helps prevent loop overruns on startup by running every command before the match starts.
   }
 
   public void robotPeriodic() {
     // Publishes information about the robot and robot subsystems to the Dashboard.
+    if (launcher.getMode() == Launcher.Mode.safe) {
+      candle0.setControl(SolidColorRequest.withColor(greenColor)); // Sets the color of the CANdle.
+    } else {
+      candle0.setControl(SolidColorRequest.withColor(redColor)); // Sets the color of the CANdle.
+    }
+    
     swerve.updateDash();
     launcher.updateDash();
     updateDash();
@@ -106,6 +124,7 @@ public class Robot extends TimedRobot {
   }
 
   public void teleopPeriodic() {
+    launcher.periodic();
     swerve.updateOdometry(); // Keeps track of the position of the robot on the field. Must be called each period.
     swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
     for (int limelightIndex = 0; limelightIndex < swerve.limelights.length; limelightIndex++) { // Iterates through each limelight.
@@ -124,6 +143,30 @@ public class Robot extends TimedRobot {
       swerveLock = true; // Pressing the X-button causes the swerve modules to lock (for defense).
     } else if (Math.abs(driver.getLeftY()) >= 0.05 || Math.abs(driver.getLeftX()) >= 0.05 || Math.abs(driver.getRightX()) >= 0.05) {
       swerveLock = false; // Pressing any joystick more than 5% will cause the swerve modules stop locking and begin driving.
+    }
+    if (driver.getRawButton(4)) {
+      launcher.launch();
+    }
+
+    if (driver.getLeftTriggerAxis() > 0.1) {
+      launcher.fill();
+    }
+
+    if (driver.getRightTriggerAxis() > 0.1) {
+      launcher.safe(true);
+    }
+    if (driver.getRightBumperButton()) {
+      launcher.safe(false);
+    }
+
+    if (driver.getPOV() == 0) {
+      launcher.setPSI(25);
+    } else if (driver.getPOV() == 90) {
+      launcher.setPSI(30);
+    } else if (driver.getPOV() == 180) {
+      launcher.setPSI(35);
+    } else if (driver.getPOV() == 270) {
+      launcher.setPSI(40);
     }
 
     if (swerveLock) {
