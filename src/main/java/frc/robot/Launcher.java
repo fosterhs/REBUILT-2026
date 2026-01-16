@@ -12,11 +12,11 @@ public class Launcher {
   private static final double PSI_Offset = -26.1;
   private final AnalogPotentiometer voltRead = new AnalogPotentiometer(0, 5, 0); //potentiometer on analog port 0
 
-  private final Timer solenoidTimer = new Timer(); //
+  private final Timer solenoidTimer = new Timer();
 
   private double PSISetPoint = 30.0; 
   private double PSIMargin = 1.0;
-
+  private double PSIsafe = 5.0;
   private final VictorSPX motor1 = new VictorSPX(1); //Activates VictorSPX on CAN ID 5
   private final VictorSPX motor2 = new VictorSPX(0); //Activates VictorSPX on CAN ID 2
 
@@ -50,7 +50,7 @@ public class Launcher {
       case safe:
         setFillingSolenoid(false);
         setLaunchingSolenid(false);
-        if (getPSI() > PSIMargin) {
+        if (getPSI() > PSIsafe) {
           currState = Mode.idle;
         }
       break;
@@ -58,7 +58,7 @@ public class Launcher {
       case launching:
         setLaunchingSolenid(true);
         setFillingSolenoid(false);
-        if (solenoidTimer.get() > 2.0){
+        if (solenoidTimer.get() > 10.0){
          setLaunchingSolenid(false);
          setFillingSolenoid(false);
          currState = Mode.idle;
