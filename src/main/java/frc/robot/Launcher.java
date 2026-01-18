@@ -6,23 +6,17 @@ import edu.wpi.first.wpilibj.AnalogPotentiometer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.Timer;
 
-
 public class Launcher {
-  private static final double PSI_Scale = 49.8;
-  private static final double PSI_Offset = -26.1;
-  private final AnalogPotentiometer voltRead = new AnalogPotentiometer(0, 5, 0); //potentiometer on analog port 0
-
-  private final Timer solenoidTimer = new Timer();
-
-  private double PSISetPoint = 30.0; 
-  private double PSIMargin = 1.0;
-  private double PSIsafe = 5.0;
   private final VictorSPX motor1 = new VictorSPX(1); //Activates VictorSPX on CAN ID 5
   private final VictorSPX motor2 = new VictorSPX(0); //Activates VictorSPX on CAN ID 2
-
-
+  private final AnalogPotentiometer voltRead = new AnalogPotentiometer(0, 5, 0); //potentiometer on analog port 0
+  private final Timer solenoidTimer = new Timer();
+  private static final double PSI_Scale = 49.8;
+  private static final double PSI_Offset = -26.1;
   public enum Mode {safe, launching, filling, idle}; // A list containing all the possible modes of the launcher.
   private Mode currState = Mode.idle; // Stores the current mode of the launcher.
+  private double PSISetPoint = 30.0; 
+  private double PSIsafe = 5.0;
 
   // Constructor for the Launcher class
   public Launcher() {
@@ -33,7 +27,7 @@ public class Launcher {
   // Called once in robotInit() on robot startup. Determines whether the launcher should start in safe mode or idle mode based on the tank pressure.
   // Start in safe mode if the tank pressure is less than PSIMargin. Otherwise start in idle mode.
   public void init() {
-    if(getPSI() < PSIMargin){
+    if(getPSI() < PSIsafe){
       currState = Mode.safe;
     } else {
       currState = Mode.idle;
@@ -80,14 +74,6 @@ public class Launcher {
         setLaunchingSolenid(false);
       break;
     }
-
-  //if(currState == case1) {
-  //  do case 1 stuff
-  //} else if(currState == case 2) {
-  //  do case 2 stuff
-  //} else {
-  //  do default stuff
-  //}
   }
 
   // Allows the user to command the launcher to launch a t-shirt. Refuse to launch if safe mode is enabled.
@@ -108,7 +94,7 @@ public class Launcher {
 
   // Allows the user to command the launcher into safe mode, where no launch or fill commands will be executed. The user can only trigger safe mode if the PSI is less than PSIMargin.
   public void safe(boolean safeMode) {
-    if  (safeMode && getPSI() < PSIMargin) {
+    if  (safeMode && getPSI() < PSIsafe) {
      currState = Mode.safe;
     } 
 
@@ -142,7 +128,6 @@ public class Launcher {
     return voltRead.get();
   }
 
-
   public void updateDash() {
     SmartDashboard.putNumber("Launcher PSI", getPSI());
     SmartDashboard.putNumber("Volt Read", getVolt());
@@ -150,16 +135,19 @@ public class Launcher {
     SmartDashboard.putNumber("Desired PSI", getDesiredPSI());
     switch(currState){
       case safe:
-      SmartDashboard.putString("Launcher Mode", "safe");
+        SmartDashboard.putString("Launcher Mode", "safe");
       break;
+
       case launching:
-      SmartDashboard.putString("Launcher Mode", "launching");
+        SmartDashboard.putString("Launcher Mode", "launching");
       break;
+
       case filling:
-      SmartDashboard.putString("Launcher Mode", "filling");
+        SmartDashboard.putString("Launcher Mode", "filling");
       break;
+
       case idle:
-      SmartDashboard.putString("Launcher Mode", "idle");
+        SmartDashboard.putString("Launcher Mode", "idle");
       break;
     }
   }

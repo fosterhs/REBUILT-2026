@@ -8,11 +8,8 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.controls.SolidColor;
-import com.ctre.phoenix6.hardware.CANdle;
 import com.ctre.phoenix6.signals.RGBWColor;
-
 
 public class Robot extends TimedRobot {
   private final XboxController driver = new XboxController(0); // Initializes the driver controller.
@@ -26,17 +23,16 @@ public class Robot extends TimedRobot {
   private double rotationScaleFactor = 0.3; // Scales the rotational speed of the robot that results from controller inputs. 1.0 corresponds to full speed. 0.0 is fully stopped.
   private boolean boostMode = false; // Stores whether the robot is at 100% speed (boost mode), or at ~65% speed (normal mode).
   private boolean swerveLock = false; // Controls whether the swerve drive is in x-lock (for defense) or is driving. 
+
   private final CANBus canbus = new CANBus("canivore"); // Initializes the canbus associated with the canivore.
-
-  private final Drivetrain swerve = new Drivetrain(); // Contains the Swerve Modules, Gyro, Path Follower, Target Tracking, Odometry, and Vision Calibration.
-  private final Launcher launcher = new Launcher(); // Contains the LED, PSI Calc, Launcher triger.
-
   private final CANdle candle0 = new CANdle(0, canbus); // Initializes the lights on the front of the robot.
   private final RGBWColor redColor = new RGBWColor(255, 0, 0); // Represents red LEDs.
   private final RGBWColor greenColor = new RGBWColor(0, 255, 0); // Represents red LEDs.
   private SolidColor SolidColorRequest = new SolidColor(0, 307); // Used to control the CANdle lights.
 
-  
+  private final Drivetrain swerve = new Drivetrain(); // Contains the Swerve Modules, Gyro, Path Follower, Target Tracking, Odometry, and Vision Calibration.
+  private final Launcher launcher = new Launcher(); // Contains the LED, PSI Calc, Launcher triger.
+
   // Auto Variables
   private final SendableChooser<String> autoChooser = new SendableChooser<>();
   private static final String auto1 = "Auto 1"; 
@@ -144,30 +140,6 @@ public class Robot extends TimedRobot {
     } else if (Math.abs(driver.getLeftY()) >= 0.05 || Math.abs(driver.getLeftX()) >= 0.05 || Math.abs(driver.getRightX()) >= 0.05) {
       swerveLock = false; // Pressing any joystick more than 5% will cause the swerve modules stop locking and begin driving.
     }
-    if (driver.getRawButton(4)) {
-      launcher.launch();
-    }
-
-    if (driver.getLeftTriggerAxis() > 0.1) {
-      launcher.fill();
-    }
-
-    if (driver.getRightTriggerAxis() > 0.1) {
-      launcher.safe(true);
-    }
-    if (driver.getRightBumperButton()) {
-      launcher.safe(false);
-    }
-
-    if (driver.getPOV() == 0) {
-      launcher.setPSI(25);
-    } else if (driver.getPOV() == 90) {
-      launcher.setPSI(30);
-    } else if (driver.getPOV() == 180) {
-      launcher.setPSI(35);
-    } else if (driver.getPOV() == 270) {
-      launcher.setPSI(40);
-    }
  
     if (swerveLock) {
       swerve.xLock(); // Locks the swerve modules (for defense).
@@ -184,6 +156,22 @@ public class Robot extends TimedRobot {
     if (driver.getRawButtonReleased(7)) swerve.pushCalibration(false, 0.0); // Updates the position of the robot on the field based on previous calculations.  
 
     if (driver.getRawButtonPressed(8)) swerve.resetGyro(); // Right center button re-zeros the angle reading of the gyro to the current angle of the robot. Should be called if the gyroscope readings are no longer well correlated with the field.
+
+    // Launcher Code
+    if (driver.getRawButton(4)) launcher.launch();
+    if (driver.getLeftTriggerAxis() > 0.1) launcher.fill();
+    if (driver.getRightTriggerAxis() > 0.1) launcher.safe(true);
+    if (driver.getRightBumperButton()) launcher.safe(false);
+
+    if (driver.getPOV() == 0) {
+      launcher.setPSI(25);
+    } else if (driver.getPOV() == 90) {
+      launcher.setPSI(30);
+    } else if (driver.getPOV() == 180) {
+      launcher.setPSI(35);
+    } else if (driver.getPOV() == 270) {
+      launcher.setPSI(40);
+    }
   }
   
   public void disabledInit() { 
@@ -247,7 +235,6 @@ public class Robot extends TimedRobot {
     swerve.calcPriorityLimelightIndex();
     System.out.println("swerve getPriorityLimelightIndex: " + swerve.getPriorityLimelightIndex());
     swerve.updateDash();
-
     updateDash();
   }
 }
