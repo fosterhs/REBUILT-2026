@@ -8,6 +8,8 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import com.ctre.phoenix6.controls.EmptyAnimation;
+import com.ctre.phoenix6.controls.RainbowAnimation;
 import com.ctre.phoenix6.controls.SolidColor;
 import com.ctre.phoenix6.signals.RGBWColor;
 
@@ -27,8 +29,14 @@ public class Robot extends TimedRobot {
   private final CANBus canbus = new CANBus("canivore"); // Initializes the canbus associated with the canivore.
   private final CANdle candle0 = new CANdle(0, canbus); // Initializes the lights on the front of the robot.
   private final RGBWColor redColor = new RGBWColor(255, 0, 0); // Represents red LEDs.
-  private final RGBWColor greenColor = new RGBWColor(0, 255, 0); // Represents red LEDs.
-  private SolidColor SolidColorRequest = new SolidColor(0, 307); // Used to control the CANdle lights.
+  private final RGBWColor yellowColor = new RGBWColor(255, 130, 0); // Represents yellow LEDs.
+  private SolidColor SolidColorRequest = new SolidColor(0, 308); // Used to control the CANdle lights.
+  private SolidColor Flicker = new SolidColor(0, 105); // Used to control the CANdle lights.
+  private SolidColor Flicker2 = new SolidColor(106, 190); // Used to control the CANdle lights.
+  private SolidColor Flicker3 = new SolidColor(191, 308); // Used to control the CANdle lights.
+  private RainbowAnimation rainbow = new RainbowAnimation(0, 308); // Creates a rainbow animation when called.
+  private EmptyAnimation nothing = new EmptyAnimation(2); // Clears all animation in slot 2. (Which is the rainbow.)
+  private int count = 0; // Initializes count for the flickering animation in danger mode.
 
   private final Drivetrain swerve = new Drivetrain(); // Contains the Swerve Modules, Gyro, Path Follower, Target Tracking, Odometry, and Vision Calibration.
   private final Launcher launcher = new Launcher(); // Contains the LED, PSI Calc, Launcher triger.
@@ -54,10 +62,25 @@ public class Robot extends TimedRobot {
 
   public void robotPeriodic() {
     // Publishes information about the robot and robot subsystems to the Dashboard.
-    if (launcher.getMode() == Launcher.Mode.safe) {
-      candle0.setControl(SolidColorRequest.withColor(greenColor)); // Sets the color of the CANdle.
-    } else {
-      candle0.setControl(SolidColorRequest.withColor(redColor)); // Sets the color of the CANdle.
+    count = count + 5;
+    if (count > 100) {
+      count = 0;
+    }
+
+    if (launcher.getMode() == Launcher.Mode.safe) { // Rainbow animation plays when the robot is safe.
+      candle0.setControl(rainbow.withSlot(2));
+    } else { // An animation with a red base and disconnected yellow flashing plays when the robot isn't safe.
+      candle0.setControl(nothing);
+      candle0.setControl(SolidColorRequest.withColor(redColor)); // Sets the entire LED strip as red.
+      if (count < 15) {
+        candle0.setControl(Flicker.withColor(yellowColor)); // Sets Flicker/the first 105 leds as yellow for 15 counts out of 100.
+      }
+      if (count < 55) {
+        candle0.setControl(Flicker2.withColor(yellowColor)); // Sets Flicker2/the following 85 leds as yellow for 55 counts out of 100.
+      }
+      if (count < 30) {
+        candle0.setControl(Flicker3.withColor(yellowColor)); // Sets Flicker3/the last 118 leds as yellow for 30 counts out of 100.
+      }
     }
     
     swerve.updateDash();
