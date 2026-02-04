@@ -159,8 +159,8 @@ public class Robot extends TimedRobot {
   // Publishes information to the dashboard.
   public void updateDash() {
     SmartDashboard.putBoolean("Boost Mode", boostMode);
-    //SmartDashboard.putNumber("Speed Scale Factor", speedScaleFactor);
-    //SmartDashboard.putNumber("Auto Stage", autoStage);
+    SmartDashboard.putNumber("Speed Scale Factor", speedScaleFactor);
+    SmartDashboard.putNumber("Auto Stage", autoStage);
   }
 
   // Helps prevent loop overruns on startup by running every user created command in every class before the match starts. Not sure why this helps, but it does.
@@ -188,6 +188,9 @@ public class Robot extends TimedRobot {
     System.out.println("swerve getGyroAng: " + swerve.getGyroAng());
     System.out.println("swerve getGyroPitch: " + swerve.getGyroPitch());
     System.out.println("swerve getGyroRoll: " + swerve.getGyroRoll());
+    System.out.println("swerve getGyroAngVel: " + swerve.getGyroAngVel());
+    System.out.println("swerve getGyroPitchVel: " + swerve.getGyroPitchVel());
+    System.out.println("swerve getGyroRollVel: " + swerve.getGyroRollVel());
     System.out.println("swerve getPathAngleError: " + swerve.getPathAngleError());
     System.out.println("swerve getPathPosError: " + swerve.getPathPosError());
     System.out.println("swerve getXPos: " + swerve.getXPos());
@@ -201,7 +204,6 @@ public class Robot extends TimedRobot {
     swerve.calcPriorityLimelightIndex();
     System.out.println("swerve getPriorityLimelightIndex: " + swerve.getPriorityLimelightIndex());
     swerve.updateDash();
-
     updateDash();
   }
 }
