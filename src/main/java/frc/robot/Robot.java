@@ -23,6 +23,7 @@ public class Robot extends TimedRobot {
 
   // Initializes the different subsystems of the robot.
   private final Drivetrain swerve = new Drivetrain(); // Contains the Swerve Modules, Gyro, Path Follower, Target Tracking, Odometry, and Vision Calibration.
+  private final Climber climber = new Climber(); // Initializes the Climber subsystem.
   
   // Auto Variables
   private final SendableChooser<String> autoChooser = new SendableChooser<>();
@@ -45,10 +46,13 @@ public class Robot extends TimedRobot {
   public void robotPeriodic() {
     // Publishes information about the robot and robot subsystems to the Dashboard.
     swerve.updateDash();
+    climber.updateDash();
     updateDash();
   }
 
   public void autonomousInit() {
+    climber.init(); 
+
     autoCompleted = true;
     autoStage = 1;
     autoSelected = autoChooser.getSelected();
@@ -66,6 +70,8 @@ public class Robot extends TimedRobot {
   }
 
   public void autonomousPeriodic() {
+    climber.perioidic();
+
     swerve.updateOdometry(); // Keeps track of the position of the robot on the field. Must be called each period.
     swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
     for (int limelightIndex = 0; limelightIndex < swerve.limelights.length; limelightIndex++) { // Iterates through each limelight.
@@ -100,9 +106,12 @@ public class Robot extends TimedRobot {
   
   public void teleopInit() {
     swerve.pushCalibration(true, swerve.getFusedAng()); // Updates the robot's position on the field.
+    climber.init(); 
   }
 
   public void teleopPeriodic() {
+    climber.perioidic(); 
+
     swerve.updateOdometry(); // Keeps track of the position of the robot on the field. Must be called each period.
     swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
     for (int limelightIndex = 0; limelightIndex < swerve.limelights.length; limelightIndex++) { // Iterates through each limelight.
@@ -138,6 +147,9 @@ public class Robot extends TimedRobot {
     if (driver.getRawButtonReleased(7)) swerve.pushCalibration(false, 0.0); // Updates the position of the robot on the field based on previous calculations.  
 
     if (driver.getRawButtonPressed(8)) swerve.resetGyro(); // Right center button re-zeros the angle reading of the gyro to the current angle of the robot. Should be called if the gyroscope readings are no longer well correlated with the field.
+
+    if (driver.getPOV() == 0) climber.moveUp(); // D-pad up moves the climber up.
+    if (driver.getPOV() == 180) climber.moveDown(); // D-pad down moves the climber down.
   }
   
   public void disabledInit() { 
@@ -205,5 +217,13 @@ public class Robot extends TimedRobot {
     System.out.println("swerve getPriorityLimelightIndex: " + swerve.getPriorityLimelightIndex());
     swerve.updateDash();
     updateDash();
+
+    System.out.println("climber getMode: " + climber.getMode().toString());
+    System.out.println("climber atDesiredPosition: " + climber.atDesiredPosition());
+    System.out.println("climber getPosition: " + climber.getPosition());
+    System.out.println("climber getVelocity: " + climber.getVelocity());
+    climber.moveDown();
+    climber.moveDown();
+    climber.updateDash();
   }
 }
