@@ -1,5 +1,6 @@
 package frc.robot;
 
+import com.ctre.phoenix6.SignalLogger;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -9,7 +10,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Robot extends TimedRobot {
   private final XboxController driver = new XboxController(0); // Initializes the driver controller.
-  private final XboxController operator = new XboxController(1); // Initializes the operator controller.
 
   // Limits the acceleration of the drivetrain by smoothing controller inputs.
   private final SlewRateLimiter xAccLimiter = new SlewRateLimiter(Drivetrain.maxAccTeleop / Drivetrain.maxVelTeleop);
@@ -24,7 +24,10 @@ public class Robot extends TimedRobot {
   // Initializes the different subsystems of the robot.
   private final Drivetrain swerve = new Drivetrain(); // Contains the Swerve Modules, Gyro, Path Follower, Target Tracking, Odometry, and Vision Calibration.
   private final Climber climber = new Climber(); // Initializes the Climber subsystem.
-  
+  private final Shooter shooter = new Shooter(); // Initializes the Shooter subsystem.
+  private final Indexer indexer = new Indexer(); // Initializes the Indexer subsystem.
+  private final Intake intake = new Intake(); // Initializes the Intake subsystem. 
+
   // Auto Variables
   private final SendableChooser<String> autoChooser = new SendableChooser<>();
   private static final String auto1 = "Auto 1"; 
@@ -41,17 +44,23 @@ public class Robot extends TimedRobot {
 
     swerve.loadPath("Test", 0.0, 0.0, 0.0, 0.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     runAll(); // Helps prevent loop overruns on startup by running every command before the match starts.
+    SignalLogger.enableAutoLogging(false);
   }
 
   public void robotPeriodic() {
     // Publishes information about the robot and robot subsystems to the Dashboard.
     swerve.updateDash();
     climber.updateDash();
+    shooter.updateDash();
+    indexer.updateDash();
+    intake.updateDash();
     updateDash();
   }
 
   public void autonomousInit() {
     climber.init(); 
+    indexer.init();
+    intake.init();
 
     autoCompleted = true;
     autoStage = 1;
@@ -71,6 +80,8 @@ public class Robot extends TimedRobot {
 
   public void autonomousPeriodic() {
     climber.perioidic();
+    indexer.periodic();
+    intake.periodic();
 
     swerve.updateOdometry(); // Keeps track of the position of the robot on the field. Must be called each period.
     swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
@@ -107,10 +118,14 @@ public class Robot extends TimedRobot {
   public void teleopInit() {
     swerve.pushCalibration(true, swerve.getFusedAng()); // Updates the robot's position on the field.
     climber.init(); 
+    indexer.init();
+    intake.init();
   }
 
   public void teleopPeriodic() {
     climber.perioidic(); 
+    indexer.periodic();
+    intake.periodic();
 
     swerve.updateOdometry(); // Keeps track of the position of the robot on the field. Must be called each period.
     swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
@@ -168,6 +183,51 @@ public class Robot extends TimedRobot {
     swerve.addCalibrationEstimate(swerve.getPriorityLimelightIndex(), true);
   }
 
+  public double getHubHeading() {
+    double hubX = 182.11 * 0.0254; // The x-position of the hub on the field in meters.
+    double hubY = 158.84 * 0.0254; // The y-position of the hub on the field in meters.
+    double robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
+    double robotY = swerve.getYPos(); // The current y-position of the
+
+    if (robotX > hubX) {
+      return Math.toDegrees(Math.atan((hubY - robotY) / (hubX - robotX))) - 90.0; // Returns the heading from the robot to the hub in degrees.
+    } else if (robotX < hubX) {
+      return Math.toDegrees(Math.atan((hubY - robotY) / (hubX - robotX))) + 90.0; // Returns the heading from the robot to the hub in degrees.
+    } else {
+      if (robotY > hubY) {
+        return 0.0;
+      } else {
+        return 180.0;
+      }
+    }
+  }
+
+  private double[] distanceArray = { 1.0, 2.0, 5.0, 5.1, 8.5 }; // Distance array (need tested👈)
+  private double[] RPMArray = { 2000.0, 3400.0, 3500.0, 4500.0, 5000.0 }; // RPM array(need tested👈)
+  public double calculateShooterRPM() {
+    double hubX = 182.11 * 0.0254; // The x-position of the hub on the field in meters.
+    double hubY = 158.84 * 0.0254; // The y-position of the hub on the field in meters.
+    double robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
+    double robotY = swerve.getYPos(); // The current y-position of the robot
+    double distance = Math.sqrt(Math.pow(hubX - robotX, 2) + Math.pow(hubY - robotY, 2)); // distance to hub
+    
+    if (distance >= distanceArray[distanceArray.length - 1]) {
+      return RPMArray[RPMArray.length - 1]; // Return RPM for largest distance
+    } 
+    else if (distance <= distanceArray[0]) {
+      return RPMArray[0]; // Return RPM for smallest distance
+    } 
+    else {
+      int lowerIndex = -1; // Index for distance immediately smaller than current distance
+      for (int i = 0; i < distanceArray.length - 1; i++) {
+        if (distanceArray[i + 1] > distance && lowerIndex == -1) {
+          lowerIndex = i;
+        }
+      } 
+      return RPMArray[lowerIndex] + ((RPMArray[lowerIndex + 1] - RPMArray[lowerIndex]) / (distanceArray[lowerIndex + 1] - distanceArray[lowerIndex])) * (distance - distanceArray[lowerIndex]);
+    }
+  }
+
   // Publishes information to the dashboard.
   public void updateDash() {
     SmartDashboard.putBoolean("Boost Mode", boostMode);
@@ -216,14 +276,40 @@ public class Robot extends TimedRobot {
     swerve.calcPriorityLimelightIndex();
     System.out.println("swerve getPriorityLimelightIndex: " + swerve.getPriorityLimelightIndex());
     swerve.updateDash();
-    updateDash();
 
+    climber.init();
+    climber.perioidic();
+    climber.moveUp();
+    climber.moveDown();
     System.out.println("climber getMode: " + climber.getMode().toString());
     System.out.println("climber atDesiredPosition: " + climber.atDesiredPosition());
     System.out.println("climber getPosition: " + climber.getPosition());
     System.out.println("climber getVelocity: " + climber.getVelocity());
-    climber.moveDown();
-    climber.moveDown();
     climber.updateDash();
+    
+    shooter.spinUp(1000.0);
+    shooter.spinDown();
+    System.out.println("shooter getRPM: " + shooter.getRPM());
+    System.out.println("shooter getRPS: " + shooter.getRPS());
+    System.out.println("shooter isAtSpeed(): " + shooter.isAtSpeed());
+    System.out.println("shooter isSpunUp: " + shooter.isSpunUp());
+    shooter.updateDash();
+
+    indexer.init();
+    indexer.periodic();
+    indexer.start();
+    indexer.jammed();
+    indexer.stop();
+    System.out.println("indexer getMode: " + indexer.getMode().toString());
+    System.out.println("indexer getHopperSensor: " + indexer.getHopperSensor());
+    System.out.println("indexer getShooterSensor: " + indexer.getShooterSensor());
+    System.out.println("indexer getJamTimer: " + indexer.getJamTimer());
+    System.out.println("indexer getShooterTimer: " + indexer.getShooterTimer());
+    System.out.println("indexer getHopperTimer: " + indexer.getHopperTimer());
+    indexer.updateDash();
+
+    System.out.println("calculateShooterRPM: " + calculateShooterRPM());
+    System.out.println("getHubHeading(): " + getHubHeading());
+    updateDash();
   }
 }

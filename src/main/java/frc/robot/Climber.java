@@ -21,14 +21,14 @@ public class Climber {
 	private final StatusSignal<Angle> climberPosition;
 	private final StatusSignal<AngularVelocity> climberVelocity;
 	private final MotionMagicTorqueCurrentFOC climbMotorPositionRequest = new MotionMagicTorqueCurrentFOC(0.0); // Communicates motion magic torque current FOC position requests to the arm motor.
-  private final  VoltageOut climbMotorVoltageRequest = new VoltageOut(0.0);
+  private final VoltageOut climbMotorVoltageRequest = new VoltageOut(0.0);
 	public enum Mode {HOME, UP, DOWN}
 	public Mode currMode = Mode.HOME;
 	private boolean isHomed = false;
 	private final Timer homingTimer = new Timer();
 	private double desiredPosition = 0.0;
-	private double highLimit = 80.0;
-	private double lowLimit = 5.0;
+	private double upPosition = 80.0;
+	private double downPosition = 5.0;
 	private double posTol = 1.0;
 
 	public Climber() {
@@ -47,24 +47,21 @@ public class Climber {
 		switch (currMode) {
 			case HOME:
 				climbMotor.setControl(climbMotorVoltageRequest.withOutput(-2.0));
-				if (Math.abs(getVelocity()) > 0.05) {
-					homingTimer.restart();
-				}
+				if (Math.abs(getVelocity()) > 0.05) homingTimer.restart();
 				if (homingTimer.get() > 1.0) {
 					climbMotor.setPosition(0.0, 0.03);
           isHomed = true;
 					currMode = Mode.DOWN;
+          desiredPosition = downPosition;
 				}
 			break;
 
 			case UP:
-				climbMotor.setControl(climbMotorPositionRequest.withPosition(highLimit)); // Sets the position of the motor in shaft rotations.
-				desiredPosition = highLimit;
+				climbMotor.setControl(climbMotorPositionRequest.withPosition(upPosition)); // Sets the position of the motor in shaft rotations.
 			break;
 
 			case DOWN:
-				climbMotor.setControl(climbMotorPositionRequest.withPosition(lowLimit)); // Sets the position of the motor in shaft rotations.
-				desiredPosition = lowLimit;
+				climbMotor.setControl(climbMotorPositionRequest.withPosition(downPosition)); // Sets the position of the motor in shaft rotations.
 			break;
 		}
 	}
@@ -72,12 +69,14 @@ public class Climber {
 	public void moveUp() {
 		if (isHomed) {
 			currMode = Mode.UP;
+      desiredPosition = upPosition;
 		}
 	}
 
 	public void moveDown() {
 		if (isHomed) {
 			currMode = Mode.DOWN;
+      desiredPosition = downPosition;
 		}
 	}
 
