@@ -26,6 +26,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.Timer;
 import frc.robot.LimelightHelpers.PoseEstimate;
 
@@ -52,23 +53,25 @@ class Drivetrain {
   private static final SwerveDriveKinematics kinematics = new SwerveDriveKinematics(frontLeftModulePos, frontRightModulePos, backRightModulePos, backLeftModulePos);
 
   // Initializes each swerve module.
-  private final SwerveModule frontLeftModule = new SwerveModule(1, 2, 1, false, -0.415039, "canivore"); 
-  private final SwerveModule frontRightModule = new SwerveModule(3, 4, 2, true, -0.278809 , "canivore");
-  private final SwerveModule backRightModule = new SwerveModule(5, 6, 3, true, 0.129395 , "canivore");
-  private final SwerveModule backLeftModule = new SwerveModule(7, 8, 4, false, -0.386230, "canivore");
+  private final SwerveModule frontLeftModule = new SwerveModule(1, 2, 1, false, -0.161865, "canivore"); 
+  private final SwerveModule frontRightModule = new SwerveModule(3, 4, 2, true, 0.103760 , "canivore");
+  private final SwerveModule backRightModule = new SwerveModule(5, 6, 3, true, 0.159912 , "canivore");
+  private final SwerveModule backLeftModule = new SwerveModule(7, 8, 4, false, 0.229248, "canivore");
   private final SwerveModule[] modules = {frontLeftModule, frontRightModule, backRightModule, backLeftModule};
   private SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(0.0, 0.0, 0.0, new Rotation2d()));
   private SwerveModulePosition[] modulePositions = new SwerveModulePosition[4];
 
-  private final CANBus canivore = new CANBus("canviore"); // Refers to the CAN bus associated with the CANivore.
+  private final CANBus canivore = new CANBus("canivore"); // Refers to the CAN bus associated with the CANivore.
   private final Pigeon2 pigeon = new Pigeon2(0, canivore); // Pigeon 2.0 CAN Gyroscope
   private final StatusSignal<Angle> pigeonYaw; // Stores the yaw angle measured by the pigeon. 
   private final StatusSignal<Angle> pigeonPitch; // Stores the pitch angle measured by the pigeon.
   private final StatusSignal<Angle> pigeonRoll; // Stores the roll angle measured by the pigeon.
   private final StatusSignal<AngularVelocity> pigeonYawRate; // Stores the yaw velocity measured by the pigeon.
+  private final StatusSignal<AngularVelocity> pigeonPitchRate; // Stores the pitch velocity measured by the pigeon.
+  private final StatusSignal<AngularVelocity> pigeonRollRate; // Stores the roll velocity measured by the pigeon.
 
   // Limelight Variables
-  public final String[] limelights = {"limelight-left", "limelight-right"}; // Stores the names of all limelights on the robot.
+  public final String[] limelights = {"limelight-one"}; // Stores the names of all limelights on the robot.
   private final int maxCalibrationFrames = 50; // The number of LL frames that will be averaged to determine the position of the robot when it is disabled() or being calibrated.
   private final int minCalibrationFrames = 3; // The minimum amount of LL frames that must be processed to accept a calibration.
   private double[][] calibrationArray = new double[3][maxCalibrationFrames]; // An array that stores the LL botpose for the most recent frames, up to the number of frames specified by maxCalibrationFrames
@@ -103,7 +106,9 @@ class Drivetrain {
     pigeonPitch = pigeon.getPitch();
     pigeonRoll = pigeon.getRoll();
     pigeonYawRate = pigeon.getAngularVelocityZWorld();
-    BaseStatusSignal.setUpdateFrequencyForAll(250.0, pigeonYaw, pigeonYawRate, pigeonPitch, pigeonRoll);
+    pigeonPitchRate = pigeon.getAngularVelocityYWorld();
+    pigeonRollRate = pigeon.getAngularVelocityXWorld();
+    BaseStatusSignal.setUpdateFrequencyForAll(250.0, pigeonYaw, pigeonYawRate, pigeonPitch, pigeonPitchRate, pigeonRoll, pigeonRollRate);
     ParentDevice.optimizeBusUtilizationForAll(pigeon);
     calibrationTimer.restart();
     accurateCalibrationTimer.restart();
@@ -284,7 +289,7 @@ class Drivetrain {
 
   // Updates the position of the robot on the field. Should be called each period to remain accurate. Tends to noticably drift for periods of time >15 sec.
   public void updateOdometry() {
-    BaseStatusSignal.waitForAll(0.008, pigeonYaw, pigeonYawRate, pigeonPitch, pigeonRoll,
+    BaseStatusSignal.waitForAll(0.008, pigeonYaw, pigeonYawRate, pigeonPitch, pigeonPitchRate, pigeonRoll, pigeonRollRate,
     frontLeftModule.driveMotorPosition, frontLeftModule.driveMotorVelocity, frontLeftModule.wheelEncoderPosition, frontLeftModule.wheelEncoderVelocity,
     frontRightModule.driveMotorPosition, frontRightModule.driveMotorVelocity, frontRightModule.wheelEncoderPosition, frontRightModule.wheelEncoderVelocity,
     backRightModule.driveMotorPosition, backRightModule.driveMotorVelocity, backRightModule.wheelEncoderPosition, backRightModule.wheelEncoderVelocity,
@@ -302,7 +307,7 @@ class Drivetrain {
       } else {
         blueHeading = isBlueAlliance() ? getFusedAng() : getFusedAng() - 180.0; // Converts the robot's angular position to the blue coordinate system.
       }
-      LimelightHelpers.SetRobotOrientation(limelights[limelightIndex], blueHeading, pigeonYawRate.getValueAsDouble(), 0.0, 0.0, 0.0, 0.0); // Communicates the robot's heading to the Limelight.
+      LimelightHelpers.SetRobotOrientation(limelights[limelightIndex], blueHeading, getGyroAngVel(), getGyroPitch(), getGyroPitchVel(), getGyroRoll(), getGyroRollVel()); // Communicates the robot's heading to the Limelight.
     }
   }
 
@@ -353,7 +358,7 @@ class Drivetrain {
       if (botpose != null) {
         double SD = 0.5; // How much variance there is in the LL vision information. Lower numbers indicate more trustworthy data.
         if (botpose.tagCount >= 1) { // At least 1 AprilTag is detected.
-          if (botpose.avgTagArea*botpose.tagCount > 2.0 && Math.sqrt(Math.pow(getXVel(), 2) + Math.pow(getYVel(), 2)) < 0.5 && getAngVel() < 45.0) { // The robot is relatively stationary and the AprilTag is very close to the robot.
+          if (botpose.avgTagArea*botpose.tagCount > 2.0 && Math.sqrt(Math.pow(getXVel(), 2) + Math.pow(getYVel(), 2)) < 0.5 && Math.abs(getAngVel()) < 45.0 && Math.abs(getGyroPitch()) < 2.0 && Math.abs(getGyroRoll()) < 2.0) { // The robot is relatively stationary, flat, and the AprilTag is very close to the robot.
             SD = 0.1; // Reduces the standard deviation of the vision estimate.
             accurateCalibrationTimer.restart();
           }
@@ -435,17 +440,32 @@ class Drivetrain {
   
   // Returns the angular position of the robot in degrees. The angular position is referenced to the starting angle of the robot. CCW is positive. Will return 0 in the case of a gyro failure.
   public double getGyroAng() {
-    return BaseStatusSignal.getLatencyCompensatedValueAsDouble(pigeonYaw, pigeonYawRate, 0.02)*1.006;
+    return BaseStatusSignal.getLatencyCompensatedValueAsDouble(pigeonYaw, pigeonYawRate, 0.02);
+  }
+
+  // Returns the angular velocity of the robot in degrees per second. CCW is positive.
+  public double getGyroAngVel() {
+    return pigeonYawRate.getValueAsDouble();
   }
 
   // Returns the pitch of the robot in degrees. An elevated front is positive. An elevated rear is negative.
   public double getGyroPitch() {
-    return pigeonPitch.getValueAsDouble();
+    return BaseStatusSignal.getLatencyCompensatedValueAsDouble(pigeonPitch, pigeonPitchRate, 0.02);
+  }
+  
+  // Returns the pitch velocity of the robot in degrees per second.
+  public double getGyroPitchVel() {
+    return pigeonPitchRate.getValueAsDouble();
   }
 
   // Returns the roll of the robot in degrees. An elevated left side is positive. An elevated right side is negative.
   public double getGyroRoll() {
-    return pigeonRoll.getValueAsDouble();
+    return BaseStatusSignal.getLatencyCompensatedValueAsDouble(pigeonRoll, pigeonRollRate, 0.02);
+  }
+
+  // Returns the roll velocity of the robot in degrees per second.
+  public double getGyroRollVel() {
+    return pigeonRollRate.getValueAsDouble();
   }
 
   // Returns true if the robot is on the red alliance.
@@ -508,33 +528,36 @@ class Drivetrain {
   
   // Publishes information to the dashboard. Should be called each period.
   public void updateDash() {
-    //SmartDashboard.putNumber("Vision Calibration Timer", getCalibrationTimer());
-    //SmartDashboard.putBoolean("atDriveGoal", atDriveGoal);
-    //SmartDashboard.putNumber("Front Left Swerve Module Position", frontLeftModule.getDriveMotorPos());
-    //SmartDashboard.putNumber("Front Right Swerve Module Position", frontRightModule.getDriveMotorPos());
-    //SmartDashboard.putNumber("Back Right Swerve Module Position", backRightModule.getDriveMotorPos());
-    //SmartDashboard.putNumber("Back LeftF Swerve Module Position", backLeftModule.getDriveMotorPos());
-    //SmartDashboard.putNumber("Front Left Swerve Module Wheel Encoder Angle", frontLeftModule.getWheelAngle());
-    //SmartDashboard.putNumber("Front Right Swerve Module Wheel Encoder Angle", frontRightModule.getWheelAngle());
-    //SmartDashboard.putNumber("Back Right Swerve Module Wheel Encoder Angle", backRightModule.getWheelAngle());
-    //SmartDashboard.putNumber("Back Left Swerve Module Wheel Encoder Angle", backLeftModule.getWheelAngle());
-    //SmartDashboard.putNumber("Robot X Position", getXPos());
-    //SmartDashboard.putNumber("Robot Y Position", getYPos());
-    //SmartDashboard.putNumber("Robot Angular Position (Fused)", getFusedAng());
-    //SmartDashboard.putNumber("Robot Angular Position (Gyro)", getGyroAng());
-    //SmartDashboard.putNumber("Robot Pitch", getGyroPitch());
-    //SmartDashboard.putNumber("Robot Roll", getGyroRoll());
-    //SmartDashboard.putNumber("Robot Demanded X Velocity", getXVel());
-    //SmartDashboard.putNumber("Robot Demanded Y Velocity", getYVel());
-    //SmartDashboard.putNumber("Robot Demanded Angular Velocity", getAngVel());
-    //SmartDashboard.putNumber("Path X Position", pathXPos);
-    //SmartDashboard.putNumber("Path Y Position", pathYPos);
-    //SmartDashboard.putNumber("Path Angular Position", pathAngPos);
-    //SmartDashboard.putNumber("Path Position Error", getPathPosError());
-    //SmartDashboard.putNumber("Path Angle Error", getPathAngleError());
-    //SmartDashboard.putBoolean("Path At Endpoint", atPathEndpoint(0));
-    //SmartDashboard.putBoolean("isRedAllaince", isRedAlliance());
-    //SmartDashboard.putBoolean("isBlueAllaince", isBlueAlliance());   
+    SmartDashboard.putNumber("Vision Calibration Timer", getCalibrationTimer());
+    SmartDashboard.putBoolean("atDriveGoal", atDriveGoal);
+    SmartDashboard.putNumber("Front Left Swerve Module Position", frontLeftModule.getDriveMotorPos());
+    SmartDashboard.putNumber("Front Right Swerve Module Position", frontRightModule.getDriveMotorPos());
+    SmartDashboard.putNumber("Back Right Swerve Module Position", backRightModule.getDriveMotorPos());
+    SmartDashboard.putNumber("Back LeftF Swerve Module Position", backLeftModule.getDriveMotorPos());
+    SmartDashboard.putNumber("Front Left Swerve Module Wheel Encoder Angle", frontLeftModule.getWheelAngle());
+    SmartDashboard.putNumber("Front Right Swerve Module Wheel Encoder Angle", frontRightModule.getWheelAngle());
+    SmartDashboard.putNumber("Back Right Swerve Module Wheel Encoder Angle", backRightModule.getWheelAngle());
+    SmartDashboard.putNumber("Back Left Swerve Module Wheel Encoder Angle", backLeftModule.getWheelAngle());
+    SmartDashboard.putNumber("Robot X Position", getXPos());
+    SmartDashboard.putNumber("Robot Y Position", getYPos());
+    SmartDashboard.putNumber("Robot Angular Position (Fused)", getFusedAng());
+    SmartDashboard.putNumber("Robot Angular Position (Gyro)", getGyroAng());
+    SmartDashboard.putNumber("Robot Pitch", getGyroPitch());
+    SmartDashboard.putNumber("Robot Roll", getGyroRoll());
+    SmartDashboard.putNumber("Robot Angular Rate", getGyroAngVel());
+    SmartDashboard.putNumber("Robot Pitch Rate", getGyroPitchVel());
+    SmartDashboard.putNumber("Robot Roll Rate", getGyroRollVel());
+    SmartDashboard.putNumber("Robot Demanded X Velocity", getXVel());
+    SmartDashboard.putNumber("Robot Demanded Y Velocity", getYVel());
+    SmartDashboard.putNumber("Robot Demanded Angular Velocity", getAngVel());
+    SmartDashboard.putNumber("Path X Position", pathXPos);
+    SmartDashboard.putNumber("Path Y Position", pathYPos);
+    SmartDashboard.putNumber("Path Angular Position", pathAngPos);
+    SmartDashboard.putNumber("Path Position Error", getPathPosError());
+    SmartDashboard.putNumber("Path Angle Error", getPathAngleError());
+    SmartDashboard.putBoolean("Path At Endpoint", atPathEndpoint(0));
+    SmartDashboard.putBoolean("isRedAllaince", isRedAlliance());
+    SmartDashboard.putBoolean("isBlueAllaince", isBlueAlliance());   
   }
 
   // Calculates the shortest distance between two points on a 360 degree circle. CW is + and CCW is -
