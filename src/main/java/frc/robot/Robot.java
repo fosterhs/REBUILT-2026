@@ -42,7 +42,7 @@ public class Robot extends TimedRobot {
     autoChooser.addOption(auto2, auto2);
     SmartDashboard.putData("Autos", autoChooser);
 
-    swerve.loadPath("Test", 0.0, 0.0, 0.0, 0.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+    swerve.loadPath("pls_god", 0.0, 0.0, 0.0, 0.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     runAll(); // Helps prevent loop overruns on startup by running every command before the match starts.
     SignalLogger.enableAutoLogging(false);
   }
@@ -69,6 +69,7 @@ public class Robot extends TimedRobot {
       case auto1:
         // AutoInit 1 code goes here.
         swerve.pushCalibration(true, 0.0); // Updates the robot's position on the field.
+        swerve.resetPathController(0);
       break;
 
       case auto2:
@@ -93,6 +94,7 @@ public class Robot extends TimedRobot {
         switch (autoStage) {
           case 1:
             // Auto 1, Stage 1 code goes here.
+            swerve.followPath(0);
           break;
 
           case 2:
@@ -230,8 +232,8 @@ public class Robot extends TimedRobot {
 
   // Publishes information to the dashboard.
   public void updateDash() {
-    SmartDashboard.putBoolean("Boost Mode", boostMode);
-    SmartDashboard.putNumber("Speed Scale Factor", speedScaleFactor);
+    //SmartDashboard.putBoolean("Boost Mode", boostMode);
+    //SmartDashboard.putNumber("Speed Scale Factor", speedScaleFactor);
     SmartDashboard.putNumber("Auto Stage", autoStage);
   }
 

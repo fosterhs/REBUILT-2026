@@ -97,12 +97,12 @@ public class Climber {
 	}
 
 	public void updateDash() {
-		SmartDashboard.putNumber("Climber Timer", homingTimer.get());
-    SmartDashboard.putBoolean("Climber atDesired position", atDesiredPosition());
-		SmartDashboard.putBoolean("Climber isHomed", isHomed);
-		SmartDashboard.putString("Climber Mode", currMode.toString());
-		SmartDashboard.putNumber("Climber Position", getPosition());
-		SmartDashboard.putNumber("Climber Velocity", getVelocity());
+		//SmartDashboard.putNumber("Climber Timer", homingTimer.get());
+    	//SmartDashboard.putBoolean("Climber atDesired position", atDesiredPosition());
+		//SmartDashboard.putBoolean("Climber isHomed", isHomed);
+		//SmartDashboard.putString("Climber Mode", currMode.toString());
+		//SmartDashboard.putNumber("Climber Position", getPosition());
+		//SmartDashboard.putNumber("Climber Velocity", getVelocity());
 	}
 	
 	private void configMotor(TalonFX motor, boolean invert) {
