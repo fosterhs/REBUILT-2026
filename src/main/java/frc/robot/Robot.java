@@ -68,7 +68,7 @@ public class Robot extends TimedRobot {
     switch (autoSelected) {
       case auto1:
         // AutoInit 1 code goes here.
-        swerve.pushCalibration(true, 0.0); // Updates the robot's position on the field.
+        swerve.pushCalibration(true, 90.0); // Updates the robot's position on the field.
         swerve.resetPathController(0);
       break;
 
@@ -178,7 +178,15 @@ public class Robot extends TimedRobot {
     swerve.updateOdometry(); // Keeps track of the position of the robot on the field. Must be called each period.
     autoSelected = autoChooser.getSelected();
     if (!autoCompleted) {
-      swerve.updateVisionHeading(true, 0.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
+      switch (autoSelected) {
+        case auto1:
+          swerve.updateVisionHeading(true, 90.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
+        break;
+
+        case auto2:
+          swerve.updateVisionHeading(true, 0.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
+        break;
+      }
     } else {
       swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
     }
