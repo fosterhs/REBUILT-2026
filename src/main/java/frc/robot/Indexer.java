@@ -123,11 +123,12 @@ public class Indexer {
     return jamTimer.get();
   }
 
-  // return a boolean if the sensor sense a fuel.
+  // return a boolean if the shooter sensor sense a fuel.
   public boolean getShooterSensor() {
     return shooterFuelDetected.getValue();
   }
 
+  // return a boolean if the hopper sensor sense a fuel.
   public boolean getHopperSensor() {
     return hopperFuelDetected.getValue();
   }

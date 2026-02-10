@@ -39,11 +39,13 @@ public class Climber {
 		ParentDevice.optimizeBusUtilizationForAll(climbMotor);
 	}
 
+	// Runs code once at start: reset the homing timer.
 	public void init() {
 		homingTimer.restart();
 	}
 
-	public void perioidic() {
+	// Runs code periodically: refresh the position and velocity signals, run the state machine for the climber, and set motor outputs for each state.
+	public void periodic() {
 		switch (currMode) {
 			case HOME:
 				climbMotor.setControl(climbMotorVoltageRequest.withOutput(-2.0));
@@ -66,32 +68,38 @@ public class Climber {
 		}
 	}
 
+	// Moves the climber up to the up position if the climber is homed.
 	public void moveUp() {
-		if (isHomed) {
-			currMode = Mode.UP;
-      desiredPosition = upPosition;
-		}
+	  if (isHomed) {
+		currMode = Mode.UP;
+        desiredPosition = upPosition;
+	  }
 	}
 
+	// Moves the climber down to the down position if the climber is homed.
 	public void moveDown() {
-		if (isHomed) {
-			currMode = Mode.DOWN;
-      desiredPosition = downPosition;
-		}
+	  if (isHomed) {
+	    currMode = Mode.DOWN;
+      	desiredPosition = downPosition;
+	  }
 	}
 
+	// Returns the current mode of the climber.
 	public Mode getMode() {
 		return currMode;
 	}
 
+	// Returns true or false based on whether the climber is near the desired position.
 	public boolean atDesiredPosition() {
 		return Math.abs(desiredPosition - getPosition()) < posTol;
 	}
 
+	// Returns the motor position as a double in shaft rotations.
 	public double getPosition() {
 		return climberPosition.refresh().getValueAsDouble();
 	}
 
+	// Returns the motor velocity as a double in RPS (Rotations Per Second)
 	public double getVelocity() {
 		return climberVelocity.refresh().getValueAsDouble();
 	}

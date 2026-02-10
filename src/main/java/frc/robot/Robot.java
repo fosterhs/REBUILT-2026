@@ -79,7 +79,7 @@ public class Robot extends TimedRobot {
   }
 
   public void autonomousPeriodic() {
-    climber.perioidic();
+    climber.periodic();
     indexer.periodic();
     intake.periodic();
 
@@ -123,7 +123,7 @@ public class Robot extends TimedRobot {
   }
 
   public void teleopPeriodic() {
-    climber.perioidic(); 
+    climber.periodic(); 
     indexer.periodic();
     intake.periodic();
 
@@ -278,7 +278,7 @@ public class Robot extends TimedRobot {
     swerve.updateDash();
 
     climber.init();
-    climber.perioidic();
+    climber.periodic();
     climber.moveUp();
     climber.moveDown();
     System.out.println("climber getMode: " + climber.getMode().toString());
