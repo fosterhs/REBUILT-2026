@@ -17,7 +17,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 public class Indexer {
   public enum Mode {FORWARD, JAM, IDLE}
   private final CANBus canivore = new CANBus("canivore");
-  private final TalonFX indexMotor = new TalonFX(0, canivore);
+  private final TalonFX indexMotor = new TalonFX(49, canivore);
   private final VelocityVoltage indexMotorVelocityRequest = new VelocityVoltage(0.0).withEnableFOC(true);
   private final CANrange shooterSensor = new CANrange(11, canivore);
   private final CANrange hopperSensor = new CANrange(12, canivore);

@@ -10,6 +10,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Robot extends TimedRobot {
   private final XboxController driver = new XboxController(0); // Initializes the driver controller.
+  private final XboxController operator = new XboxController(1); // Initializes the operator controller.
 
   // Limits the acceleration of the drivetrain by smoothing controller inputs.
   private final SlewRateLimiter xAccLimiter = new SlewRateLimiter(Drivetrain.maxAccTeleop / Drivetrain.maxVelTeleop);
@@ -165,6 +166,20 @@ public class Robot extends TimedRobot {
 
     if (driver.getPOV() == 0) climber.moveUp(); // D-pad up moves the climber up.
     if (driver.getPOV() == 180) climber.moveDown(); // D-pad down moves the climber down.
+
+    shooter.setHoodPosition((operator.getLeftY() + 1.0) / 20.0 + 0.02);
+
+    if(operator.getAButton()) {
+      shooter.spinUp(3600.0);
+      if (shooter.isAtSpeed()) {
+        indexer.start();
+      } else {
+        indexer.stop();
+      }
+    } else {
+      shooter.spinDown();
+      indexer.stop();
+    }
   }
   
   public void disabledInit() { 
