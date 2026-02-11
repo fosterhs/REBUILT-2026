@@ -10,6 +10,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Robot extends TimedRobot {
   private final XboxController driver = new XboxController(0); // Initializes the driver controller.
+  private final XboxController operator = new XboxController(1);
 
   // Limits the acceleration of the drivetrain by smoothing controller inputs.
   private final SlewRateLimiter xAccLimiter = new SlewRateLimiter(Drivetrain.maxAccTeleop / Drivetrain.maxVelTeleop);
@@ -20,13 +21,14 @@ public class Robot extends TimedRobot {
   private double rotationScaleFactor = 0.3; // Scales the rotational speed of the robot that results from controller inputs. 1.0 corresponds to full speed. 0.0 is fully stopped.
   private boolean boostMode = false; // Stores whether the robot is at 100% speed (boost mode), or at ~65% speed (normal mode).
   private boolean swerveLock = false; // Controls whether the swerve drive is in x-lock (for defense) or is driving. 
+  double rpm = 100;
 
   // Initializes the different subsystems of the robot.
   private final Drivetrain swerve = new Drivetrain(); // Contains the Swerve Modules, Gyro, Path Follower, Target Tracking, Odometry, and Vision Calibration.
-  private final Climber climber = new Climber(); // Initializes the Climber subsystem.
+  //private final Climber climber = new Climber(); // Initializes the Climber subsystem.
   private final Shooter shooter = new Shooter(); // Initializes the Shooter subsystem.
   private final Indexer indexer = new Indexer(); // Initializes the Indexer subsystem.
-  private final Intake intake = new Intake(); // Initializes the Intake subsystem. 
+  //private final Intake intake = new Intake(); // Initializes the Intake subsystem. 
 
   // Auto Variables
   private final SendableChooser<String> autoChooser = new SendableChooser<>();
@@ -50,17 +52,17 @@ public class Robot extends TimedRobot {
   public void robotPeriodic() {
     // Publishes information about the robot and robot subsystems to the Dashboard.
     swerve.updateDash();
-    climber.updateDash();
+    //climber.updateDash();
     shooter.updateDash();
     indexer.updateDash();
-    intake.updateDash();
+    //intake.updateDash();
     updateDash();
   }
 
   public void autonomousInit() {
-    climber.init(); 
+    //climber.init(); 
     indexer.init();
-    intake.init();
+    //intake.init();
 
     autoCompleted = true;
     autoStage = 1;
@@ -79,9 +81,9 @@ public class Robot extends TimedRobot {
   }
 
   public void autonomousPeriodic() {
-    climber.periodic();
+    //climber.periodic();
     indexer.periodic();
-    intake.periodic();
+    //intake.periodic();
 
     swerve.updateOdometry(); // Keeps track of the position of the robot on the field. Must be called each period.
     swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
@@ -117,15 +119,15 @@ public class Robot extends TimedRobot {
   
   public void teleopInit() {
     swerve.pushCalibration(true, swerve.getFusedAng()); // Updates the robot's position on the field.
-    climber.init(); 
+    //climber.init(); 
     indexer.init();
-    intake.init();
+    //intake.init();
   }
 
   public void teleopPeriodic() {
-    climber.periodic(); 
+    //climber.periodic(); 
     indexer.periodic();
-    intake.periodic();
+    //intake.periodic();
 
     swerve.updateOdometry(); // Keeps track of the position of the robot on the field. Must be called each period.
     swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
@@ -140,6 +142,8 @@ public class Robot extends TimedRobot {
     double xVel = xAccLimiter.calculate(MathUtil.applyDeadband(-driver.getLeftY(), 0.05)*speedScaleFactor)*Drivetrain.maxVelTeleop;
     double yVel = yAccLimiter.calculate(MathUtil.applyDeadband(-driver.getLeftX(), 0.05)*speedScaleFactor)*Drivetrain.maxVelTeleop;
     double angVel = angAccLimiter.calculate(MathUtil.applyDeadband(-driver.getRightX(), 0.05)*rotationScaleFactor)*Drivetrain.maxAngVelTeleop;
+
+    double hoodAngle = (operator.getLeftY() + 1.0)/20.0 + 0.013;
 
     if (driver.getRawButton(3)) { // X button
       swerveLock = true; // Pressing the X-button causes the swerve modules to lock (for defense).
@@ -163,8 +167,24 @@ public class Robot extends TimedRobot {
 
     if (driver.getRawButtonPressed(8)) swerve.resetGyro(); // Right center button re-zeros the angle reading of the gyro to the current angle of the robot. Should be called if the gyroscope readings are no longer well correlated with the field.
 
-    if (driver.getPOV() == 0) climber.moveUp(); // D-pad up moves the climber up.
-    if (driver.getPOV() == 180) climber.moveDown(); // D-pad down moves the climber down.
+    //if (driver.getPOV() == 0) climber.moveUp(); // D-pad up moves the climber up.
+    //if (driver.getPOV() == 180) climber.moveDown(); // D-pad down moves the climber down.
+
+
+ 
+
+    shooter.setShooterPos(hoodAngle);
+    if (operator.getRightTriggerAxis() > 0.5) {
+      shooter.spinUp(5000);
+      if (shooter.isAtSpeed()) {
+        indexer.start();
+      } else {
+        indexer.stop();
+      }
+    } else {
+      shooter.spinDown();
+      indexer.stop();
+    }
   }
   
   public void disabledInit() { 
@@ -277,15 +297,15 @@ public class Robot extends TimedRobot {
     System.out.println("swerve getPriorityLimelightIndex: " + swerve.getPriorityLimelightIndex());
     swerve.updateDash();
 
-    climber.init();
-    climber.periodic();
-    climber.moveUp();
-    climber.moveDown();
-    System.out.println("climber getMode: " + climber.getMode().toString());
-    System.out.println("climber atDesiredPosition: " + climber.atDesiredPosition());
-    System.out.println("climber getPosition: " + climber.getPosition());
-    System.out.println("climber getVelocity: " + climber.getVelocity());
-    climber.updateDash();
+    //climber.init();
+    //climber.periodic();
+    //climber.moveUp();
+    //climber.moveDown();
+    //System.out.println("climber getMode: " + climber.getMode().toString());
+    //System.out.println("climber atDesiredPosition: " + climber.atDesiredPosition());
+    //System.out.println("climber getPosition: " + climber.getPosition());
+    //System.out.println("climber getVelocity: " + climber.getVelocity());
+    //climber.updateDash();
     
     shooter.spinUp(1000.0);
     shooter.spinDown();
