@@ -25,10 +25,7 @@ public class Robot extends TimedRobot {
 
   // Initializes the different subsystems of the robot.
   private final Drivetrain swerve = new Drivetrain(); // Contains the Swerve Modules, Gyro, Path Follower, Target Tracking, Odometry, and Vision Calibration.
-  //private final Climber climber = new Climber(); // Initializes the Climber subsystem.
-  private final Shooter shooter = new Shooter(); // Initializes the Shooter subsystem.
-  private final Indexer indexer = new Indexer(); // Initializes the Indexer subsystem.
-  //private final Intake intake = new Intake(); // Initializes the Intake subsystem. 
+
 
   // Auto Variables
   private final SendableChooser<String> autoChooser = new SendableChooser<>();
@@ -52,17 +49,10 @@ public class Robot extends TimedRobot {
   public void robotPeriodic() {
     // Publishes information about the robot and robot subsystems to the Dashboard.
     swerve.updateDash();
-    //climber.updateDash();
-    shooter.updateDash();
-    indexer.updateDash();
-    //intake.updateDash();
     updateDash();
   }
 
   public void autonomousInit() {
-    //climber.init(); 
-    indexer.init();
-    //intake.init();
 
     autoCompleted = true;
     autoStage = 1;
@@ -81,9 +71,6 @@ public class Robot extends TimedRobot {
   }
 
   public void autonomousPeriodic() {
-    //climber.periodic();
-    indexer.periodic();
-    //intake.periodic();
 
     swerve.updateOdometry(); // Keeps track of the position of the robot on the field. Must be called each period.
     swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
@@ -119,15 +106,9 @@ public class Robot extends TimedRobot {
   
   public void teleopInit() {
     swerve.pushCalibration(true, swerve.getFusedAng()); // Updates the robot's position on the field.
-    //climber.init(); 
-    indexer.init();
-    //intake.init();
   }
 
   public void teleopPeriodic() {
-    //climber.periodic(); 
-    indexer.periodic();
-    //intake.periodic();
 
     swerve.updateOdometry(); // Keeps track of the position of the robot on the field. Must be called each period.
     swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
@@ -142,8 +123,6 @@ public class Robot extends TimedRobot {
     double xVel = xAccLimiter.calculate(MathUtil.applyDeadband(-driver.getLeftY(), 0.05)*speedScaleFactor)*Drivetrain.maxVelTeleop;
     double yVel = yAccLimiter.calculate(MathUtil.applyDeadband(-driver.getLeftX(), 0.05)*speedScaleFactor)*Drivetrain.maxVelTeleop;
     double angVel = angAccLimiter.calculate(MathUtil.applyDeadband(-driver.getRightX(), 0.05)*rotationScaleFactor)*Drivetrain.maxAngVelTeleop;
-
-    double hoodAngle = (operator.getLeftY() + 1.0)/20.0 + 0.013;
 
     if (driver.getRawButton(3)) { // X button
       swerveLock = true; // Pressing the X-button causes the swerve modules to lock (for defense).
@@ -162,29 +141,19 @@ public class Robot extends TimedRobot {
       swerve.calcPriorityLimelightIndex();
       swerve.resetCalibration(); // Begins calculating the position of the robot on the field based on visible April Tags.
     }
+
+    
     if (driver.getRawButton(7)) swerve.addCalibrationEstimate(swerve.getPriorityLimelightIndex(), false); // Left center button
     if (driver.getRawButtonReleased(7)) swerve.pushCalibration(false, 0.0); // Updates the position of the robot on the field based on previous calculations.  
 
     if (driver.getRawButtonPressed(8)) swerve.resetGyro(); // Right center button re-zeros the angle reading of the gyro to the current angle of the robot. Should be called if the gyroscope readings are no longer well correlated with the field.
+    if (operator.getRawButtonPressed(8)) swerve.resetGyro(); // Right center button re-zeros the angle reading of the gyro to the current angle of the robot. Should be called if the gyroscope readings are no longer well correlated with the field.
+
 
     //if (driver.getPOV() == 0) climber.moveUp(); // D-pad up moves the climber up.
     //if (driver.getPOV() == 180) climber.moveDown(); // D-pad down moves the climber down.
 
-
- 
-
-    shooter.setShooterPos(hoodAngle);
-    if (operator.getRightTriggerAxis() > 0.5) {
-      shooter.spinUp(5000);
-      if (shooter.isAtSpeed()) {
-        indexer.start();
-      } else {
-        indexer.stop();
-      }
-    } else {
-      shooter.spinDown();
-      indexer.stop();
-    }
+    
   }
   
   public void disabledInit() { 
@@ -296,37 +265,6 @@ public class Robot extends TimedRobot {
     swerve.calcPriorityLimelightIndex();
     System.out.println("swerve getPriorityLimelightIndex: " + swerve.getPriorityLimelightIndex());
     swerve.updateDash();
-
-    //climber.init();
-    //climber.periodic();
-    //climber.moveUp();
-    //climber.moveDown();
-    //System.out.println("climber getMode: " + climber.getMode().toString());
-    //System.out.println("climber atDesiredPosition: " + climber.atDesiredPosition());
-    //System.out.println("climber getPosition: " + climber.getPosition());
-    //System.out.println("climber getVelocity: " + climber.getVelocity());
-    //climber.updateDash();
-    
-    shooter.spinUp(1000.0);
-    shooter.spinDown();
-    System.out.println("shooter getRPM: " + shooter.getRPM());
-    System.out.println("shooter getRPS: " + shooter.getRPS());
-    System.out.println("shooter isAtSpeed(): " + shooter.isAtSpeed());
-    System.out.println("shooter isSpunUp: " + shooter.isSpunUp());
-    shooter.updateDash();
-
-    indexer.init();
-    indexer.periodic();
-    indexer.start();
-    indexer.jammed();
-    indexer.stop();
-    System.out.println("indexer getMode: " + indexer.getMode().toString());
-    System.out.println("indexer getHopperSensor: " + indexer.getHopperSensor());
-    System.out.println("indexer getShooterSensor: " + indexer.getShooterSensor());
-    System.out.println("indexer getJamTimer: " + indexer.getJamTimer());
-    System.out.println("indexer getShooterTimer: " + indexer.getShooterTimer());
-    System.out.println("indexer getHopperTimer: " + indexer.getHopperTimer());
-    indexer.updateDash();
 
     System.out.println("calculateShooterRPM: " + calculateShooterRPM());
     System.out.println("getHubHeading(): " + getHubHeading());
