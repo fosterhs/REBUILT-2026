@@ -13,23 +13,22 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Climber {
 	private final CANBus canivore = new CANBus("canivore");
-	private final TalonFX climbMotor = new TalonFX(13, canivore); // Initializes the motor with CAN ID of 0 connected to the canivore.
+	private final TalonFX climbMotor = new TalonFX(18, canivore);
 	private final StatusSignal<Angle> climberPosition;
 	private final StatusSignal<AngularVelocity> climberVelocity;
-	private final MotionMagicTorqueCurrentFOC climbMotorPositionRequest = new MotionMagicTorqueCurrentFOC(0.0); // Communicates motion magic torque current FOC position requests to the arm motor.
-  	private final VoltageOut climbMotorVoltageRequest = new VoltageOut(0.0);
-	public enum Mode {HOME, UP, DOWN}
+	private final MotionMagicTorqueCurrentFOC climbMotorPositionRequest = new MotionMagicTorqueCurrentFOC(0.0);
+  private final VoltageOut climbMotorVoltageRequest = new VoltageOut(0.0).withEnableFOC(true);
+  private final Timer homingTimer = new Timer();
+	private final double upPosition = 80.0;
+	private final double downPosition = 2.0;
+	private final double posTol = 1.0;
+  public enum Mode {HOME, UP, DOWN}
 	public Mode currMode = Mode.HOME;
 	private boolean isHomed = false;
-	private final Timer homingTimer = new Timer();
 	private double desiredPosition = 0.0;
-	private double upPosition = 80.0;
-	private double downPosition = 5.0;
-	private double posTol = 1.0;
 
 	public Climber() {
 		configMotor(climbMotor, false); // Configures the motor with counterclockwise rotation positive.
@@ -46,8 +45,8 @@ public class Climber {
 	public void perioidic() {
 		switch (currMode) {
 			case HOME:
-				climbMotor.setControl(climbMotorVoltageRequest.withOutput(-2.0));
-				if (Math.abs(getVelocity()) > 0.05) homingTimer.restart();
+				climbMotor.setControl(climbMotorVoltageRequest.withOutput(-2.0).withEnableFOC(true));
+				if (Math.abs(getVelocity()) > 0.5) homingTimer.restart();
 				if (homingTimer.get() > 1.0) {
 					climbMotor.setPosition(0.0, 0.03);
           			isHomed = true;
@@ -98,7 +97,7 @@ public class Climber {
 
 	public void updateDash() {
 		//SmartDashboard.putNumber("Climber Timer", homingTimer.get());
-    	//SmartDashboard.putBoolean("Climber atDesired position", atDesiredPosition());
+    //SmartDashboard.putBoolean("Climber atDesired position", atDesiredPosition());
 		//SmartDashboard.putBoolean("Climber isHomed", isHomed);
 		//SmartDashboard.putString("Climber Mode", currMode.toString());
 		//SmartDashboard.putNumber("Climber Position", getPosition());

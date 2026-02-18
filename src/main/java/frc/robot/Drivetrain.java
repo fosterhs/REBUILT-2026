@@ -27,7 +27,6 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.Timer;
 import frc.robot.LimelightHelpers.PoseEstimate;
 
@@ -72,7 +71,7 @@ class Drivetrain {
   private final StatusSignal<AngularVelocity> pigeonRollRate; // Stores the roll velocity measured by the pigeon.
 
   // Limelight Variables
-  public final String[] limelights = {"limelight-one"}; // Stores the names of all limelights on the robot.
+  public final String[] limelights = {"limelight-shooter", "limelight-backleft", "limelight-backright"}; // Stores the names of all limelights on the robot.
   private final int maxCalibrationFrames = 50; // The number of LL frames that will be averaged to determine the position of the robot when it is disabled() or being calibrated.
   private final int minCalibrationFrames = 3; // The minimum amount of LL frames that must be processed to accept a calibration.
   private double[][] calibrationArray = new double[3][maxCalibrationFrames]; // An array that stores the LL botpose for the most recent frames, up to the number of frames specified by maxCalibrationFrames
@@ -538,9 +537,9 @@ class Drivetrain {
     //SmartDashboard.putNumber("Front Right Swerve Module Wheel Encoder Angle", frontRightModule.getWheelAngle());
     //SmartDashboard.putNumber("Back Right Swerve Module Wheel Encoder Angle", backRightModule.getWheelAngle());
     //SmartDashboard.putNumber("Back Left Swerve Module Wheel Encoder Angle", backLeftModule.getWheelAngle());
-    SmartDashboard.putNumber("Robot X Position", getXPos());
-    SmartDashboard.putNumber("Robot Y Position", getYPos());
-    SmartDashboard.putNumber("Robot Angular Position (Fused)", getFusedAng());
+    //SmartDashboard.putNumber("Robot X Position", getXPos());
+    //SmartDashboard.putNumber("Robot Y Position", getYPos());
+    //SmartDashboard.putNumber("Robot Angular Position (Fused)", getFusedAng());
     //SmartDashboard.putNumber("Robot Angular Position (Gyro)", getGyroAng());
     //SmartDashboard.putNumber("Robot Pitch", getGyroPitch());
     //SmartDashboard.putNumber("Robot Roll", getGyroRoll());
@@ -550,9 +549,9 @@ class Drivetrain {
     //SmartDashboard.putNumber("Robot Demanded X Velocity", getXVel());
     //SmartDashboard.putNumber("Robot Demanded Y Velocity", getYVel());
     //SmartDashboard.putNumber("Robot Demanded Angular Velocity", getAngVel());
-    SmartDashboard.putNumber("Path X Position", pathXPos);
-    SmartDashboard.putNumber("Path Y Position", pathYPos);
-    SmartDashboard.putNumber("Path Angular Position", pathAngPos);
+    //SmartDashboard.putNumber("Path X Position", pathXPos);
+    //SmartDashboard.putNumber("Path Y Position", pathYPos);
+    //SmartDashboard.putNumber("Path Angular Position", pathAngPos);
     //SmartDashboard.putNumber("Path Position Error", getPathPosError());
     //SmartDashboard.putNumber("Path Angle Error", getPathAngleError());
     //SmartDashboard.putBoolean("Path At Endpoint", atPathEndpoint(0));
