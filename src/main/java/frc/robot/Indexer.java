@@ -134,12 +134,12 @@ public class Indexer {
 
   // Publish indexer information (state, sensor, shooting flag, and timer) to SmartDashboard
   public void updateDash() {
-    SmartDashboard.putString("Indexer State", currMode.toString());
-    SmartDashboard.putBoolean("shooter sensor", getShooterSensor());
-    SmartDashboard.putNumber("shooter Sensor Timer", getShooterTimer());
-    SmartDashboard.putBoolean("Hopper sensor", getHopperSensor());
-    SmartDashboard.putNumber("Hopper Sensor Timer", getHopperTimer());
-    SmartDashboard.putNumber("Jammed Timer", getJamTimer());
+    //SmartDashboard.putString("Indexer State", currMode.toString());
+    //SmartDashboard.putBoolean("shooter sensor", getShooterSensor());
+    //SmartDashboard.putNumber("shooter Sensor Timer", getShooterTimer());
+    //SmartDashboard.putBoolean("Hopper sensor", getHopperSensor());
+    //SmartDashboard.putNumber("Hopper Sensor Timer", getHopperTimer());
+    //SmartDashboard.putNumber("Jammed Timer", getJamTimer());
   }
   
   // Configs the motor settings and PID

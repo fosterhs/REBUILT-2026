@@ -21,7 +21,7 @@ public class Climber {
 	private final StatusSignal<Angle> climberPosition;
 	private final StatusSignal<AngularVelocity> climberVelocity;
 	private final MotionMagicTorqueCurrentFOC climbMotorPositionRequest = new MotionMagicTorqueCurrentFOC(0.0); // Communicates motion magic torque current FOC position requests to the arm motor.
-  private final VoltageOut climbMotorVoltageRequest = new VoltageOut(0.0);
+  	private final VoltageOut climbMotorVoltageRequest = new VoltageOut(0.0);
 	public enum Mode {HOME, UP, DOWN}
 	public Mode currMode = Mode.HOME;
 	private boolean isHomed = false;
@@ -50,9 +50,9 @@ public class Climber {
 				if (Math.abs(getVelocity()) > 0.05) homingTimer.restart();
 				if (homingTimer.get() > 1.0) {
 					climbMotor.setPosition(0.0, 0.03);
-          isHomed = true;
+          			isHomed = true;
 					currMode = Mode.DOWN;
-          desiredPosition = downPosition;
+          			desiredPosition = downPosition;
 				}
 			break;
 
@@ -69,14 +69,14 @@ public class Climber {
 	public void moveUp() {
 		if (isHomed) {
 			currMode = Mode.UP;
-      desiredPosition = upPosition;
+      		desiredPosition = upPosition;
 		}
 	}
 
 	public void moveDown() {
 		if (isHomed) {
 			currMode = Mode.DOWN;
-      desiredPosition = downPosition;
+      		desiredPosition = downPosition;
 		}
 	}
 
@@ -97,12 +97,12 @@ public class Climber {
 	}
 
 	public void updateDash() {
-		SmartDashboard.putNumber("Climber Timer", homingTimer.get());
-    SmartDashboard.putBoolean("Climber atDesired position", atDesiredPosition());
-		SmartDashboard.putBoolean("Climber isHomed", isHomed);
-		SmartDashboard.putString("Climber Mode", currMode.toString());
-		SmartDashboard.putNumber("Climber Position", getPosition());
-		SmartDashboard.putNumber("Climber Velocity", getVelocity());
+		//SmartDashboard.putNumber("Climber Timer", homingTimer.get());
+    	//SmartDashboard.putBoolean("Climber atDesired position", atDesiredPosition());
+		//SmartDashboard.putBoolean("Climber isHomed", isHomed);
+		//SmartDashboard.putString("Climber Mode", currMode.toString());
+		//SmartDashboard.putNumber("Climber Position", getPosition());
+		//SmartDashboard.putNumber("Climber Velocity", getVelocity());
 	}
 	
 	private void configMotor(TalonFX motor, boolean invert) {

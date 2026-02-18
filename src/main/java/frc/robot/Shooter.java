@@ -71,11 +71,11 @@ private boolean isSpunUp = false;
 
   // Publish Shooter information (Motor state, Velocity) to SmartDashboard.
   public void updateDash() {
-    SmartDashboard.putNumber("Shooter desiredRPM", desiredRPM);
-    SmartDashboard.putBoolean("Shooter isAtSpeed", isAtSpeed());
-    SmartDashboard.putBoolean("Shooter isSpunUp", isSpunUp());
-    SmartDashboard.putNumber("Shooter Velocity (RPS)", getRPS());
-    SmartDashboard.putNumber("Shooter Velocity (RPM)", getRPM());
+    //SmartDashboard.putNumber("Shooter desiredRPM", desiredRPM);
+    //SmartDashboard.putBoolean("Shooter isAtSpeed", isAtSpeed());
+    //SmartDashboard.putBoolean("Shooter isSpunUp", isSpunUp());
+    //SmartDashboard.putNumber("Shooter Velocity (RPS)", getRPS());
+    //SmartDashboard.putNumber("Shooter Velocity (RPM)", getRPM());
   }
 
   // Configs the motor settings and PID
