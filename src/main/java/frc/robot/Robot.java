@@ -45,6 +45,7 @@ public class Robot extends TimedRobot {
   private boolean isScoring = false;
   private boolean isShooting = false;
   private final Timer shootingTimer = new Timer();
+  public static final double dTime = 0.020;  // units: seconds (20 ms)
 
   public void robotInit() { 
     // Configures the auto chooser on the dashboard.
@@ -121,6 +122,7 @@ public class Robot extends TimedRobot {
     for (int limelightIndex = 0; limelightIndex < swerve.limelights.length; limelightIndex++) { // Iterates through each limelight.
       swerve.addVisionEstimate(limelightIndex, true); // Checks to see if there are reliable April Tags in sight of the Limelight and updates the robot position on the field.
     }
+
     switch (autoSelected) {
       case auto1:
         switch (autoStage) {
@@ -543,6 +545,10 @@ public class Robot extends TimedRobot {
       swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
     }
     swerve.addCalibrationEstimate(swerve.getPriorityLimelightIndex(), true);
+  }
+
+  public void simulationPeriodic() {
+    swerve.simulationPeriodic();
   }
 
   public double getHubHeading() {

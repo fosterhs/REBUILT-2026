@@ -6,6 +6,7 @@ import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.Pigeon2;
+import com.ctre.phoenix6.sim.Pigeon2SimState;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.trajectory.PathPlannerTrajectory;
@@ -21,12 +22,16 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.simulation.DifferentialDrivetrainSim;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.Timer;
 import frc.robot.LimelightHelpers.PoseEstimate;
 
@@ -70,6 +75,7 @@ class Drivetrain {
   private final StatusSignal<AngularVelocity> pigeonYawRate; // Stores the yaw velocity measured by the pigeon.
   private final StatusSignal<AngularVelocity> pigeonPitchRate; // Stores the pitch velocity measured by the pigeon.
   private final StatusSignal<AngularVelocity> pigeonRollRate; // Stores the roll velocity measured by the pigeon.
+  private final Pigeon2SimState pigeonSim = new Pigeon2SimState(pigeon);
 
   // Limelight Variables
   public final String[] limelights = {"limelight-shooter", "limelight-bl", "limelight-br"}; // Stores the names of all limelights on the robot.
@@ -103,6 +109,23 @@ class Drivetrain {
   private double pathXPos = 0.0; // Unit: meters
   private double pathYPos = 0.0; // Unit: meters
   private double pathAngPos = 0.0; // Unit degrees
+  private final Field2d robotField = new Field2d();
+
+  // Simulation
+  DifferentialDrivetrainSim driveSim = new DifferentialDrivetrainSim(
+      DCMotor.getNEO(2),        // 2 NEO motors on each side of the drivetrain.
+      7.29,                       // 7.29:1 gearing reduction.
+      7.5,               // MOI of 7.5 kg m^2 (from CAD model).
+      60.0,                        // The mass of the robot is 60 kg.
+      Units.inchesToMeters(3),     // The robot uses 3" radius wheels.
+      0.7112,            // The track width is 0.7112 meters.
+      // The standard deviations for measurement noise:
+      // x and y:          0.001 m
+      // heading:          0.001 rad
+      // l and r velocity: 0.1   m/s
+      // l and r position: 0.005 m
+      VecBuilder.fill(0.001, 0.001, 0.001, 0.1, 0.1, 0.005, 0.005)
+  );
 
   public Drivetrain() {
     pigeon.setYaw(0.0); // Sets the gyro angle to 0 based on the current heading of the robot.
@@ -122,6 +145,8 @@ class Drivetrain {
     xPathController.setIntegratorRange(-maxVelAuto*0.8, maxVelAuto*0.8);
     yPathController.setIntegratorRange(-maxVelAuto*0.8, maxVelAuto*0.8);
     anglePathController.setIntegratorRange(-maxAngVelAuto*0.8, maxAngVelAuto*0.8);
+
+    SmartDashboard.putData("Field", robotField);
   }
   
   // Drives the robot at a certain speed and rotation rate. Units: meters per second for xVel and yVel, radians per second for angVel. 
@@ -538,10 +563,10 @@ class Drivetrain {
     //SmartDashboard.putNumber("Front Right Swerve Module Wheel Encoder Angle", frontRightModule.getWheelAngle());
     //SmartDashboard.putNumber("Back Right Swerve Module Wheel Encoder Angle", backRightModule.getWheelAngle());
     //SmartDashboard.putNumber("Back Left Swerve Module Wheel Encoder Angle", backLeftModule.getWheelAngle());
-    //martDashboard.putNumber("Robot X Position", getXPos());
-    //SmartDashboard.putNumber("Robot Y Position", getYPos());
-    //SmartDashboard.putNumber("Robot Angular Position (Fused)", getFusedAng());
-    //SmartDashboard.putNumber("Robot Angular Position (Gyro)", getGyroAng());
+    SmartDashboard.putNumber("Robot X Position", getXPos());
+    SmartDashboard.putNumber("Robot Y Position", getYPos());
+    SmartDashboard.putNumber("Robot Angular Position (Fused)", getFusedAng());
+    SmartDashboard.putNumber("Robot Angular Position (Gyro)", getGyroAng());
     //SmartDashboard.putNumber("Robot Pitch", getGyroPitch());
     //SmartDashboard.putNumber("Robot Roll", getGyroRoll());
     //SmartDashboard.putNumber("Robot Angular Rate", getGyroAngVel());
@@ -558,6 +583,7 @@ class Drivetrain {
     //SmartDashboard.putBoolean("Path At Endpoint", atPathEndpoint(0));
     //SmartDashboard.putBoolean("isRedAllaince", isRedAlliance());
     //SmartDashboard.putBoolean("isBlueAllaince", isBlueAlliance());   
+    robotField.setRobotPose(odometry.getEstimatedPosition());
   }
 
   // Calculates the shortest distance between two points on a 360 degree circle. CW is + and CCW is -
@@ -578,5 +604,20 @@ class Drivetrain {
       modulePositions[moduleIndex] = modules[moduleIndex].getSMP();
     }
     return modulePositions;
+  }
+
+  public void simulationPeriodic() {
+    // Update gyro (pigeon) simulation via pigeonSim
+    // access via pigeonSi
+    // pigeonSim.setPitch(0);
+    // pigeonSim.setRoll(0);
+    pigeonSim.addYaw(getAngVel() * Robot.dTime);
+    pigeonSim.setRoll(0);
+    pigeonSim.setPitch(0);
+
+    // Position is updated via the SwerveModule
+    for (int moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {
+      modules[moduleIndex].simulationPeriodic();
+    }
   }
 }
