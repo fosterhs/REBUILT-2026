@@ -530,7 +530,8 @@ class Drivetrain {
   public void updateDash() {
     SmartDashboard.putNumber("Vision Calibration Timer", getCalibrationTimer());
     SmartDashboard.putNumber("Accurate Calibration Timer", getAccurateCalibrationTimer());
-    /* SmartDashboard.putBoolean("atDriveGoal", atDriveGoal);
+    /* 
+    SmartDashboard.putBoolean("atDriveGoal", atDriveGoal);
     SmartDashboard.putNumber("Front Left Swerve Module Position", frontLeftModule.getDriveMotorPos());
     SmartDashboard.putNumber("Front Right Swerve Module Position", frontRightModule.getDriveMotorPos());
     SmartDashboard.putNumber("Back Right Swerve Module Position", backRightModule.getDriveMotorPos());
@@ -558,7 +559,8 @@ class Drivetrain {
     SmartDashboard.putNumber("Path Angle Error", getPathAngleError());
     SmartDashboard.putBoolean("Path At Endpoint", atPathEndpoint(0));
     SmartDashboard.putBoolean("isRedAllaince", isRedAlliance());
-    SmartDashboard.putBoolean("isBlueAllaince", isBlueAlliance());   */
+    SmartDashboard.putBoolean("isBlueAllaince", isBlueAlliance());   
+    */
   }
 
   // Calculates the shortest distance between two points on a 360 degree circle. CW is + and CCW is -

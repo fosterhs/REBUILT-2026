@@ -26,7 +26,6 @@ public class Robot extends TimedRobot {
   // Initializes the different subsystems of the robot.
   private final Drivetrain swerve = new Drivetrain(); // Contains the Swerve Modules, Gyro, Path Follower, Target Tracking, Odometry, and Vision Calibration.
 
-
   // Auto Variables
   private final SendableChooser<String> autoChooser = new SendableChooser<>();
   private static final String auto1 = "Auto 1"; 
@@ -116,8 +115,8 @@ public class Robot extends TimedRobot {
       swerve.addVisionEstimate(limelightIndex, true); // Checks to see ifs there are reliable April Tags in sight of the Limelight and updates the robot position on the field.
     }
 
-    if (driver.getRawButtonPressed(1)) boostMode = true; // A button sets boost mode. (100% speed up from default of 60%).
-    if (driver.getRawButtonPressed(2)) boostMode = false; // B Button sets default mode (60% of full speed).
+    if (driver.getRawButtonPressed(2)) boostMode = true; // A button sets boost mode. (100% speed up from default of 60%).
+    if (driver.getRawButtonPressed(3)) boostMode = false; // B Button sets default mode (60% of full speed).
     
     // Applies a deadband to controller inputs. Also limits the acceleration of controller inputs.
     double xVel = xAccLimiter.calculate(MathUtil.applyDeadband(-driver.getLeftY(), 0.05)*speedScaleFactor)*Drivetrain.maxVelTeleop;
@@ -149,11 +148,6 @@ public class Robot extends TimedRobot {
     if (driver.getRawButtonPressed(8)) swerve.resetGyro(); // Right center button re-zeros the angle reading of the gyro to the current angle of the robot. Should be called if the gyroscope readings are no longer well correlated with the field.
     if (operator.getRawButtonPressed(8)) swerve.resetGyro(); // Right center button re-zeros the angle reading of the gyro to the current angle of the robot. Should be called if the gyroscope readings are no longer well correlated with the field.
 
-
-    //if (driver.getPOV() == 0) climber.moveUp(); // D-pad up moves the climber up.
-    //if (driver.getPOV() == 180) climber.moveDown(); // D-pad down moves the climber down.
-
-    
   }
   
   public void disabledInit() { 
@@ -219,9 +213,9 @@ public class Robot extends TimedRobot {
 
   // Publishes information to the dashboard.
   public void updateDash() {
-    SmartDashboard.putBoolean("Boost Mode", boostMode);
-    SmartDashboard.putNumber("Speed Scale Factor", speedScaleFactor);
-    SmartDashboard.putNumber("Auto Stage", autoStage);
+    //SmartDashboard.putBoolean("Boost Mode", boostMode);
+    //SmartDashboard.putNumber("Speed Scale Factor", speedScaleFactor);
+    //SmartDashboard.putNumber("Auto Stage", autoStage);
   }
 
   // Helps prevent loop overruns on startup by running every user created command in every class before the match starts. Not sure why this helps, but it does.
