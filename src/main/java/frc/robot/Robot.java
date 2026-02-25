@@ -19,6 +19,7 @@ public class Robot extends TimedRobot {
 
   private double speedScaleFactor = 0.65; // Scales the translational speed of the robot that results from controller inputs. 1.0 corresponds to full speed. 0.0 is fully stopped.
   private double rotationScaleFactor = 0.3; // Scales the rotational speed of the robot that results from controller inputs. 1.0 corresponds to full speed. 0.0 is fully stopped.
+  private double stowLimit = 0.5;
   private boolean boostMode = false; // Stores whether the robot is at 100% speed (boost mode), or at ~65% speed (normal mode).
   private boolean swerveLock = false; // Controls whether the swerve drive is in x-lock (for defense) or is driving. 
 
@@ -390,19 +391,21 @@ public class Robot extends TimedRobot {
       swerve.addVisionEstimate(limelightIndex, true); // Checks to see ifs there are reliable April Tags in sight of the Limelight and updates the robot position on the field.
     }
 
-    if (driver.getRawButtonPressed(1)) boostMode = true; // A button sets boost mode. (100% speed up from default of 60%).
-    if (driver.getRawButtonPressed(2)) boostMode = false; // B Button sets default mode (60% of full speed).
+    if (driver.getRawButtonPressed(2)) boostMode = true; // B button sets boost mode. (100% speed up from default of 60%).
+    if (driver.getRawButtonPressed(3)) boostMode = false; // X button sets default mode (60% of full speed).
     
     // Applies a deadband to controller inputs. Also limits the acceleration of controller inputs.
     double xVel = xAccLimiter.calculate(MathUtil.applyDeadband(-driver.getLeftY(), 0.05)*speedScaleFactor)*Drivetrain.maxVelTeleop;
     double yVel = yAccLimiter.calculate(MathUtil.applyDeadband(-driver.getLeftX(), 0.05)*speedScaleFactor)*Drivetrain.maxVelTeleop;
     double angVel = angAccLimiter.calculate(MathUtil.applyDeadband(-driver.getRightX(), 0.05)*rotationScaleFactor)*Drivetrain.maxAngVelTeleop;
 
-    if (driver.getRawButton(3)) { // X button
-      swerveLock = true; // Pressing the X-button causes the swerve modules to lock (for defense).
+    if (driver.getRawButton(4)) { // Y button
+      swerveLock = true; // Pressing the Y-button causes the swerve modules to lock (for defense).
     } else if (Math.abs(driver.getLeftY()) >= 0.05 || Math.abs(driver.getLeftX()) >= 0.05 || Math.abs(driver.getRightX()) >= 0.05) {
       swerveLock = false; // Pressing any joystick more than 5% will cause the swerve modules stop locking and begin driving.
     }
+
+
 
     if (swerveLock) {
       swerve.xLock(); // Locks the swerve modules (for defense).
@@ -420,8 +423,23 @@ public class Robot extends TimedRobot {
 
     if (driver.getRawButtonPressed(8)) swerve.resetGyro(); // Right center button re-zeros the angle reading of the gyro to the current angle of the robot. Should be called if the gyroscope readings are no longer well correlated with the field.
 
-    if (driver.getPOV() == 0) climber.moveUp(); // D-pad up moves the climber up.
-    if (driver.getPOV() == 180) climber.moveDown(); // D-pad down moves the climber down.
+    if (driver.getLeftTriggerAxis() > 0.5) climber.moveUp(); // D-pad up moves the climber up.
+    if (driver.getRightTriggerAxis() > 0.5) climber.moveDown(); // D-pad down moves the climber down.
+
+    if (driver.getLeftBumperButton()) {
+      if (intake.getRightArmPosition() > stowLimit) {
+        intake.stowIntake();
+      } else {
+        intake.leftIntake();
+      }
+    }
+    if (driver.getRightBumperButton()) {
+      if (intake.getLeftArmPosition() > stowLimit) {
+        intake.stowIntake();
+      } else {
+        intake.rightIntake();
+      }
+    }
   }
   
   public void disabledInit() { 
@@ -468,6 +486,7 @@ public class Robot extends TimedRobot {
   }
 
   private double[] distanceArray = { 1.0, 2.0, 5.0, 5.1, 8.5 }; // Distance array (need tested👈)
+
   private double[] RPMArray = { 2000.0, 3400.0, 3500.0, 4500.0, 5000.0 }; // RPM array(need tested👈)
   public double calculateShooterRPM() {
     double hubX = 182.11 * 0.0254; // The x-position of the hub on the field in meters.
@@ -491,6 +510,36 @@ public class Robot extends TimedRobot {
       } 
       return RPMArray[lowerIndex] + ((RPMArray[lowerIndex + 1] - RPMArray[lowerIndex]) / (distanceArray[lowerIndex + 1] - distanceArray[lowerIndex])) * (distance - distanceArray[lowerIndex]);
     }
+  }
+
+  private double[] AngleArray = { 2000.0, 3400.0, 3500.0, 4500.0, 5000.0 }; // Angle array(need tested👈)
+  public double calculateHoodAngle() {
+    double hubX = 182.11 * 0.0254; // The x-position of the hub on the field in meters.
+    double hubY = 158.84 * 0.0254; // The y-position of the hub on the field in meters.
+    double robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
+    double robotY = swerve.getYPos(); // The current y-position of the robot
+    double distance = Math.sqrt(Math.pow(hubX - robotX, 2) + Math.pow(hubY - robotY, 2)); // distance to hub
+    
+    if (distance >= distanceArray[distanceArray.length - 1]) {
+      return AngleArray[AngleArray.length - 1]; // Return angle for largest distance
+    } 
+    else if (distance <= distanceArray[0]) {
+      return AngleArray[0]; // Return angle for smallest distance
+    } 
+    else {
+      int lowerIndex = -1; // Index for distance immediately smaller than current distance
+      for (int i = 0; i < distanceArray.length - 1; i++) {
+        if (distanceArray[i + 1] > distance && lowerIndex == -1) {
+          lowerIndex = i;
+        }
+      } 
+      return AngleArray[lowerIndex] + ((AngleArray[lowerIndex + 1] - AngleArray[lowerIndex]) / (distanceArray[lowerIndex + 1] - distanceArray[lowerIndex])) * (distance - distanceArray[lowerIndex]);
+    }
+  }
+
+  public void shootToHub() {
+    shooter.spinUp(calculateShooterRPM()); // Turns the shooter on.
+    
   }
 
   // Publishes information to the dashboard.
