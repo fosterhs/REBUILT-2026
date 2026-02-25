@@ -405,12 +405,14 @@ public class Robot extends TimedRobot {
       swerveLock = false; // Pressing any joystick more than 5% will cause the swerve modules stop locking and begin driving.
     }
 
-
-
     if (swerveLock) {
       swerve.xLock(); // Locks the swerve modules (for defense).
+    } else if (driver.getAButton()) {
+      shootToHub(xVel, yVel);
     } else {
       swerve.drive(xVel, yVel, angVel, true, 0.0, 0.0); // Drive at the velocity demanded by the controller.
+      shooter.spinDown();
+      indexer.stop();
     }
 
     // The following 3 calls allow the user to calibrate the position of the robot based on April Tag information. Should be called when the robot is stationary. Button 7 is "View", the right center button.
@@ -537,9 +539,21 @@ public class Robot extends TimedRobot {
     }
   }
 
-  public void shootToHub() {
-    shooter.spinUp(calculateShooterRPM()); // Turns the shooter on.
-    
+  public void shootToHub(double xVel, double yVel) {
+    if (swerve.getXPos() < 4.0) { // If in allance zone go according to calculations from arrays
+      shooter.spinUp(calculateShooterRPM()); // Turns the shooter on with the calculated RPM.
+      shooter.setHoodPos(calculateHoodAngle()); // Adjusts the hood position according to the hood angle.
+      swerve.aimDrive(xVel, yVel, getHubHeading(), true); // Rotates the robot to a rotation where it'll have the least misses.
+    } else { // If out of alliance zone just shoot at max RPM and hood angle
+      shooter.spinUp(5000.0);
+      shooter.setHoodPos(30.0);
+    }
+
+    if (shooter.isAtSpeed()) {
+      indexer.start();
+    } else {
+      indexer.stop();
+    }
   }
 
   // Publishes information to the dashboard.
