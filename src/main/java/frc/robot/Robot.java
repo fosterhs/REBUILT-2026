@@ -33,7 +33,7 @@ public class Robot extends TimedRobot {
   private final SendableChooser<String> autoChooser = new SendableChooser<>();
   private static final String auto1 = "Fuel Collection Via Neutral Zone, Right Side Start."; 
   private static final String auto2 = "Fuel Collection Via Neutral Zone, Left Side Start."; 
-  private static final String auto3 = "Fuel Collection Via Neutral Zone, Center Start."; 
+  private static final String auto3 = "Climbing, Center Start."; 
   private String autoSelected;
   private int autoStage = 1;
   private boolean autoCompleted = false;
