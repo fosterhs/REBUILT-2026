@@ -27,11 +27,12 @@ public class Intake {
   private final TalonFX rightIntake = new TalonFX(15, canivore);
   private final TalonFX leftIntakeDeploy = new TalonFX(16, canivore);
   private final TalonFX leftIntake = new TalonFX(17, canivore);
+  //mr shaman said not using the sensor no more...IDK TALK TO HIM🤷‍♀️
   
   private final Timer leftIntakeTimer = new Timer();
   private final Timer rightIntakeTimer = new Timer();
   private boolean isHomed = false;
-  
+  // Code Review: Put more requests per motor stated  - here👇, do I look like chatgpt?🥀 so demanding..."pUt MoRe ReQuEsT"(mocking)
   private final PositionVoltage leftArmPositionRequest = new PositionVoltage(0.0).withEnableFOC(true);
   private final PositionVoltage rightArmPositionRequest = new PositionVoltage(0.0).withEnableFOC(true);
   private final VelocityVoltage leftRollerVelocityRequest = new VelocityVoltage(0.0).withEnableFOC(true);
@@ -60,7 +61,7 @@ public class Intake {
   }
 
   public void init() {
-    if (currMode != Mode.HOME) {
+    if (currMode != Mode.HOME) {//if not at mode.home, set mode and arm positions at 0
       currMode = Mode.HOME;
       desiredLeftArmPosition = 0.0;
       desiredLeftRollerVelocity = 0.0;
@@ -80,11 +81,12 @@ public class Intake {
     
     switch (currMode) {
       case HOME:
+        // Code Review: How would we transition to the home -> stowed states midgame?
         leftIntakeDeploy.setControl(leftArmVoltageRequest.withOutput(-2.0));
         rightIntakeDeploy.setControl(rightArmVoltageRequest.withOutput(-2.0));
         leftIntake.setControl(leftRollerVelocityRequest.withVelocity(0.0));
         rightIntake.setControl(rightRollerVelocityRequest.withVelocity(0.0));
-        if (Math.abs(leftArmVelocity.getValueAsDouble()) > 0.05) {
+        if (Math.abs(leftArmVelocity.getValueAsDouble()) > 0.05) {// Code Review: Puting left and right together just put separately -...ts grammar bruh, timer breakdown👇
           leftIntakeTimer.restart();
         }
         if (Math.abs(rightArmVelocity.getValueAsDouble()) > 0.05) {
@@ -92,7 +94,7 @@ public class Intake {
         }
 
         if (leftIntakeTimer.get() >1.0 && rightIntakeTimer.get() > 1.0) {
-          leftIntakeDeploy.setPosition(0.0, 0.03);
+          leftIntakeDeploy.setPosition(0.0, 0.03); 
           rightIntakeDeploy.setPosition(0.0, 0.03);
           isHomed = true;
           currMode = Mode.STOW;
@@ -101,8 +103,8 @@ public class Intake {
         }
         break;
 
-      case LEFT:
-        if (rightArmEncoderPosition.getValueAsDouble() < 0.67) {
+      case LEFT://if current state is left, and left button clicked, go to stow, 
+        if (rightArmEncoderPosition.getValueAsDouble() < 0.67) {//fact check value at the end
           desiredRightArmPosition = 0.0;
           desiredLeftArmPosition = 2.0;
           desiredLeftRollerVelocity = 10.0;
@@ -112,11 +114,12 @@ public class Intake {
           desiredLeftArmPosition = leftArmEncoderPosition.getValueAsDouble();
           desiredLeftRollerVelocity = 0.0;
           desiredRightRollerVelocity = 0.0;
+          //intakeTimer.restart(); // Code review: WHAT POINT - FINE REMOVED 👇GEE YELLING IN ALL CAPS?
         }
         break;
 
       case RIGHT:
-        if (leftArmEncoderPosition.getValueAsDouble() < 0.67) {
+        if (leftArmEncoderPosition.getValueAsDouble() < 0.67) {//fact check value at the end
           desiredLeftArmPosition = 0.0;
           desiredRightArmPosition = 2.0;
           desiredLeftRollerVelocity = 0.0;
@@ -128,7 +131,7 @@ public class Intake {
           desiredRightRollerVelocity = 0.0; 
         }
         break;
-      case STOW:
+      case STOW: // Code Review: Dont use this, go to zero position directly. From line 115-135 - bruh 🫱💻🫲 here, write the code bro
         desiredLeftArmPosition = 0.0;
         desiredRightArmPosition = 0.0;
         desiredLeftRollerVelocity = 0.0;
@@ -143,7 +146,7 @@ public class Intake {
     }
   }
 
-  public void leftIntake() {
+  public void leftIntake() {//more if statements for logics on left and right intakes
     if (isHomed) {
       currMode = Mode.LEFT;
       leftIntakeTimer.restart();
@@ -160,6 +163,7 @@ public class Intake {
   }
 
   public void stowIntake() {
+    // Code Review: What should happen if isHomed is False?
     if (isHomed) {
       currMode = Mode.STOW;
       leftIntakeTimer.restart();
@@ -230,16 +234,16 @@ public class Intake {
 
   public void updateDash() {
     SmartDashboard.putString("Intake Mode", currMode.toString());
-    SmartDashboard.putBoolean("Intake Ready", isReady());
+    //SmartDashboard.putBoolean("Intake Ready", isReady());
     SmartDashboard.putBoolean("Intake Homed", isHomed);
     SmartDashboard.putNumber("Left Intake Timer", leftIntakeTimer.get());
     SmartDashboard.putNumber("Right Intake Timer", rightIntakeTimer.get());
     SmartDashboard.putNumber("Left Arm Encoder", getLeftArmEncoderPosition());
-    SmartDashboard.putNumber("Left Arm Desired", getLeftArmDesiredPosition());
-    SmartDashboard.putNumber("Left Roller Vel", getLeftRollerVelocity());
+    //SmartDashboard.putNumber("Left Arm Desired", getLeftArmDesiredPosition());
+    //SmartDashboard.putNumber("Left Roller Vel", getLeftRollerVelocity());
     SmartDashboard.putNumber("Right Arm Encoder", getRightArmEncoderPosition());
-    SmartDashboard.putNumber("Right Arm Desired", getRightArmDesiredPosition());
-    SmartDashboard.putNumber("Right Roller Vel", getRightRollerVelocity());
+    //SmartDashboard.putNumber("Right Arm Desired", getRightArmDesiredPosition());
+    //SmartDashboard.putNumber("Right Roller Vel", getRightRollerVelocity());
   }
   
   private void configMotor(TalonFX motor, boolean invert, double currentLimit, boolean isArmMotor) {
@@ -266,3 +270,4 @@ public class Intake {
     motor.getConfigurator().apply(motorConfigs, 0.03);
   }
 }
+//add another system where if sensor reads range too far and arm intake both distance too far, try to set arm back to position 0 and stop everything. (shaman said not doing it)
