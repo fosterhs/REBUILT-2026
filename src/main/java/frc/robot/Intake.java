@@ -1,368 +1,285 @@
 package frc.robot;
 
-import com.ctre.phoenix6.SignalLogger;
-import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.filter.SlewRateLimiter;
-import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import com.ctre.phoenix6.StatusSignal;
+import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.controls.VoltageOut;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.CANBus;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
-public class Robot extends TimedRobot {
-  private final XboxController driver = new XboxController(0); // Initializes the driver controller.
+public class Intake {
+  public enum Mode {HOME, LEFT, RIGHT, STOW}
+  public Mode currMode = Mode.HOME;
+  public double desiredLeftArmPosition = 0.0;
+  public double desiredLeftRollerVelocity = 0.0;
+  public double desiredRightArmPosition = 0.0;
+  public double desiredRightRollerVelocity = 0.0;
+  
+  private final CANBus canivore = new CANBus("canivore");
+  private final TalonFX rightIntakeDeploy = new TalonFX(14, canivore);
+  private final TalonFX rightIntake = new TalonFX(15, canivore);
+  private final TalonFX leftIntakeDeploy = new TalonFX(16, canivore);
+  private final TalonFX leftIntake = new TalonFX(17, canivore);
+  //mr shaman said not using the sensor no more...IDK TALK TO HIM🤷‍♀️
+  
+  private final Timer leftIntakeTimer = new Timer();
+  private final Timer rightIntakeTimer = new Timer();
+  private boolean isHomed = false;
+  // Code Review: Put more requests per motor stated  - here👇, do I look like chatgpt?🥀 so demanding..."pUt MoRe ReQuEsT"(mocking)
+  private final PositionVoltage leftArmPositionRequest = new PositionVoltage(0.0).withEnableFOC(true);
+  private final PositionVoltage rightArmPositionRequest = new PositionVoltage(0.0).withEnableFOC(true);
+  private final VelocityVoltage leftRollerVelocityRequest = new VelocityVoltage(0.0).withEnableFOC(true);
+  private final VelocityVoltage rightRollerVelocityRequest = new VelocityVoltage(0.0).withEnableFOC(true);
+  private final VoltageOut leftArmVoltageRequest = new VoltageOut(0.0);
+  private final VoltageOut rightArmVoltageRequest = new VoltageOut(0.0);
+  
+  private final StatusSignal<AngularVelocity> leftArmVelocity;
+  private final StatusSignal<AngularVelocity> rightArmVelocity;
+  private final StatusSignal<Angle> leftArmEncoderPosition;
+  private final StatusSignal<Angle> rightArmEncoderPosition;
 
-  // Limits the acceleration of the drivetrain by smoothing controller inputs.
-  private final SlewRateLimiter xAccLimiter = new SlewRateLimiter(Drivetrain.maxAccTeleop / Drivetrain.maxVelTeleop);
-  private final SlewRateLimiter yAccLimiter = new SlewRateLimiter(Drivetrain.maxAccTeleop / Drivetrain.maxVelTeleop);
-  private final SlewRateLimiter angAccLimiter = new SlewRateLimiter(Drivetrain.maxAngAccTeleop / Drivetrain.maxAngVelTeleop);
-
-  private double speedScaleFactor = 0.65; // Scales the translational speed of the robot that results from controller inputs. 1.0 corresponds to full speed. 0.0 is fully stopped.
-  private double rotationScaleFactor = 0.3; // Scales the rotational speed of the robot that results from controller inputs. 1.0 corresponds to full speed. 0.0 is fully stopped.
-  private boolean boostMode = false; // Stores whether the robot is at 100% speed (boost mode), or at ~65% speed (normal mode).
-  private boolean swerveLock = false; // Controls whether the swerve drive is in x-lock (for defense) or is driving. 
-
-  // Initializes the different subsystems of the robot.
-  private final Drivetrain swerve = new Drivetrain(); // Contains the Swerve Modules, Gyro, Path Follower, Target Tracking, Odometry, and Vision Calibration.
-  private final Climber climber = new Climber(); // Initializes the Climber subsystem.
-  private final Shooter shooter = new Shooter(); // Initializes the Shooter subsystem.
-  private final Indexer indexer = new Indexer(); // Initializes the Indexer subsystem.
-  private final Intake intake = new Intake(); // Initializes the Intake subsystem. 
-
-  // Auto Variables
-  private final SendableChooser<String> autoChooser = new SendableChooser<>();
-  private static final String auto1 = "Auto 1"; 
-  private static final String auto2 = "Auto 2"; 
-  private String autoSelected;
-  private int autoStage = 1;
-  private boolean autoCompleted = false;
-
-  public void robotInit() { 
-    // Configures the auto chooser on the dashboard.
-    autoChooser.setDefaultOption(auto1, auto1);
-    autoChooser.addOption(auto2, auto2);
-    SmartDashboard.putData("Autos", autoChooser);
-
-    swerve.loadPath("Test", 0.0, 0.0, 0.0, 0.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
-    runAll(); // Helps prevent loop overruns on startup by running every command before the match starts.
-    SignalLogger.enableAutoLogging(false);
+  public Intake() {
+    configMotor(rightIntakeDeploy, true, 40.0, true);
+    configMotor(rightIntake, false, 60.0, false);
+    configMotor(leftIntakeDeploy, false, 40.0, true);
+    configMotor(leftIntake, true, 60.0, false);
+    
+    leftArmVelocity = leftIntakeDeploy.getVelocity();
+    rightArmVelocity = rightIntakeDeploy.getVelocity();
+    leftArmEncoderPosition = leftIntakeDeploy.getPosition();
+    rightArmEncoderPosition = rightIntakeDeploy.getPosition();
+    
+    rightIntakeTimer.start();
+    leftIntakeTimer.start();
   }
 
-  public void robotPeriodic() {
-    // Publishes information about the robot and robot subsystems to the Dashboard.
-    swerve.updateDash();
-    climber.updateDash();
-    shooter.updateDash();
-    indexer.updateDash();
-    intake.updateDash();
-    updateDash();
-  }
-
-  public void autonomousInit() {
-    climber.init(); 
-    indexer.init();
-    intake.init();
-
-    autoCompleted = true;
-    autoStage = 1;
-    autoSelected = autoChooser.getSelected();
-    switch (autoSelected) {
-      case auto1:
-        // AutoInit 1 code goes here.
-        swerve.pushCalibration(true, 0.0); // Updates the robot's position on the field.
-      break;
-
-      case auto2:
-        // AutoInit 2 code goes here.
-        swerve.pushCalibration(true, 0.0); // Updates the robot's position on the field.
-      break;
+  public void init() {
+    if (currMode != Mode.HOME) {//if not at mode.home, set mode and arm positions at 0
+      currMode = Mode.HOME;
+      desiredLeftArmPosition = 0.0;
+      desiredLeftRollerVelocity = 0.0;
+      desiredRightArmPosition = 0.0;
+      desiredRightRollerVelocity = 0.0;
+      isHomed = false;
     }
+    leftIntakeTimer.restart();
+    rightIntakeTimer.restart();
   }
 
-  public void autonomousPeriodic() {
-    climber.perioidic();
-    indexer.periodic();
-    intake.periodic();
-
-    swerve.updateOdometry(); // Keeps track of the position of the robot on the field. Must be called each period.
-    swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
-    for (int limelightIndex = 0; limelightIndex < swerve.limelights.length; limelightIndex++) { // Iterates through each limelight.
-      swerve.addVisionEstimate(limelightIndex, true); // Checks to see ifs there are reliable April Tags in sight of the Limelight and updates the robot position on the field.
-    }
-    switch (autoSelected) {
-      case auto1:
-        switch (autoStage) {
-          case 1:
-            // Auto 1, Stage 1 code goes here.
-          break;
-
-          case 2:
-            // Auto 1, Stage 2 code goes here.
-          break;
+  public void periodic() {
+    leftArmVelocity.refresh();
+    rightArmVelocity.refresh();
+    leftArmEncoderPosition.refresh();
+    rightArmEncoderPosition.refresh();
+    
+    switch (currMode) {
+      case HOME:
+        // Code Review: How would we transition to the home -> stowed states midgame? -pending review...I believe home will only run once at the begining of the batch, the rest will only go to stow
+        leftIntakeDeploy.setControl(leftArmVoltageRequest.withOutput(-2.0));
+        rightIntakeDeploy.setControl(rightArmVoltageRequest.withOutput(-2.0));
+        leftIntake.setControl(leftRollerVelocityRequest.withVelocity(0.0));
+        rightIntake.setControl(rightRollerVelocityRequest.withVelocity(0.0));
+        if (Math.abs(leftArmVelocity.getValueAsDouble()) > 0.05) {// Code Review: Puting left and right together just put separately -...ts grammar bruh, timer breakdown👇
+          leftIntakeTimer.restart();
         }
-      break; 
-
-      case auto2:
-        switch (autoStage) {
-          case 1:
-            // Auto 2, Stage 1 code goes here.
-          break;
-
-          case 2:
-            // Auto 2, Stage 2 code goes here.
-          break;
+        if (Math.abs(rightArmVelocity.getValueAsDouble()) > 0.05) {
+          rightIntakeTimer.restart();
         }
-      break; 
+
+        if (leftIntakeTimer.get() >1.0 && rightIntakeTimer.get() > 1.0) {
+          leftIntakeDeploy.setPosition(0.0, 0.03); 
+          rightIntakeDeploy.setPosition(0.0, 0.03);
+          isHomed = true;
+          currMode = Mode.STOW;
+          leftIntakeTimer.restart();
+          rightIntakeTimer.restart();
+        }
+        break;
+
+      case LEFT:
+        if (rightArmEncoderPosition.getValueAsDouble() < 0.67) {//fact check value at the end
+          desiredRightArmPosition = 0.0;
+          desiredLeftArmPosition = 2.0;
+          desiredLeftRollerVelocity = 10.0;
+          desiredRightRollerVelocity = 0.0;
+        } else {
+          desiredRightArmPosition = 0.0;
+          desiredLeftArmPosition = leftArmEncoderPosition.getValueAsDouble();
+          desiredLeftRollerVelocity = 0.0;
+          desiredRightRollerVelocity = 0.0;
+          //intakeTimer.restart(); // Code review: WHAT POINT - FINE REMOVED 👇GEE YELLING IN ALL CAPS?
+        }
+        break;
+
+      case RIGHT:
+        if (leftArmEncoderPosition.getValueAsDouble() < 0.67) {//fact check value at the end
+          desiredLeftArmPosition = 0.0;
+          desiredRightArmPosition = 2.0;
+          desiredLeftRollerVelocity = 0.0;
+          desiredRightRollerVelocity = 10.0;
+        } else {
+          desiredLeftArmPosition = 0.0;
+          desiredRightArmPosition = rightArmEncoderPosition.getValueAsDouble();
+          desiredLeftRollerVelocity = 0.0;
+          desiredRightRollerVelocity = 0.0; 
+        }
+        break;
+      case STOW: // Code Review: Dont use this, go to zero position directly. From line 115-135 - bruh 🫱💻🫲 here, write the code bro
+        desiredLeftArmPosition = 0.0;
+        desiredRightArmPosition = 0.0;
+        desiredLeftRollerVelocity = 0.0;
+        desiredRightRollerVelocity = 0.0;
+        break;
     }
+    if (currMode != Mode.HOME) {
+      leftIntakeDeploy.setControl(leftArmPositionRequest.withPosition(desiredLeftArmPosition));
+      leftIntake.setControl(leftRollerVelocityRequest.withVelocity(desiredLeftRollerVelocity));
+      rightIntakeDeploy.setControl(rightArmPositionRequest.withPosition(desiredRightArmPosition));
+      rightIntake.setControl(rightRollerVelocityRequest.withVelocity(desiredRightRollerVelocity));
+    }
+  }
+
+  public void leftIntake() {
+    if (currMode == Mode.LEFT) {
+      stowIntake();
+    } 
+    else if (isHomed) {
+      currMode = Mode.LEFT;
+      leftIntakeTimer.restart();
+      rightIntakeTimer.restart();
+    }
+  }
+
+  public void rightIntake() {
+    if (currMode == Mode.RIGHT) {
+      stowIntake();
+    } 
+    else if (isHomed) {
+      currMode = Mode.RIGHT;
+      leftIntakeTimer.restart();
+      rightIntakeTimer.restart();
+    }
+  }
+
+  public void stowIntake() {
+    // Code Review: What should happen if isHomed is False?
+    if (!isHomed) {
+      // If not homed, go to HOME mode first
+      currMode = Mode.HOME;
+      leftIntakeTimer.restart();
+      rightIntakeTimer.restart();
+    } else {
+      // Already homed, go directly to STOW
+      currMode = Mode.STOW;
+      leftIntakeTimer.restart();
+      rightIntakeTimer.restart();
+    }
+  }
+
+  public Mode getMode() { 
+    return currMode;
+  }
+
+  public double getLeftArmEncoderPosition() {
+    return leftArmEncoderPosition.getValueAsDouble();
+  }
+
+  public double getLeftArmDesiredPosition() {
+    return desiredLeftArmPosition;
+  }
+
+  public double getLeftRollerVelocity() {
+    return leftIntake.getVelocity().getValueAsDouble();
+  }
+
+  public double getLeftRollerDesiredVelocity() {
+    return desiredLeftRollerVelocity;
+  }
+
+  public boolean leftArmInPosition() {
+    return Math.abs(getLeftArmEncoderPosition() - desiredLeftArmPosition) < 0.1;
+  }
+
+  public boolean leftRollerAtSpeed() {
+    return Math.abs(getLeftRollerVelocity() - desiredLeftRollerVelocity) < 1.0;
+  }
+
+  public double getRightArmEncoderPosition() {
+    return rightArmEncoderPosition.getValueAsDouble();
+  }
+
+  public double getRightArmDesiredPosition() {
+    return desiredRightArmPosition;
+  }
+
+  public double getRightRollerVelocity() {
+    return rightIntake.getVelocity().getValueAsDouble();
+  }
+
+  public double getRightRollerDesiredVelocity() {
+    return desiredRightRollerVelocity;
   }
   
-  public void teleopInit() {
-    swerve.pushCalibration(true, swerve.getFusedAng()); // Updates the robot's position on the field.
-    climber.init(); 
-    indexer.init();
-    intake.init();
+  public boolean rightArmInPosition() {
+    return Math.abs(getRightArmEncoderPosition() - desiredRightArmPosition) < 0.1;
   }
 
-  public void teleopPeriodic() {
-    climber.perioidic(); 
-    indexer.periodic();
-    intake.periodic();
-
-    swerve.updateOdometry(); // Keeps track of the position of the robot on the field. Must be called each period.
-    swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
-    for (int limelightIndex = 0; limelightIndex < swerve.limelights.length; limelightIndex++) { // Iterates through each limelight.
-      swerve.addVisionEstimate(limelightIndex, true); // Checks to see ifs there are reliable April Tags in sight of the Limelight and updates the robot position on the field.
-    }
-
-    if (driver.getRawButtonPressed(2)) boostMode = true; // A button sets boost mode. (100% speed up from default of 60%).
-    if (driver.getRawButtonPressed(3)) boostMode = false; // x button sets normal mode. (Back to default speed).
-    
-    // Applies a deadband to controller inputs. Also limits the acceleration of controller inputs.
-    double xVel = xAccLimiter.calculate(MathUtil.applyDeadband(-driver.getLeftY(), 0.05)*speedScaleFactor)*Drivetrain.maxVelTeleop;
-    double yVel = yAccLimiter.calculate(MathUtil.applyDeadband(-driver.getLeftX(), 0.05)*speedScaleFactor)*Drivetrain.maxVelTeleop;
-    double angVel = angAccLimiter.calculate(MathUtil.applyDeadband(-driver.getRightX(), 0.05)*rotationScaleFactor)*Drivetrain.maxAngVelTeleop;
-
-    if (driver.getRawButton(21)) { // fix it later
-      swerveLock = true; // Pressing the _____ button causes the swerve modules to lock (for defense).
-    } else if (Math.abs(driver.getLeftY()) >= 0.05 || Math.abs(driver.getLeftX()) >= 0.05 || Math.abs(driver.getRightX()) >= 0.05) {
-      swerveLock = false; // Pressing any joystick more than 5% will cause the swerve modules stop locking and begin driving.
-    }
-
-    if (swerveLock) {
-      swerve.xLock(); // Locks the swerve modules (for defense).
-    } else {
-      swerve.drive(xVel, yVel, angVel, true, 0.0, 0.0); // Drive at the velocity demanded by the controller.
-    }
-
-    // The following 3 calls allow the user to calibrate the position of the robot based on April Tag information. Should be called when the robot is stationary. Button 7 is "View", the right center button.
-    if (driver.getRawButtonPressed(7)) {
-      swerve.calcPriorityLimelightIndex();
-      swerve.resetCalibration(); // Begins calculating the position of the robot on the field based on visible April Tags.
-    }
-    if (driver.getRawButton(7)) swerve.addCalibrationEstimate(swerve.getPriorityLimelightIndex(), false); // Left center button
-    if (driver.getRawButtonReleased(7)) swerve.pushCalibration(false, 0.0); // Updates the position of the robot on the field based on previous calculations.  
-
-    if (driver.getRawButtonPressed(8)) swerve.resetGyro(); // Right center button re-zeros the angle reading of the gyro to the current angle of the robot. Should be called if the gyroscope readings are no longer well correlated with the field.
-
-    if (driver.getPOV() == 0) climber.moveUp(); // D-pad up moves the climber up.
-    if (driver.getPOV() == 180) climber.moveDown(); // D-pad down moves the climber down.
-
-    // remove operator stick to driver. keep all other functions? neded auto adjustment for both speed and hood position/angle based on distance to hub
-
-    if(driver.getAButton()) {
-      if (swerve.getXPos() < 4.0) {
-        //if in allance zone go according to calculations from arrays
-      shooter.spinUp(calculateShooterRPM()); // A button spins up the shooter to the appropriate RPM based on distance to the hub.
-      shooter.setHoodPosition(calculateHoodAngle()); // Sets the hood angle based on distance to the hub.
-      }
-      else {
-        //if out of alliance zone just shoot at max RPM and hood angle
-        shooter.spinUp(5000.0);
-        shooter.setHoodPosition(30.0);
-      }
-
-      if (shooter.isAtSpeed()) {
-        indexer.start();
-      } else {
-        indexer.stop();
-      }
-    } else {
-      shooter.spinDown();
-      indexer.stop();
-    }
-  }
-  
-  public void disabledInit() { 
-    swerve.calcPriorityLimelightIndex();
-    swerve.resetCalibration(); // Begins calculating the position of the robot on the field based on visible April Tags.
+  public boolean rightRollerAtSpeed() {
+    return Math.abs(getRightRollerVelocity() - desiredRightRollerVelocity) < 1.0;
   }
 
-  public void disabledPeriodic() {
-    swerve.updateOdometry(); // Keeps track of the position of the robot on the field. Must be called each period.
-    autoSelected = autoChooser.getSelected();
-    if (!autoCompleted) {
-      swerve.updateVisionHeading(true, 0.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
-    } else {
-      swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
-    }
-    swerve.addCalibrationEstimate(swerve.getPriorityLimelightIndex(), true);
+  public boolean isReady() {
+    return leftArmInPosition() && leftRollerAtSpeed() && 
+           rightArmInPosition() && rightRollerAtSpeed();
   }
 
-  public double getHubHeading() {
-    double hubX = 182.11 * 0.0254; // The x-position of the hub on the field in meters.
-    double hubY = 158.84 * 0.0254; // The y-position of the hub on the field in meters.
-    double robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
-    double robotY = swerve.getYPos(); // The current y-position of the
-
-    if (robotX > hubX) {
-      return Math.toDegrees(Math.atan((hubY - robotY) / (hubX - robotX))) - 90.0; // Returns the heading from the robot to the hub in degrees.
-    } else if (robotX < hubX) {
-      return Math.toDegrees(Math.atan((hubY - robotY) / (hubX - robotX))) + 90.0; // Returns the heading from the robot to the hub in degrees.
-    } else {
-      if (robotY > hubY) {
-        return 0.0;
-      } else {
-        return 180.0;
-      }
-    }
+  public boolean getIsHomed() {
+    return isHomed;
   }
 
-  private double[] distanceArray = { 1.0, 2.0, 5.0, 5.1, 8.5 }; // Distance array (need tested👈) in meters(doesnt really matter though)
-  private double[] RPMArray = { 2000.0, 3400.0, 3500.0, 4500.0, 5000.0 }; // RPM array(need tested👈)
-  private double[] hoodAngleArray = { 0.0, 10.0, 20.0, 25.0, 30.0 }; // Hood angle array (need tested👈) in degrees.
-  public double calculateShooterRPM() {
-    double hubX = 182.11 * 0.0254; // The x-position of the hub on the field in meters.
-    double hubY = 158.84 * 0.0254; // The y-position of the hub on the field in meters.
-    double robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
-    double robotY = swerve.getYPos(); // The current y-position of the robot
-    double distance = Math.sqrt(Math.pow(hubX - robotX, 2) + Math.pow(hubY - robotY, 2)); // distance to hub
-    
-    if (distance >= distanceArray[distanceArray.length - 1]) {
-      return RPMArray[RPMArray.length - 1]; // Return RPM for largest distance
-    } 
-    else if (distance <= distanceArray[0]) {
-      return RPMArray[0]; // Return RPM for smallest distance
-    } 
-    else {
-      int lowerIndex = -1; // Index for distance immediately smaller than current distance
-      for (int i = 0; i < distanceArray.length - 1; i++) {
-        if (distanceArray[i + 1] > distance && lowerIndex == -1) {
-          lowerIndex = i;
-        }
-      } 
-      return RPMArray[lowerIndex] + ((RPMArray[lowerIndex + 1] - RPMArray[lowerIndex]) / (distanceArray[lowerIndex + 1] - distanceArray[lowerIndex])) * (distance - distanceArray[lowerIndex]);
-    }
-  }
-      public double calculateHoodAngle() {
-    double distance = getDistanceToHub();
-    
-    if (distance >= distanceArray[distanceArray.length - 1]) {
-      return hoodAngleArray[hoodAngleArray.length - 1];
-    } 
-    else if (distance <= distanceArray[0]) {
-      return hoodAngleArray[0];
-    } 
-    else {
-      int lowerIndex = -1;
-      for (int i = 0; i < distanceArray.length - 1; i++) {
-        if (distanceArray[i + 1] > distance && lowerIndex == -1) {
-          lowerIndex = i;
-        }
-      } 
-      return hoodAngleArray[lowerIndex] + ((hoodAngleArray[lowerIndex + 1] - hoodAngleArray[lowerIndex]) / 
-             (distanceArray[lowerIndex + 1] - distanceArray[lowerIndex])) * (distance - distanceArray[lowerIndex]);
-    }
-  }
-  public double getDistanceToHub() {
-    double hubX = 182.11 * 0.0254;
-    double hubY = 158.84 * 0.0254;
-    double robotX = swerve.getXPos();
-    double robotY = swerve.getYPos();
-    return Math.sqrt(Math.pow(hubX - robotX, 2) + Math.pow(hubY - robotY, 2));
-  }
-
-
-  // Publishes information to the dashboard.
   public void updateDash() {
-    SmartDashboard.putBoolean("Boost Mode", boostMode);
-    SmartDashboard.putNumber("Speed Scale Factor", speedScaleFactor);
-    SmartDashboard.putNumber("Auto Stage", autoStage);
+    SmartDashboard.putString("Intake Mode", currMode.toString());
+    //SmartDashboard.putBoolean("Intake Ready", isReady());
+    SmartDashboard.putBoolean("Intake Homed", isHomed);
+    SmartDashboard.putNumber("Left Intake Timer", leftIntakeTimer.get());
+    SmartDashboard.putNumber("Right Intake Timer", rightIntakeTimer.get());
+    SmartDashboard.putNumber("Left Arm Encoder", getLeftArmEncoderPosition());
+    //SmartDashboard.putNumber("Left Arm Desired", getLeftArmDesiredPosition());
+    //SmartDashboard.putNumber("Left Roller Vel", getLeftRollerVelocity());
+    SmartDashboard.putNumber("Right Arm Encoder", getRightArmEncoderPosition());
+    //SmartDashboard.putNumber("Right Arm Desired", getRightArmDesiredPosition());
+    //SmartDashboard.putNumber("Right Roller Vel", getRightRollerVelocity());
   }
-
-  // Helps prevent loop overruns on startup by running every user created command in every class before the match starts. Not sure why this helps, but it does.
-  public void runAll() { 
-    swerve.resetDriveController(0.0);
-    swerve.xLock();
-    swerve.aimDrive(-3.0, 2.0, 105.0, false);
-    swerve.driveTo(1.0, -2.0, -75.0);
-    swerve.resetPathController(0);
-    swerve.followPath(0);
-    swerve.addCalibrationEstimate(0, false);
-    swerve.pushCalibration(true, 180.0);
-    swerve.resetCalibration();
-    swerve.resetGyro();
-    swerve.updateVisionHeading(true, 180.0);
-    swerve.addVisionEstimate(0, true);
-    swerve.updateOdometry();
-    swerve.drive(0.01, 0.0, 0.0, true, 0.0, 0.0);
-    System.out.println("swerve atDriveGoal: " + swerve.atDriveGoal());
-    System.out.println("swerve atPathEndpoint: " + swerve.atPathEndpoint(0));
-    System.out.println("swerve getAngVel: " + swerve.getAngVel());
-    System.out.println("swerve getCalibrationTimer: " + swerve.getCalibrationTimer());
-    System.out.println("swerve getAccurateCalibrationTimer: " + swerve.getAccurateCalibrationTimer());
-    System.out.println("swerve getFusedAng: " + swerve.getFusedAng());
-    System.out.println("swerve getGyroAng: " + swerve.getGyroAng());
-    System.out.println("swerve getGyroPitch: " + swerve.getGyroPitch());
-    System.out.println("swerve getGyroRoll: " + swerve.getGyroRoll());
-    System.out.println("swerve getGyroAngVel: " + swerve.getGyroAngVel());
-    System.out.println("swerve getGyroPitchVel: " + swerve.getGyroPitchVel());
-    System.out.println("swerve getGyroRollVel: " + swerve.getGyroRollVel());
-    System.out.println("swerve getPathAngleError: " + swerve.getPathAngleError());
-    System.out.println("swerve getPathPosError: " + swerve.getPathPosError());
-    System.out.println("swerve getXPos: " + swerve.getXPos());
-    System.out.println("swerve getXVel: " + swerve.getXVel());
-    System.out.println("swerve getYPos: " + swerve.getYPos());
-    System.out.println("swerve getYVel: " + swerve.getYVel());
-    System.out.println("swerve isBlueAlliance: " + swerve.isBlueAlliance());
-    System.out.println("swerve isRedAlliance: " + swerve.isRedAlliance());
-    System.out.println("swerve getGyroPitch: " + swerve.getGyroPitch());
-    System.out.println("swerve getAngleDist: " + swerve.getAngleDistance(30.0, -120.0));
-    swerve.calcPriorityLimelightIndex();
-    System.out.println("swerve getPriorityLimelightIndex: " + swerve.getPriorityLimelightIndex());
-    swerve.updateDash();
-
-    climber.init();
-    climber.perioidic();
-    climber.moveUp();
-    climber.moveDown();
-    System.out.println("climber getMode: " + climber.getMode().toString());
-    System.out.println("climber atDesiredPosition: " + climber.atDesiredPosition());
-    System.out.println("climber getPosition: " + climber.getPosition());
-    System.out.println("climber getVelocity: " + climber.getVelocity());
-    climber.updateDash();
+  
+  private void configMotor(TalonFX motor, boolean invert, double currentLimit, boolean isArmMotor) {
+    TalonFXConfiguration motorConfigs = new TalonFXConfiguration();
     
-    shooter.spinUp(1000.0);
-    shooter.spinDown();
-    System.out.println("shooter getRPM: " + shooter.getRPM());
-    System.out.println("shooter getRPS: " + shooter.getRPS());
-    System.out.println("shooter isAtSpeed(): " + shooter.isAtSpeed());
-    System.out.println("shooter isSpunUp: " + shooter.isSpunUp());
-    shooter.updateDash();
-
-    indexer.init();
-    indexer.periodic();
-    indexer.start();
-    indexer.jammed();
-    indexer.stop();
-    System.out.println("indexer getMode: " + indexer.getMode().toString());
-    System.out.println("indexer getHopperSensor: " + indexer.getHopperSensor());
-    System.out.println("indexer getShooterSensor: " + indexer.getShooterSensor());
-    System.out.println("indexer getJamTimer: " + indexer.getJamTimer());
-    System.out.println("indexer getShooterTimer: " + indexer.getShooterTimer());
-    System.out.println("indexer getHopperTimer: " + indexer.getHopperTimer());
-    indexer.updateDash();
-
-    System.out.println("calculateShooterRPM: " + calculateShooterRPM());
-    System.out.println("getHubHeading(): " + getHubHeading());
-    updateDash();
+    motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+    motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
+    
+    motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = currentLimit;
+    
+    if (isArmMotor) {
+      motorConfigs.Slot0.kP = 2.0;
+      motorConfigs.Slot0.kI = 0.5;
+      motorConfigs.Slot0.kD = 0.0;
+    } else {
+      motorConfigs.Slot0.kP = 0.2;
+      motorConfigs.Slot0.kI = 0.1;
+      motorConfigs.Slot0.kD = 0.0;
+      motorConfigs.Slot0.kV = 0.12;
+      motorConfigs.Slot0.kS = 0.1;
+    }
+    
+    motor.getConfigurator().apply(motorConfigs, 0.03);
   }
 }
+//add another system where if sensor reads range too far and arm intake both distance too far, try to set arm back to position 0 and stop everything. (shaman said not doing it)
