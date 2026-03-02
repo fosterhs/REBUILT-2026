@@ -14,6 +14,9 @@ import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
+import com.ctre.phoenix6.sim.CANcoderSimState;
+import com.ctre.phoenix6.sim.TalonFXSimState;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 
@@ -36,6 +39,14 @@ public class Shooter {
   private double shootingRPM = 2800.0; // Can adjust
   private double desiredHoodPosition = hoodMinPosition;
 
+  // Simulation
+  private final TalonFXSimState hoodMotorSim = hoodMotor.getSimState();
+  private final TalonFXSimState shootMotorRightSim = shootMotorRight.getSimState();
+  private final TalonFXSimState shootMotorLeftSim = shootMotorLeft.getSimState();
+  private final CANcoderSimState hoodEncoderSim = hoodEncoder.getSimState();
+  private double desiredRPMSim = 0;
+  public static final double hoodGearRatio = 1;
+
   // Initialize Shooter: configure motor, and obtain a data for velocity
   public Shooter() {
     configHoodEncoder(hoodEncoder);
@@ -51,12 +62,14 @@ public class Shooter {
   
   // Turns on motor. Sets the speed of the motor in rotations per minute.
   public void spinUp() {
+    desiredRPMSim = shootingRPM;
     shootMotorRight.setControl(shooterMotorRightVelocityRequest.withVelocity(shootingRPM/60.0).withEnableFOC(true));
     shootMotorLeft.setControl(shooterMotorLeftVelocityRequest.withVelocity(shootingRPM/60.0).withEnableFOC(true));
   }
 
   // Turn off motor.
   public void spinDown() {
+    desiredRPMSim = 0;
     shootMotorRight.setControl(shooterMotorRightVelocityRequest.withVelocity(0.0).withEnableFOC(true));
     shootMotorLeft.setControl(shooterMotorLeftVelocityRequest.withVelocity(0.0).withEnableFOC(true));
   }
@@ -90,6 +103,9 @@ public class Shooter {
   }
 
   public boolean hoodIsInPosition() {
+    // TODO: Fix simulationPeriodic
+    if (Robot.isSimulation()) return true;
+
     return Math.abs(desiredHoodPosition - getHoodPosition()) < hoodTol;
   }
 
@@ -99,7 +115,9 @@ public class Shooter {
 
   // Returns true or false based on whether the shooter motor is near the desired RPM.
   public boolean shooterIsAtSpeed() {
-    return Math.abs(shootingRPM - getLeftShooterRPM()) < rpmTol && Math.abs(shootingRPM - getRightShooterRPM()) < rpmTol;
+    // use abs() on the left/right shooter to compare magnitudes 
+    // otherwise you may have (2800 - -2800) = 5600 rpm which shows as not ready
+    return Math.abs(shootingRPM - Math.abs(getLeftShooterRPM())) < rpmTol && Math.abs(shootingRPM - Math.abs(getRightShooterRPM())) < rpmTol;
   }
 
   // Returns the motor velocity in RPM (Rotations Per Minute)
@@ -118,14 +136,26 @@ public class Shooter {
 
   // Publish Shooter information (Motor state, Velocity) to SmartDashboard.
   public void updateDash() {
-    //SmartDashboard.putNumber("Shooter getRightShooterRPM", getRightShooterRPM());
-    //SmartDashboard.putNumber("Shooter getLeftShooterRPM", getLeftShooterRPM());
-    //SmartDashboard.putBoolean("Shooter shooterIsAtSpeed", shooterIsAtSpeed());
-    //SmartDashboard.putNumber("Shooter shootingRPM", shootingRPM);
-    //SmartDashboard.putNumber("Shooter getHoodPosition", getHoodPosition());
-    //SmartDashboard.putBoolean("Shooter hoodIsInPosition", hoodIsInPosition());
-    //SmartDashboard.putNumber("Shooter desiredHoodPosition", desiredHoodPosition);
-    //SmartDashboard.putBoolean("Shooter isReady", isReady());
+    // SmartDashboard.putNumber("Shooter getRightShooterRPM", getRightShooterRPM());
+    // SmartDashboard.putNumber("Shooter getLeftShooterRPM", getLeftShooterRPM());
+    // SmartDashboard.putBoolean("Shooter shooterIsAtSpeed", shooterIsAtSpeed());
+    // SmartDashboard.putNumber("Shooter shootingRPM", shootingRPM);
+    // SmartDashboard.putNumber("Shooter getHoodPosition", getHoodPosition());
+    // SmartDashboard.putBoolean("Shooter hoodIsInPosition", hoodIsInPosition());
+    // SmartDashboard.putNumber("Shooter desiredHoodPosition", desiredHoodPosition);
+    // SmartDashboard.putBoolean("Shooter isReady", isReady());
+  }
+
+  public void simulationPeriodic() {
+    // Very basic - just jump to the desired values
+    // Update the motors
+    shootMotorRightSim.setRotorVelocity(desiredRPMSim / 60.0);
+    shootMotorLeftSim.setRotorVelocity(desiredRPMSim / 60.0);
+
+    // Update the hood position.
+    // TODO:
+    hoodMotorSim.setRawRotorPosition(desiredHoodPosition/hoodGearRatio);
+    hoodEncoderSim.setRawPosition(desiredHoodPosition/hoodGearRatio);
   }
 
   private void configHoodEncoder(CANcoder CANsensor) {

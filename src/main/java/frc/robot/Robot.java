@@ -3,6 +3,8 @@ package frc.robot;
 import com.ctre.phoenix6.SignalLogger;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
@@ -45,6 +47,11 @@ public class Robot extends TimedRobot {
   private boolean isScoring = false;
   private boolean isShooting = false;
   private final Timer shootingTimer = new Timer();
+
+  // Sim Variables
+  public static final double dTime = 0.020;  // units: seconds
+  private final double startingXPosSim = 3.725;  // m
+  private final double startingYPosSim = 0.900;  // m
 
   public void robotInit() { 
     // Configures the auto chooser on the dashboard.
@@ -109,6 +116,23 @@ public class Robot extends TimedRobot {
         swerve.resetPathController(6); 
       break;
     }
+
+    if (Robot.isSimulation()) {
+      // Ensure the initial position matches the start of the path
+      switch (autoSelected) {
+        case auto1:
+          swerve.initPathPose(0);
+        break;
+        case auto2:
+          swerve.initPathPose(3);
+        break;
+        case auto3:
+          swerve.initPathPose(6);
+        break;
+        default:
+          swerve.initPathPose(0);
+      }
+    }
   }
 
   public void autonomousPeriodic() {
@@ -121,6 +145,7 @@ public class Robot extends TimedRobot {
     for (int limelightIndex = 0; limelightIndex < swerve.limelights.length; limelightIndex++) { // Iterates through each limelight.
       swerve.addVisionEstimate(limelightIndex, true); // Checks to see if there are reliable April Tags in sight of the Limelight and updates the robot position on the field.
     }
+
     switch (autoSelected) {
       case auto1:
         switch (autoStage) {
@@ -545,6 +570,16 @@ public class Robot extends TimedRobot {
     swerve.addCalibrationEstimate(swerve.getPriorityLimelightIndex(), true);
   }
 
+  public void simulationPeriodic() {
+    // Runs at 50 Hz, make sure to call all of the subsystem simulationPeriodic methods
+    swerve.simulationPeriodic();
+    climber.simulationPeriodic();
+    indexer.simulationPeriodic();
+    intake.simulationPeriodic();
+    shooter.simulationPeriodic();
+
+  }
+
   public double getHubHeading() {
     double hubX = 182.11 * 0.0254; // The x-position of the hub on the field in meters.
     double hubY = 158.84 * 0.0254; // The y-position of the hub on the field in meters.
@@ -594,11 +629,20 @@ public class Robot extends TimedRobot {
   public void updateDash() {
     //SmartDashboard.putBoolean("Boost Mode", boostMode);
     //SmartDashboard.putNumber("Speed Scale Factor", speedScaleFactor);
-    SmartDashboard.putNumber("Auto Stage", autoStage);
+    if (Robot.isSimulation()) {
+      SmartDashboard.putNumber("sim/Auto Stage", autoStage);
+      SmartDashboard.putBoolean("sim/At Drive Goal", swerve.atDriveGoal());
+      SmartDashboard.putBoolean("sim/Shooter Ready", shooter.isReady());
+    }
   }
 
   // Helps prevent loop overruns on startup by running every user created command in every class before the match starts. Not sure why this helps, but it does.
   public void runAll() { 
+    if (Robot.isSimulation()) {
+      // Set the robot's initial pose at the beginning of the sim
+      swerve.setPoseSim(new Pose2d(startingXPosSim, startingYPosSim, Rotation2d.fromDegrees(0.0)));
+    }
+
     swerve.resetDriveController(0.0);
     swerve.xLock();
     swerve.aimDrive(-3.0, 2.0, 105.0, false);

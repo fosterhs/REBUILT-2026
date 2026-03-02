@@ -12,12 +12,16 @@ import com.ctre.phoenix6.signals.AdvancedHallSupportValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.MotorArrangementValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.sim.TalonFXSimState;
+import com.ctre.phoenix6.sim.TalonFXSSimState;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.simulation.DutyCycleEncoderSim;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Intake {  
   // Motors and Sensors
@@ -30,6 +34,15 @@ public class Intake {
   private final TalonFX leftCenteringMotor = new TalonFX(13, canivore);
   private final DutyCycleEncoder leftArmEncoder = new DutyCycleEncoder(0);
   private final DutyCycleEncoder rightArmEncoder = new DutyCycleEncoder(1);
+
+  private final TalonFXSimState rightArmMotorSim = rightArmMotor.getSimState();
+  private final TalonFXSSimState rightRollerMotorSim = rightRollerMotor.getSimState();
+  private final TalonFXSimState rightCenteringMotorSim = rightCenteringMotor.getSimState();
+  private final TalonFXSimState leftArmMotorSim = leftArmMotor.getSimState();
+  private final TalonFXSSimState leftRollerMotorSim = leftRollerMotor.getSimState();
+  private final TalonFXSimState leftCenteringMotorSim = leftCenteringMotor.getSimState();
+  private final DutyCycleEncoderSim leftArmEncoderSim = new DutyCycleEncoderSim(leftArmEncoder);
+  private final DutyCycleEncoderSim rightArmEncoderSim = new DutyCycleEncoderSim(rightArmEncoder);
   
   // Control Requests
   private final MotionMagicTorqueCurrentFOC rightArmMotorPositionRequest = new MotionMagicTorqueCurrentFOC(0.0);
@@ -84,6 +97,10 @@ public class Intake {
   public void periodic() {
     switch (currMode) {
       case HOME:
+        if (Robot.isSimulation()) {
+          currMode = Mode.STOW;
+        }
+
         leftArmMotor.setControl(leftArmMotorVoltageRequest.withOutput(-1.0).withEnableFOC(true));
         rightArmMotor.setControl(rightArmMotorVoltageRequest.withOutput(-1.0).withEnableFOC(true));
 
@@ -260,6 +277,23 @@ public class Intake {
     //SmartDashboard.putNumber("Intake getRightArmDesiredPosition", getRightArmDesiredPosition());
     //SmartDashboard.putBoolean("Intake rightArmInPosition", rightArmInPosition());
     //SmartDashboard.putBoolean("Intake isReady", isReady());
+  }
+
+  public void simulationPeriodic() {
+    // TODO: update this code
+    // TalonFX Motor Sims
+    // rightArmMotorSim
+    // rightRollerMotorSim
+    // rightCenteringMotorSim
+    // leftArmMotorSim
+    // leftRollerMotorSim
+    // leftCenteringMotorSim
+
+    // DutyCycle Encoder Sims
+    // leftArmEncoderSim
+    // rightArmEncoderSim
+
+    // Simulate homing, simulate fully extended
   }
   
   private void configCenteringMotor(TalonFX motor, boolean invert) {
