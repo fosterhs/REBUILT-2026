@@ -6,7 +6,11 @@ import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.sim.TalonFXSimState;
+import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Indexer {
   public enum Mode {FORWARD, IDLE}
@@ -16,6 +20,11 @@ public class Indexer {
   private final VoltageOut hopperIndexMotorVoltageRequest = new VoltageOut(0.0).withEnableFOC(true);
   private final VoltageOut shooterIndexMotorVoltageRequest = new VoltageOut(0.0).withEnableFOC(true);
   private Mode currMode = Mode.IDLE;
+
+  // Simulation
+  private final TalonFXSimState hopperIndexMotorSim = hopperIndexMotor.getSimState();
+  private final TalonFXSimState shooterIndexMotorSim = shooterIndexMotor.getSimState();
+  private boolean hopperSimHasFuel = false;
   
   // Initialize indexer: configure motor, start timer, configure sensor, and obtain fuelDetected data
   public Indexer() {
@@ -62,6 +71,10 @@ public class Indexer {
   // Publish indexer information (state, sensor, shooting flag, and timer) to SmartDashboard
   public void updateDash() {
     //SmartDashboard.putString("Indexer getMode", getMode().toString());
+  }
+
+  public void simulationPeriodic() {
+    
   }
   
   // Configs the motor settings and PID

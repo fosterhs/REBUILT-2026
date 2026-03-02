@@ -109,15 +109,15 @@ class Drivetrain {
   private double pathXPos = 0.0; // Unit: meters
   private double pathYPos = 0.0; // Unit: meters
   private double pathAngPos = 0.0; // Unit degrees
-  private final Field2d robotField = new Field2d();
 
   // Simulation
+  private final Field2d robotField = new Field2d();
   DifferentialDrivetrainSim driveSim = new DifferentialDrivetrainSim(
       DCMotor.getNEO(2),        // 2 NEO motors on each side of the drivetrain.
-      7.29,                       // 7.29:1 gearing reduction.
-      7.5,               // MOI of 7.5 kg m^2 (from CAD model).
-      60.0,                        // The mass of the robot is 60 kg.
-      Units.inchesToMeters(3),     // The robot uses 3" radius wheels.
+      5.357,                       // 7.29:1 gearing reduction.
+      6.498,               // MOI of 7.5 kg m^2 (from CAD model).
+      40.834,                        // The mass of the robot is 60 kg.
+      Units.inchesToMeters(0.051),     // The robot uses 3" radius wheels.
       0.7112,            // The track width is 0.7112 meters.
       // The standard deviations for measurement noise:
       // x and y:          0.001 m
@@ -145,6 +145,10 @@ class Drivetrain {
     xPathController.setIntegratorRange(-maxVelAuto*0.8, maxVelAuto*0.8);
     yPathController.setIntegratorRange(-maxVelAuto*0.8, maxVelAuto*0.8);
     anglePathController.setIntegratorRange(-maxAngVelAuto*0.8, maxAngVelAuto*0.8);
+
+    if (Robot.isSimulation()) {
+      robotField.setRobotPose(0, 0, new Rotation2d(Math.toRadians(-90)));
+    }
 
     SmartDashboard.putData("Field", robotField);
   }
@@ -273,6 +277,13 @@ class Drivetrain {
       double angVelSetpoint = pathAngVel + angVelCorrection;
       double xVelSetpoint = pathXVel + xVelCorrection;
       double yVelSetpoint = pathYVel + yVelCorrection;
+
+      if (Robot.isSimulation()) {
+        // publish the desired pose to compare against
+        SmartDashboard.putNumber("sim/debug/pathXPos", pathXPos);
+        SmartDashboard.putNumber("sim/debug/pathYPos", pathYPos);
+        SmartDashboard.putNumber("sim/debug/pathAngPos", pathAngPos);
+      }
 
       // Checks to see if all 3 targets have been achieved. Sets velocities to 0 to prevent twitchy robot motions at near 0 velocities.
       atDriveGoal = atPathEndpoint(pathIndex);
@@ -447,6 +458,16 @@ class Drivetrain {
     }
   }
 
+  public void setPoseSim(Pose2d newPose) {
+    // Used in simulation to reset the "known" pose of the robot. 
+    odometry.resetPosition(Rotation2d.fromDegrees(getGyroAng()), getModulePositions(), newPose); 
+  }
+
+  public void initPathPose(int pathIndex) {
+    // Used in simulation to overwrite the starting location of the robot based on the path provided
+    setPoseSim(paths.get(pathIndex).sample(0).pose);
+  }
+
   // Returns the amount of time that has elapsed since the robot has updated its position on the field using vision.
   public double getCalibrationTimer() {
     return calibrationTimer.get();
@@ -583,7 +604,12 @@ class Drivetrain {
     //SmartDashboard.putBoolean("Path At Endpoint", atPathEndpoint(0));
     //SmartDashboard.putBoolean("isRedAllaince", isRedAlliance());
     //SmartDashboard.putBoolean("isBlueAllaince", isBlueAlliance());   
-    robotField.setRobotPose(odometry.getEstimatedPosition());
+    if (Robot.isSimulation()) {
+      // Update the current pose of the robot in the visualized field
+      Pose2d curPose = odometry.getEstimatedPosition();
+      curPose = curPose.rotateAround(curPose.getTranslation(), new Rotation2d(-Math.PI/2));
+      robotField.setRobotPose(curPose);
+    }
   }
 
   // Calculates the shortest distance between two points on a 360 degree circle. CW is + and CCW is -

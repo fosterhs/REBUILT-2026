@@ -114,6 +114,10 @@ public class Climber {
 		//SmartDashboard.putNumber("Climber Position", getPosition());
 		//SmartDashboard.putNumber("Climber Velocity", getVelocity());
 	}
+
+	public void simulationPeriodic() {
+		
+	}
 	
 	private void configClimbMotor(TalonFX motor, boolean invert) {
 		TalonFXConfiguration motorConfigs = new TalonFXConfiguration();

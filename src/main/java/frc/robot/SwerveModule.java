@@ -45,6 +45,7 @@ class SwerveModule {
   public final TalonFXSimState turnMotorSim;
   private double driveMotorSimVel;
   private double turnMotorSimAngle;
+  private final double simulationDriveFactor = 1;
   private int driveDirectionSim;  // -1 for inverted, 1 for not inverted
   
 
@@ -102,7 +103,7 @@ class SwerveModule {
   
   // Sets the velocity of the module. Units: meters per second
   private void setVel(double vel) {
-    driveMotorSimVel = vel*driveGearRatio/(wheelCirc*correctionFactor);
+    driveMotorSimVel = vel*simulationDriveFactor*driveGearRatio/(wheelCirc*correctionFactor);
     driveMotor.setControl(driveMotorVelocityRequest.withVelocity(vel*driveGearRatio/(wheelCirc*correctionFactor)));
   }
   
