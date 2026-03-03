@@ -5,6 +5,7 @@ import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
@@ -12,12 +13,14 @@ import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 import com.ctre.phoenix6.sim.CANcoderSimState;
 import com.ctre.phoenix6.sim.TalonFXSimState;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Voltage;
 
 public class Shooter {
   private final CANBus canivore = new CANBus("canivore");
@@ -28,8 +31,9 @@ public class Shooter {
   private final StatusSignal<AngularVelocity> shooterVelocityRight;
   private final StatusSignal<AngularVelocity> shooterVelocityLeft;
   private final StatusSignal<Angle> hoodPosition;
+  private final StatusSignal<Voltage> shooterVoltageRight;
   private final VelocityVoltage shooterMotorRightVelocityRequest = new VelocityVoltage(0.0).withEnableFOC(true);
-  private final VelocityVoltage shooterMotorLeftVelocityRequest = new VelocityVoltage(0.0).withEnableFOC(true);
+  private final Follower shooterMotorLeftFollowerRequest = new Follower(12, MotorAlignmentValue.Opposed);
   private final MotionMagicTorqueCurrentFOC hoodMotorPositionRequest = new MotionMagicTorqueCurrentFOC(0.0); 
   private final double rpmTol = 200.0; // Can adjust
   private final double hoodTol = 0.005; // Can adjust
@@ -55,7 +59,8 @@ public class Shooter {
     shooterVelocityRight = shootMotorRight.getVelocity();
     shooterVelocityLeft = shootMotorLeft.getVelocity();
     hoodPosition = hoodEncoder.getAbsolutePosition();
-    BaseStatusSignal.setUpdateFrequencyForAll(250.0, shooterVelocityRight, shooterVelocityLeft, hoodPosition);
+    shooterVoltageRight = shootMotorRight.getMotorVoltage();
+    BaseStatusSignal.setUpdateFrequencyForAll(250.0, shooterVelocityRight, shooterVelocityLeft, hoodPosition, shooterVoltageRight);
 	  ParentDevice.optimizeBusUtilizationForAll(shootMotorLeft, hoodMotor, hoodEncoder);
   }
   
@@ -63,14 +68,14 @@ public class Shooter {
   public void spinUp() {
     desiredRPMSim = shootingRPM;
     shootMotorRight.setControl(shooterMotorRightVelocityRequest.withVelocity(shootingRPM/60.0).withEnableFOC(true));
-    shootMotorLeft.setControl(shooterMotorLeftVelocityRequest.withVelocity(shootingRPM/60.0).withEnableFOC(true));
+    shootMotorLeft.setControl(shooterMotorLeftFollowerRequest);
   }
 
   // Turn off motor.
   public void spinDown() {
     desiredRPMSim = 0;
     shootMotorRight.setControl(shooterMotorRightVelocityRequest.withVelocity(0.0).withEnableFOC(true));
-    shootMotorLeft.setControl(shooterMotorLeftVelocityRequest.withVelocity(0.0).withEnableFOC(true));
+    shootMotorLeft.setControl(shooterMotorLeftFollowerRequest);
   }
 
   public void setShootingRPM(double rpm) {

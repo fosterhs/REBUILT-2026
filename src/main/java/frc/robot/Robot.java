@@ -463,7 +463,8 @@ public class Robot extends TimedRobot {
         swerve.resetDriveController(getHubHeading());
         shooter.setHoodPosition(calcHoodPosition());
       } else {
-        shooter.setHoodPosition(shooter.hoodMaxPosition);
+        shooter.setHoodPosition(shooter.hoodMaxPosition);     
+        swerve.resetDriveController(180.0);
       }
     }
 
@@ -514,19 +515,14 @@ public class Robot extends TimedRobot {
       if (isScoring) {
         swerve.aimDrive(xVel, yVel, getHubHeading(), true);
         shooter.setHoodPosition(calcHoodPosition());
-        if (shooter.hoodIsInPosition() && shooter.shooterIsAtSpeed() && swerve.atDriveGoal()) {
-          indexer.start();
-        } else {
-          indexer.stop();
-        }
       } else {
-        swerve.drive(xVel, yVel, angVel, true, 0.0, 0.0); // Drive at the velocity demanded by the controller.
+        swerve.aimDrive(xVel, yVel, 180.0, true);
         shooter.setHoodPosition(shooter.hoodMaxPosition);
-        if (shooter.hoodIsInPosition() && shooter.shooterIsAtSpeed()) {
-          indexer.start();
-        } else {
-          indexer.stop();
-        }
+      }
+      if (shooter.hoodIsInPosition() && shooter.shooterIsAtSpeed() && swerve.atDriveGoal()) {
+        indexer.start();
+      } else {
+        indexer.stop();
       }
     } else {
       swerve.drive(xVel, yVel, angVel, true, 0.0, 0.0); // Drive at the velocity demanded by the controller.

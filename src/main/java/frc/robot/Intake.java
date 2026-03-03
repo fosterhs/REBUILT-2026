@@ -21,7 +21,6 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DutyCycleEncoderSim;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Intake {  
   // Motors and Sensors
@@ -62,8 +61,9 @@ public class Intake {
 
   private final Timer leftHomingTimer = new Timer();
   private final Timer rightHomingTimer = new Timer();
+  private final Timer armOscillationTimer = new Timer();
   private final double armPosTol = 0.5;
-  private final double armIntakePosition = 9.9; // Can adjust
+  private double armIntakePosition = 11.3; // Can adjust
   private final double armStowPosition = 0.2; // Can adjust
   public enum Mode {HOME, LEFT, RIGHT, STOW}
   private Mode currMode = Mode.HOME;
@@ -92,9 +92,11 @@ public class Intake {
   public void init() {
     leftHomingTimer.restart();
     rightHomingTimer.restart();
+    armOscillationTimer.restart();
   }
 
   public void periodic() {
+    armIntakePosition = 11.3 + 0.6*Math.sin(armOscillationTimer.get()*Math.PI*2.0);
     switch (currMode) {
       case HOME:
         if (Robot.isSimulation()) {
@@ -327,7 +329,7 @@ public class Intake {
     motorConfigs.Slot0.kP = 800.0/18.75; // Units: amperes per 1 rotation of error.
 		motorConfigs.Slot0.kI = 0.0; // Units: amperes per 1 rotation * 1 second of error.
 		motorConfigs.Slot0.kD = 18.0/18.75; // Units: amperes per 1 rotation / 1 second of error.
-		motorConfigs.MotionMagic.MotionMagicAcceleration = 2.0*5800.0/60.0; // Units: rotations per second per second.
+		motorConfigs.MotionMagic.MotionMagicAcceleration = 5800.0/60.0; // Units: rotations per second per second.
 		motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 5800.0/60.0; // Units: rotations per second.
 
 
