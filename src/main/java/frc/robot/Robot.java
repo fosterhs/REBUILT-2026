@@ -77,6 +77,7 @@ public class Robot extends TimedRobot {
     swerve.loadPath("fuel collection via human player", 0.0, 0.0, 0.0, -90.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     runAll(); // Helps prevent loop overruns on startup by running every command before the match starts.
     SignalLogger.enableAutoLogging(false);
+    SignalLogger.stop();
   }
 
   public void robotPeriodic() {
@@ -519,7 +520,7 @@ public class Robot extends TimedRobot {
           indexer.stop();
         }
       } else {
-        swerve.drive(xVel, yVel, angVel, true, 0.0, 0.0);
+        swerve.drive(xVel, yVel, angVel, true, 0.0, 0.0); // Drive at the velocity demanded by the controller.
         shooter.setHoodPosition(shooter.hoodMaxPosition);
         if (shooter.hoodIsInPosition() && shooter.shooterIsAtSpeed()) {
           indexer.start();
@@ -696,7 +697,7 @@ public class Robot extends TimedRobot {
     
     shooter.spinUp();
     shooter.spinDown();
-    shooter.setShootingRPM(2800.0);
+    shooter.setShootingRPM(4000.0);
     shooter.setHoodPosition(calcHoodPosition());
     shooter.lowerHood();
     System.out.println("shooter hoodIsInPosition: " + shooter.hoodIsInPosition());

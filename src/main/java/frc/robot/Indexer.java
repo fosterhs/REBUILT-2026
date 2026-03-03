@@ -7,19 +7,18 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.sim.TalonFXSimState;
-import com.ctre.phoenix6.BaseStatusSignal;
-import com.ctre.phoenix6.CANBus;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import com.ctre.phoenix6.CANBus;
 
 public class Indexer {
-  public enum Mode {FORWARD, IDLE}
+  public enum Mode {INDEX, IDLE}
   private final CANBus canivore = new CANBus("canivore");
   private final TalonFX hopperIndexMotor = new TalonFX(19, canivore);
   private final TalonFX shooterIndexMotor = new TalonFX(10, canivore);
   private final VoltageOut hopperIndexMotorVoltageRequest = new VoltageOut(0.0).withEnableFOC(true);
   private final VoltageOut shooterIndexMotorVoltageRequest = new VoltageOut(0.0).withEnableFOC(true);
   private Mode currMode = Mode.IDLE;
+  private final Timer indexTimer = new Timer();
 
   // Simulation
   private final TalonFXSimState hopperIndexMotorSim = hopperIndexMotor.getSimState();
@@ -31,22 +30,32 @@ public class Indexer {
     configIndexMotor(hopperIndexMotor, false);
     configIndexMotor(shooterIndexMotor,true);
 	  ParentDevice.optimizeBusUtilizationForAll(hopperIndexMotor, shooterIndexMotor);
+    indexTimer.restart();
   }
 
   // Runs code once at start: set current state to IDLE, stop shooting, stops motor, and reset the index timer
   public void init() {
     currMode = Mode.IDLE;
+    indexTimer.restart();
   }
 
   // Runs code periodically: refresh the fuel sensor, run the shooting/jam state machine, and set motor outputs for each state
   public void periodic() {
     switch (currMode) {
-      case FORWARD://just going forward
-        hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(12.0).withEnableFOC(true));
-        shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(12.0).withEnableFOC(true));
+      case INDEX://just going forward
+        if (indexTimer.get() < 2.7) {
+          hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(12.0).withEnableFOC(true));
+          shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(12.0).withEnableFOC(true));
+        } else if (indexTimer.get() < 3.0) {
+          hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(-12.0).withEnableFOC(true));
+          shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(-12.0).withEnableFOC(true));
+        } else {
+          indexTimer.restart();
+        }
       break;
 
       case IDLE://just stops
+        indexTimer.restart();
         hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
         shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
       break;
@@ -55,7 +64,7 @@ public class Indexer {
 
   // Marks the Indexer as running forward (not shooting) and resets the jam timer.
   public void start() {
-    currMode = Mode.FORWARD;
+    currMode = Mode.INDEX;
   }
 
   //Marks the indexer as idle, stops shooting, and reset the jam timer.
