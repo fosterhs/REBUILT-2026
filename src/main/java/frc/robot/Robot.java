@@ -570,6 +570,10 @@ public class Robot extends TimedRobot {
     swerve.addCalibrationEstimate(swerve.getPriorityLimelightIndex(), true);
   }
 
+  public void simulationInit() {
+    intake.simulationInit();
+  }
+
   public void simulationPeriodic() {
     // Runs at 50 Hz, make sure to call all of the subsystem simulationPeriodic methods
     swerve.simulationPeriodic();

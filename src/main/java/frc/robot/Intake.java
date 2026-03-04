@@ -21,7 +21,12 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DutyCycleEncoderSim;
+import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d;
+import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
+import edu.wpi.first.wpilibj.smartdashboard.MechanismRoot2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.util.Color;
+import edu.wpi.first.wpilibj.util.Color8Bit;
 
 public class Intake {  
   // Motors and Sensors
@@ -35,6 +40,7 @@ public class Intake {
   private final DutyCycleEncoder leftArmEncoder = new DutyCycleEncoder(0);
   private final DutyCycleEncoder rightArmEncoder = new DutyCycleEncoder(1);
 
+  // Simulation Variables
   private final TalonFXSimState rightArmMotorSim = rightArmMotor.getSimState();
   private final TalonFXSSimState rightRollerMotorSim = rightRollerMotor.getSimState();
   private final TalonFXSimState rightCenteringMotorSim = rightCenteringMotor.getSimState();
@@ -43,6 +49,21 @@ public class Intake {
   private final TalonFXSimState leftCenteringMotorSim = leftCenteringMotor.getSimState();
   private final DutyCycleEncoderSim leftArmEncoderSim = new DutyCycleEncoderSim(leftArmEncoder);
   private final DutyCycleEncoderSim rightArmEncoderSim = new DutyCycleEncoderSim(rightArmEncoder);
+  private boolean rightArmMotorSimInverted;
+  private boolean rightRollerMotorSimInverted;
+  private boolean rightCenteringMotorSimInverted;
+  private boolean leftArmMotorSimInverted;
+  private boolean leftRollerMotorSimInverted;
+  private boolean leftCenteringMotorSimInverted;
+
+  private final double simStowAngleDegWorld = 85.0;  // relative to world
+  private final double simDeployAngleDeg = 100.0;    // relative to stow (-15 deg w.r.t world)
+  private Mechanism2d mech;
+  private MechanismRoot2d intakeRoot;
+  private MechanismLigament2d leftShoulder;
+  private MechanismLigament2d leftArm;
+  private MechanismLigament2d rightShoulder;
+  private MechanismLigament2d rightArm;
   
   // Control Requests
   private final MotionMagicTorqueCurrentFOC rightArmMotorPositionRequest = new MotionMagicTorqueCurrentFOC(0.0);
@@ -87,6 +108,17 @@ public class Intake {
     rightArmVelocity = rightArmMotor.getVelocity();
     BaseStatusSignal.setUpdateFrequencyForAll(250.0, leftArmPosition, leftArmVelocity, rightArmPosition, rightArmVelocity);
 		ParentDevice.optimizeBusUtilizationForAll(rightArmMotor, rightRollerMotor, rightCenteringMotor, leftArmMotor, leftRollerMotor, leftCenteringMotor);
+    
+    if (Robot.isSimulation()) {
+      // Save off the boolean invert states
+      leftArmMotorSimInverted = true;
+      rightArmMotorSimInverted = false;
+      leftRollerMotorSimInverted = false;
+      rightRollerMotorSimInverted = true;
+      leftCenteringMotorSimInverted = true;
+      rightCenteringMotorSimInverted = true;
+    }
+  
   }
 
   public void init() {
@@ -97,10 +129,6 @@ public class Intake {
   public void periodic() {
     switch (currMode) {
       case HOME:
-        if (Robot.isSimulation()) {
-          currMode = Mode.STOW;
-        }
-
         leftArmMotor.setControl(leftArmMotorVoltageRequest.withOutput(-1.0).withEnableFOC(true));
         rightArmMotor.setControl(rightArmMotorVoltageRequest.withOutput(-1.0).withEnableFOC(true));
 
@@ -277,12 +305,80 @@ public class Intake {
     //SmartDashboard.putNumber("Intake getRightArmDesiredPosition", getRightArmDesiredPosition());
     //SmartDashboard.putBoolean("Intake rightArmInPosition", rightArmInPosition());
     //SmartDashboard.putBoolean("Intake isReady", isReady());
+
+    if (Robot.isSimulation() && (rightArm != null)) {
+      // update the mechanism2d object and push it to the dashboard
+      double leftArmPos =  leftArmPosition.refresh().getValueAsDouble();
+      double rightArmPos = rightArmPosition.refresh().getValueAsDouble();
+
+      if (leftArmIsHomed) {
+        // 0-degrees is stowed position
+        leftArmPos = simStowAngleDegWorld - leftArmPos;
+      }
+      leftShoulder.setAngle(-leftArmPos);
+      leftArm.setAngle(90 + leftArmPos);
+
+      if (rightArmIsHomed) {
+        // 0-degrees is stowed position
+        rightArmPos = simStowAngleDegWorld - rightArmPos;
+      }
+      rightShoulder.setAngle(rightArmPos);
+      rightArm.setAngle(-(90 + rightArmPos));
+
+      SmartDashboard.putData(mech);
+    }
+  }
+
+  public void simulationInit() {
+    // Set up the Mechanism2D visual as two 3-segment arms connected at a common root
+    Mechanism2d mech = new Mechanism2d(3.5, 2.5);
+    MechanismRoot2d intakeRoot = mech.getRoot("intakeRoot", 3.5/2, 1);
+
+    // Angle from ground - initialize as stowed until we have data
+    double leftAngle = simStowAngleDegWorld;
+    double rightAngle = simStowAngleDegWorld;
+
+    leftArmMotorSim.setRawRotorPosition(-simStowAngleDegWorld);
+    rightArmMotorSim.setRawRotorPosition(simStowAngleDegWorld);
+
+    // Build out the arms
+    // TODO: Update dimensions
+    MechanismLigament2d leftIntakeBase = intakeRoot.append(
+      new MechanismLigament2d("leftIntakeBase", 0.5, 180, 0.5, new Color8Bit(Color.kWhite))
+    );
+    leftShoulder = leftIntakeBase.append(
+      new MechanismLigament2d("leftIntakeShoulder", 1, -leftAngle, 0.5, new Color8Bit(Color.kTeal))
+    );
+    leftArm = leftShoulder.append(
+      new MechanismLigament2d("leftIntakeArm", 0.5, 90 + leftAngle, 0.5, new Color8Bit(Color.kTeal))
+    );
+    MechanismLigament2d rightIntakeBase = intakeRoot.append(
+      new MechanismLigament2d("rightIntakeBase", 0.5, 0, 0.5, new Color8Bit(Color.kWhite))
+    );
+    rightShoulder = rightIntakeBase.append(
+      new MechanismLigament2d("rightIntakeShoulder", 1, rightAngle, 0.5, new Color8Bit(Color.kOrange))
+    );
+    rightArm = rightShoulder.append(
+      new MechanismLigament2d("rightIntakeArm", 0.5, -(90 + rightAngle), 0.5, new Color8Bit(Color.kOrange))
+    );
+
+    // Push the data
+    SmartDashboard.putData("IntakeMech2d", mech);
+
+    leftArmMotor.setPosition(0.0, 0.03);
+    rightArmMotor.setPosition(0.0, 0.03);
   }
 
   public void simulationPeriodic() {
+    // Simple Roller and Centering Sim: setSpeed = desiredSpeed
+    // TODO:
+
+    // More Complicated Arm Sim: Enforce encoder limits
+    runArmMotorSim(leftArmMotorSim, leftArmEncoder, leftArmEncoderSim, leftArmMotorSimInverted);
+    runArmMotorSim(rightArmMotorSim, rightArmEncoder, rightArmEncoderSim, rightArmMotorSimInverted);
+
+
     // TODO: update this code
-    // TalonFX Motor Sims
-    // rightArmMotorSim
     // rightRollerMotorSim
     // rightCenteringMotorSim
     // leftArmMotorSim
@@ -294,6 +390,25 @@ public class Intake {
     // rightArmEncoderSim
 
     // Simulate homing, simulate fully extended
+  }
+
+  private void runArmMotorSim(TalonFXSimState armMotorSim, DutyCycleEncoder armEncoder, DutyCycleEncoderSim armEncoderSim, boolean inverted) {
+    double armSpeed = 0;
+    double voltageTol = 0.6;
+    int inversionFactor = inverted ? -1 : 1;
+
+    // apply speed proportional to the voltage
+    if (armMotorSim.getMotorVoltage()*inversionFactor <= -voltageTol &&  Math.abs(armStowPosition - inversionFactor * armEncoder.get()) > armPosTol) {
+      // moving up (neg voltage) and we have not reached the stowed position
+      armSpeed = 5 * armMotorSim.getMotorVoltage();
+    } else if (armMotorSim.getMotorVoltage()*inversionFactor >= voltageTol && Math.abs(armIntakePosition - inversionFactor*armEncoder.get()) > armPosTol) {
+      // moving down (pos voltage), and we have not reached the deploy position
+      armSpeed = 5 * armMotorSim.getMotorVoltage();
+    } // else 0
+
+    armMotorSim.setRotorVelocity(armSpeed);
+    armMotorSim.addRotorPosition(armSpeed*Robot.dTime);
+    armEncoderSim.set(armEncoder.get() + armSpeed*Robot.dTime);
   }
   
   private void configCenteringMotor(TalonFX motor, boolean invert) {
