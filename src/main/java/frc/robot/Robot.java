@@ -8,8 +8,13 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d;
+import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
+import edu.wpi.first.wpilibj.smartdashboard.MechanismRoot2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.util.Color;
+import edu.wpi.first.wpilibj.util.Color8Bit;
 
 public class Robot extends TimedRobot {
   private final XboxController driver = new XboxController(0); // Initializes the driver controller.
@@ -52,6 +57,10 @@ public class Robot extends TimedRobot {
   public static final double dTime = 0.020;  // units: seconds
   private final double startingXPosSim = 3.725;  // m
   private final double startingYPosSim = 0.900;  // m
+  private Mechanism2d shootingTrajMech = new Mechanism2d(12, 5);
+  private MechanismRoot2d shootingTrajRoot = shootingTrajMech.getRoot("shootRoot", 0.1, 0.1);
+  private MechanismRoot2d hubTrajRoot = shootingTrajMech.getRoot("hubRoot", 10, 0);
+  private MechanismLigament2d[] shootingTrajLigaments = new MechanismLigament2d[50];
 
   public void robotInit() { 
     // Configures the auto chooser on the dashboard.
@@ -531,6 +540,8 @@ public class Robot extends TimedRobot {
       swerve.drive(xVel, yVel, angVel, true, 0.0, 0.0); // Drive at the velocity demanded by the controller.
     }
 
+    SmartDashboard.putNumber("debug/angVelController", angVel);
+
     // The following 3 calls allow the user to calibrate the position of the robot based on April Tag information. Should be called when the robot is stationary. Button 7 is "View", the right center button.
     if (driver.getRawButtonPressed(7)) {
       swerve.calcPriorityLimelightIndex();
@@ -581,7 +592,88 @@ public class Robot extends TimedRobot {
     indexer.simulationPeriodic();
     intake.simulationPeriodic();
     shooter.simulationPeriodic();
+  }
 
+  public void simulateProjectileTrajectory() {
+    // Really, draw the x,y plot using mechanism2d
+    double xStep = 0.25;
+    double currentX = 0;
+    double currentY = 0;
+    double nextY = 0;
+    
+    // TODO: convert to v0 using shooting gear ratio
+    double shooterRatio = 0.75;  // meters / rotation
+    double v0 = Math.abs(shooterRatio * shooter.getRightShooterRPM() / 60);  // m/s
+    double theta = shooter.getHoodPosition(); // radians
+    double prevAngle = 0;
+
+    // assume robot is pointing at hub, find distance to hub
+    double hubX = 182.11 * 0.0254; 
+    double hubY = 158.84 * 0.0254; 
+    double robotX = swerve.getXPos();
+    double robotY = swerve.getYPos();
+
+    double distanceToHub = Math.sqrt(Math.pow(hubX-robotX,2) + Math.pow(hubY-robotY, 2));
+    hubTrajRoot.setPosition(distanceToHub, 0);
+
+    Color8Bit[] colors = new Color8Bit[2];
+    if (v0 == 0) {
+      v0 = 7;
+      colors[0] = new Color8Bit(Color.kRed);
+    } else {
+      colors[0] = new Color8Bit(Color.kWhite);
+    }
+    colors[1] = new Color8Bit(Color.kBlack);
+
+
+    // Given the shooterSpeed and hoodAngle, compute the y(x) trajectory
+    // y(x) = v_0 * sin(theta) * x / (v0 cos(theta)) - 0.5*g*(x/(v0*cos(theta)))^2
+    for (int idx = 0; idx < shootingTrajLigaments.length; idx++) {
+      
+      if (shootingTrajLigaments[idx] == null) {
+        // it wasn't initialized
+        MechanismLigament2d piece;
+        if (idx != 0) {
+          piece = shootingTrajLigaments[idx-1].append(
+            new MechanismLigament2d("piece"+String.valueOf(idx), 1, Math.toDegrees(Math.PI/4), 0.5, colors[idx % colors.length])
+          );
+        } else {
+          // add the 0th one to the root 
+          piece = shootingTrajRoot.append(
+            new MechanismLigament2d("piece0", 1, 0, 0, new Color8Bit(Color.kWhite))
+          );
+
+          hubTrajRoot.append(
+            // hub basket height is 1.8288 m
+            // inside width is 41.73 inches
+            new MechanismLigament2d("hubSegment", 1.8288, 90, 20, new Color8Bit(Color.kTeal))
+          );
+        }
+        shootingTrajLigaments[idx] = piece;
+      }
+
+      // Now, assuming the piece exists, update its length and angle
+      currentY = currentX * Math.tan(theta) - 0.5*9.81*Math.pow(currentX / (v0*Math.cos(theta)),2);
+      currentX += xStep;
+      nextY = currentX * Math.tan(theta) - 0.5*9.81*Math.pow(currentX / (v0*Math.cos(theta)),2);
+
+      double pieceAngle = Math.atan((nextY - currentY)/xStep);
+      double pieceLength = Math.sqrt(Math.pow((nextY - currentY),2) + Math.pow(xStep,2));
+ 
+      // System.out.println(idx);
+      // System.out.println("PieceAngle is :"+String.valueOf(pieceAngle));
+      // System.out.println("PieceLength is :"+String.valueOf(pieceLength));
+      shootingTrajLigaments[idx].setLength(pieceLength);
+      shootingTrajLigaments[idx].setAngle(Math.toDegrees(pieceAngle - prevAngle));
+      shootingTrajLigaments[idx].setColor(colors[idx % colors.length]);
+
+      prevAngle = pieceAngle;
+      currentY = nextY;
+    }
+
+    // Push the data
+    SmartDashboard.putData("sim/ShootingTrajectory", shootingTrajMech);
+    
   }
 
   public double getHubHeading() {
@@ -637,6 +729,7 @@ public class Robot extends TimedRobot {
       SmartDashboard.putNumber("sim/Auto Stage", autoStage);
       SmartDashboard.putBoolean("sim/At Drive Goal", swerve.atDriveGoal());
       SmartDashboard.putBoolean("sim/Shooter Ready", shooter.isReady());
+      simulateProjectileTrajectory();
     }
   }
 
