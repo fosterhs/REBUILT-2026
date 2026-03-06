@@ -453,6 +453,8 @@ public class Robot extends TimedRobot {
       climber.moveDown(); 
     } 
 
+    shooter.setShootingRPM(calcShooterRPM());
+
     if (!isNearTrench && driver.getRawButtonPressed(1)) {
       isShooting = true;
       isScoring = swerve.getXPos() < nearTrenchX - trenchTolerance;
@@ -594,15 +596,40 @@ public class Robot extends TimedRobot {
     }
   }
 
-  private double[] distanceArray = {1.0, 2.0, 3.2, 5.5}; // Distance array (need tested👈)
-  private double[] hoodArray = {0.035, 0.06, 0.08, 0.12}; // Hood array (need tested👈)
+  private double[] distanceRPMArray = {2.0, 6.0}; // Distance array (need tested👈)
+  private double[] RPMArray = {2500.0, 3800.0}; // Distance array (need tested👈)
+  public double calcShooterRPM() {
+    double hubX = 182.11 * 0.0254; // The x-position of the hub on the field in meters.
+    double hubY = 158.84 * 0.0254; // The y-position of the hub on the field in meters.
+    double robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
+    double robotY = swerve.getYPos(); // The current y-position of the robot on the field in meters.
+    double distance = Math.sqrt(Math.pow(hubX - robotX, 2) + Math.pow(hubY - robotY, 2)); // distance to hub
+
+    if (distance >= distanceRPMArray[distanceRPMArray.length - 1]) {
+      return RPMArray[RPMArray.length - 1]; // Return RPM for largest distance
+    } else if (distance <= distanceRPMArray[0]) {
+      return RPMArray[0]; // Return RPM for smallest distance
+    } else {
+      int lowerIndex = -1; // Index for distance immediately smaller than current distance
+      for (int i = 0; i < distanceRPMArray.length - 1; i++) {
+        if (distanceRPMArray[i + 1] > distance && lowerIndex == -1) {
+          lowerIndex = i;
+        }
+      } 
+      return RPMArray[lowerIndex] + ((RPMArray[lowerIndex + 1] - RPMArray[lowerIndex]) / (distanceRPMArray[lowerIndex + 1] - distanceRPMArray[lowerIndex])) * (distance - distanceRPMArray[lowerIndex]);
+    }
+  }
+
+  double test = 0.065;
+  private double[] distanceArray = {2.0 , 3.0, 4.0, 5.0, 6.0,}; // Distance array (need tested👈)
+  private double[] hoodArray = {0.05, 0.0625, 0.07, 0.065, 0.06}; // Hood array (need tested👈)
   public double calcHoodPosition() {
     double hubX = 182.11 * 0.0254; // The x-position of the hub on the field in meters.
     double hubY = 158.84 * 0.0254; // The y-position of the hub on the field in meters.
     double robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
     double robotY = swerve.getYPos(); // The current y-position of the robot
     double distance = Math.sqrt(Math.pow(hubX - robotX, 2) + Math.pow(hubY - robotY, 2)); // distance to hub
-    
+
     if (distance >= distanceArray[distanceArray.length - 1]) {
       return hoodArray[hoodArray.length - 1]; // Return RPM for largest distance
     } 
@@ -624,10 +651,20 @@ public class Robot extends TimedRobot {
   public void updateDash() {
     //SmartDashboard.putBoolean("Boost Mode", boostMode);
     //SmartDashboard.putNumber("Speed Scale Factor", speedScaleFactor);
+    double hubX = 182.11 * 0.0254; // The x-position of the hub on the field in meters.
+    double hubY = 158.84 * 0.0254; // The y-position of the hub on the field in meters.
+    double robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
+    double robotY = swerve.getYPos(); // The current y-position of the robot
+    double distance = Math.sqrt(Math.pow(hubX - robotX, 2) + Math.pow(hubY - robotY, 2)); // distance to hub
+    SmartDashboard.putNumber("Distance to Hub", distance);
+    SmartDashboard.putNumber("cal Shooter RPM", calcShooterRPM());
+
+
     if (Robot.isSimulation()) {
       SmartDashboard.putNumber("sim/Auto Stage", autoStage);
       SmartDashboard.putBoolean("sim/At Drive Goal", swerve.atDriveGoal());
       SmartDashboard.putBoolean("sim/Shooter Ready", shooter.isReady());
+
     }
   }
 
@@ -691,7 +728,7 @@ public class Robot extends TimedRobot {
     
     shooter.spinUp();
     shooter.spinDown();
-    shooter.setShootingRPM(4000.0);
+    shooter.setShootingRPM(3000.0);
     shooter.setHoodPosition(calcHoodPosition());
     shooter.lowerHood();
     System.out.println("shooter hoodIsInPosition: " + shooter.hoodIsInPosition());
