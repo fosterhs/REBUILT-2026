@@ -183,8 +183,8 @@ public class Robot extends TimedRobot {
           case 4:
             // Auto 1, Stage 4 code goes here.
             swerve.followPath(1); // Brings the robot to the neutral zone to collect fuel.
-            if (swerve.getXPos() > 6.5) {
-                intake.rightIntake(); // When the X position is greater than 6.5, the right intake will deploy.
+            if (swerve.getXPos() > 5.5) {
+                intake.rightIntake(); // When the X position is greater than 5.5, the right intake will deploy.
             }
             if (swerve.atPathEndpoint(1) && intake.isReady()) {
               autoStage = 5; // Advances to the next stage once the robot has gotten to the neutral zone.
@@ -271,8 +271,8 @@ public class Robot extends TimedRobot {
           case 4:
             // Auto 2, Stage 4 code goes here.
             swerve.followPath(4); // Brings the robot to the neutral zone to collect fuel.
-            if (swerve.getXPos() > 6.5) {
-                intake.leftIntake(); // When the X position is less than 6.5, the left intake will deploy.
+            if (swerve.getXPos() > 5.5) {
+                intake.leftIntake(); // When the X position is greater than 5.5, the left intake will deploy.
             }
             if (swerve.atPathEndpoint(4) && intake.isReady()) {
               autoStage = 5; // Advances to the next stage once the robot has gotten to the neutral zone.
@@ -359,8 +359,8 @@ public class Robot extends TimedRobot {
           case 4:
             // Auto 3, Stage 4 code goes here.
             swerve.followPath(7); // Brings the robot to the depot.
-            if (swerve.getXPos() < 1.5) {
-                intake.leftIntake(); // When the X position is less than 1.5, the left intake will deploy.
+            if (swerve.getXPos() < 1.8) {
+                intake.leftIntake(); // When the X position is less than 1.8, the left intake will deploy.
             }
             if (swerve.atPathEndpoint(7) && intake.isReady()) {
               autoStage = 5; // Advances to the next stage once the robot has gotten to the neutral zone.
