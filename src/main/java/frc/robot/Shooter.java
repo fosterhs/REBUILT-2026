@@ -39,7 +39,7 @@ public class Shooter {
   private final double hoodTol = 0.005; // Can adjust
   public final double hoodMinPosition = 0.020; // Can adjust
   public final double hoodMaxPosition = 0.115; // Can adjust
-  private double shootingRPM = 4000.0; // Can adjust
+  private double shootingRPM = 3000.0; // Can adjust
   private double desiredHoodPosition = hoodMinPosition;
 
   // Simulation
@@ -179,10 +179,14 @@ public class Shooter {
     motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake;
     motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
 
+
+    // P = 0.25 , I = 0.5, D = 0.0, V = 0.12, S = 0.16
+
+
     // VelocityVoltage closed-loop control configuration.
     motorConfigs.Slot0.kP = 0.25; // Units: volts per 1 motor rotation per second of error.
     motorConfigs.Slot0.kI = 0.5; // Units: volts per 1 motor rotation per second * 1 second of error.
-    motorConfigs.Slot0.kD = 0.0; // Units: volts per 1 motor rotation per second / 1 second of error.
+    motorConfigs.Slot0.kD = 0.02; // Units: volts per 1 motor rotation per second / 1 second of error.
     motorConfigs.Slot0.kV = 0.12; // The amount of voltage required to create 1 motor rotation per second.
     motorConfigs.Slot0.kS = 0.16; // The amount of voltage required to barely overcome static friction.
 
