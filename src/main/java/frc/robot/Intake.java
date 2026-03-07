@@ -172,18 +172,26 @@ public class Intake {
       leftRollerMotor.setControl(leftRollerMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
       leftCenteringMotor.setControl(leftCenteringMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
     } else {
-      leftRollerMotor.setControl(leftRollerMotorVoltageRequest.withOutput(8.0).withEnableFOC(true));
-      leftCenteringMotor.setControl(leftCenteringMotorVoltageRequest.withOutput(4.0).withEnableFOC(true));
+      leftRollerMotor.setControl(leftRollerMotorVoltageRequest.withOutput(6.0).withEnableFOC(true));
+      leftCenteringMotor.setControl(leftCenteringMotorVoltageRequest.withOutput(3.0).withEnableFOC(true));
     }
     if (rightArmIsStowed) {
       rightRollerMotor.setControl(rightRollerMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
       rightCenteringMotor.setControl(rightCenteringMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
     } else {
-      rightRollerMotor.setControl(rightRollerMotorVoltageRequest.withOutput(8.0).withEnableFOC(true));
-      rightCenteringMotor.setControl(rightCenteringMotorVoltageRequest.withOutput(4.0).withEnableFOC(true));
+      rightRollerMotor.setControl(rightRollerMotorVoltageRequest.withOutput(6.0).withEnableFOC(true));
+      rightCenteringMotor.setControl(rightCenteringMotorVoltageRequest.withOutput(3.0).withEnableFOC(true));
     }
   }
-
+    public void home() {
+    currMode = Mode.HOME;
+    leftArmIsHomed = false;
+    rightArmIsHomed = false;
+    leftArmIsStowed = true;
+    rightArmIsStowed = true;
+    leftHomingTimer.restart();
+    rightHomingTimer.restart();
+  }
   public void leftIntake() {
     if (getMode() != Mode.HOME) {
       currMode = Mode.LEFT;
@@ -331,7 +339,8 @@ public class Intake {
 		motorConfigs.Slot0.kD = 18.0/18.75; // Units: amperes per 1 rotation / 1 second of error.
 		motorConfigs.MotionMagic.MotionMagicAcceleration = 5800.0/60.0; // Units: rotations per second per second.
 		motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 5800.0/60.0; // Units: rotations per second.
-
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 30.0;
+    motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
 
 		motor.getConfigurator().apply(motorConfigs, 0.03);
   }

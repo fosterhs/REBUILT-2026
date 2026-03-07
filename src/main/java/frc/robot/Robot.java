@@ -487,7 +487,10 @@ public class Robot extends TimedRobot {
         intake.rightIntake();
       }
     }
-
+    
+    if (driver.getPOV() == 180) {
+      intake.home();
+    }
     if (driver.getRawButtonPressed(2)) boostMode = true; // A button sets boost mode. (100% speed up from default of 60%).
     if (driver.getRawButtonPressed(3)) boostMode = false; // B Button sets default mode (60% of full speed).
 

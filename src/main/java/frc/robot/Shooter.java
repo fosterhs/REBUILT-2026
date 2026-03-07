@@ -184,7 +184,7 @@ public class Shooter {
 
 
     // VelocityVoltage closed-loop control configuration.
-    motorConfigs.Slot0.kP = 0.25; // Units: volts per 1 motor rotation per second of error.
+    motorConfigs.Slot0.kP = 0.20; // Units: volts per 1 motor rotation per second of error.
     motorConfigs.Slot0.kI = 0.5; // Units: volts per 1 motor rotation per second * 1 second of error.
     motorConfigs.Slot0.kD = 0.02; // Units: volts per 1 motor rotation per second / 1 second of error.
     motorConfigs.Slot0.kV = 0.12; // The amount of voltage required to create 1 motor rotation per second.
