@@ -99,8 +99,8 @@ class Drivetrain {
   private final PIDController yPathController = new PIDController(1.5, 0.0, 0.0);
   private final PIDController anglePathController = new PIDController(1.5, 0.0, 0.0);
   private boolean atDriveGoal = false; // Whether the robot is at the target within the tolerance specified by posTol and angTol when controlled by aimDrive() or moveToTarget()
-  private double posTol = 0.02; // The allowable error in the x and y position of the robot in meters.
-  private double angTol = 0.6; // The allowable error in the angle of the robot in degrees.
+  private double posTol = 0.1; // The allowable error in the x and y position of the robot in meters.
+  private double angTol = 1.0; // The allowable error in the angle of the robot in degrees.
   
   // These variables are updated each period so they can be passed along to the user or the dashboard.
   private double xVel = 0.0; // Unit: meters per second
