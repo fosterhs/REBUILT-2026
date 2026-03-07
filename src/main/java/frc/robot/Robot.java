@@ -61,11 +61,11 @@ public class Robot extends TimedRobot {
     SmartDashboard.putData("Autos", autoChooser);
 
     // Auto 1 Paths : Fuel Collection from Neutral Zone, Right Starting Position. 0-2
-    swerve.loadPath("neutral zone right travelling to shooting position", 0.0, 0.0, 0.0, -90.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+    swerve.loadPath("neutral zone right travelling to shooting position", 0.0, 0.0, 0.0, 90.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     swerve.loadPath("neutral zone right travelling to zone", 0.0, 0.0, 0.0, 50.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     swerve.loadPath("neutral zone right travelling to shooting position 2", 0.0, 0.0, 0.0, 180.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     // Auto 2 Paths : Fuel Collection from Neutral Zone, Left Starting Position. 3-5
-    swerve.loadPath("neutral zone left travelling to shooting position", 0.0, 0.0, 0.0, 90.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+    swerve.loadPath("neutral zone left travelling to shooting position", 0.0, 0.0, 0.0, -90.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     swerve.loadPath("neutral zone left travelling to zone", 0.0, 0.0, 0.0, -50.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     swerve.loadPath("neutral zone left travelling to shooting position 2", 0.0, 0.0, 0.0, 180.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     // Auto 3 Paths : Climbing Auto, Center Starting Position. 6-9
@@ -99,13 +99,13 @@ public class Robot extends TimedRobot {
     switch (autoSelected) {
       case auto1:
         // AutoInit 1 code goes here.
-        swerve.pushCalibration(true, -90.0); // Updates the robot's position on the field.
+        swerve.pushCalibration(true, 90.0); // Updates the robot's position on the field.
         swerve.resetPathController(0); 
       break;
 
       case auto2:
         // AutoInit 2 code goes here.
-        swerve.pushCalibration(true, 90.0); // Updates the robot's position on the field.
+        swerve.pushCalibration(true, -90.0); // Updates the robot's position on the field.
         swerve.resetPathController(3); 
       break;
 
@@ -194,7 +194,7 @@ public class Robot extends TimedRobot {
           case 5:
             // Auto 1, Stage 5 code goes here.
             swerve.drive(0.0, 1.5, 0.0, true, 0.0, 0.0); // Moves the robot in the neutral zone, collecting fuel.
-            if (swerve.getYPos() >= 3.575) {
+            if (swerve.getYPos() >= 3.9) {
               swerve.drive(0.0, 0.0, 0.0, true, 0.0, 0.0); // Holds the robot still.
               intake.stow(); // Stows the intake.
               swerve.resetPathController(2);
