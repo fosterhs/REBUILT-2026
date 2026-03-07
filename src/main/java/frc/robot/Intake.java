@@ -62,7 +62,7 @@ public class Intake {
   private final Timer leftHomingTimer = new Timer();
   private final Timer rightHomingTimer = new Timer();
   private final Timer armOscillationTimer = new Timer();
-  private final double armPosTol = 2.0;
+  private final double armPosTol = 0.5;
   private double armIntakePosition = 11.3; // Can adjust
   private final double armStowPosition = 0.2; // Can adjust
   public enum Mode {HOME, LEFT, RIGHT, STOW}

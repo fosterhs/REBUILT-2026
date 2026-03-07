@@ -62,11 +62,11 @@ public class Robot extends TimedRobot {
 
     // Auto 1 Paths : Fuel Collection from Neutral Zone, Right Starting Position. 0-2
     swerve.loadPath("neutral zone right travelling to shooting position", 0.0, 0.0, 0.0, 90.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
-    swerve.loadPath("neutral zone right travelling to zone", 0.0, 0.0, 0.0, 50.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+    swerve.loadPath("neutral zone right travelling to zone", 0.0, 0.0, 0.0, 70.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     swerve.loadPath("neutral zone right travelling to shooting position 2", 0.0, 0.0, 0.0, 180.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     // Auto 2 Paths : Fuel Collection from Neutral Zone, Left Starting Position. 3-5
     swerve.loadPath("neutral zone left travelling to shooting position", 0.0, 0.0, 0.0, -90.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
-    swerve.loadPath("neutral zone left travelling to zone", 0.0, 0.0, 0.0, -50.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+    swerve.loadPath("neutral zone left travelling to zone", 0.0, 0.0, 0.0, -70.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     swerve.loadPath("neutral zone left travelling to shooting position 2", 0.0, 0.0, 0.0, 180.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     // Auto 3 Paths : Climbing Auto, Center Starting Position. 6-9
     swerve.loadPath("climbing travelling to shooting position", 0.0, 0.0, 0.0, 180.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
@@ -100,13 +100,11 @@ public class Robot extends TimedRobot {
       case auto1:
         // AutoInit 1 code goes here.
         swerve.pushCalibration(true, 90.0); // Updates the robot's position on the field.
-        swerve.resetPathController(0); 
       break;
 
       case auto2:
         // AutoInit 2 code goes here.
         swerve.pushCalibration(true, -90.0); // Updates the robot's position on the field.
-        swerve.resetPathController(3); 
       break;
 
       case auto3:
@@ -150,9 +148,10 @@ public class Robot extends TimedRobot {
         switch (autoStage) {
           case 1:
             // Auto 1, Stage 1 code goes here.
-            swerve.followPath(0); // Brings the robot to a shooting position.
+            swerve.drive(-0.1, 0.0, 0.0, true, 0.0, 0.0); // Brings the robot slightly backwards.
             shooter.spinUp(); // Turns the shooter on.
-            if (swerve.atPathEndpoint(0)) {
+            if (swerve.getXPos() <= 3.5) {
+              swerve.drive(0.0, 0.0, 0.0, false, 0.0, 0.0); // Stops the robot.
               shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
               autoStage = 2; // Advances to the next stage once the robot has gotten to the shooting position.
             }
@@ -237,10 +236,10 @@ public class Robot extends TimedRobot {
       case auto2:
         switch (autoStage) {
           case 1:
-            // Auto 2, Stage 1 code goes here.
-            swerve.followPath(3); // Brings the robot to a shooting position.
+            swerve.drive(-0.1, 0.0, 0.0, true, 0.0, 0.0); // Brings the robot slightly backwards.
             shooter.spinUp(); // Turns the shooter on.
-            if (swerve.atPathEndpoint(3)) {
+            if (swerve.getXPos() <= 3.5) {
+              swerve.drive(0.0, 0.0, 0.0, false, 0.0, 0.0); // Stops the robot.
               shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
               autoStage = 2; // Advances to the next stage once the robot has gotten to the shooting position.
             }
