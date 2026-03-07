@@ -148,7 +148,7 @@ public class Robot extends TimedRobot {
         switch (autoStage) {
           case 1:
             // Auto 1, Stage 1 code goes here.
-            swerve.drive(-0.1, 0.0, 0.0, true, 0.0, 0.0); // Brings the robot slightly backwards.
+            swerve.drive(-0.3, 0.0, 0.0, true, 0.0, 0.0); // Brings the robot slightly backwards.
             shooter.spinUp(); // Turns the shooter on.
             if (swerve.getXPos() <= 3.5) {
               swerve.drive(0.0, 0.0, 0.0, false, 0.0, 0.0); // Stops the robot.
@@ -236,7 +236,7 @@ public class Robot extends TimedRobot {
       case auto2:
         switch (autoStage) {
           case 1:
-            swerve.drive(-0.1, 0.0, 0.0, true, 0.0, 0.0); // Brings the robot slightly backwards.
+            swerve.drive(-0.3, 0.0, 0.0, true, 0.0, 0.0); // Brings the robot slightly backwards.
             shooter.spinUp(); // Turns the shooter on.
             if (swerve.getXPos() <= 3.5) {
               swerve.drive(0.0, 0.0, 0.0, false, 0.0, 0.0); // Stops the robot.
