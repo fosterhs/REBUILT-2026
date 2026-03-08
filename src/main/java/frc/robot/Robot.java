@@ -46,9 +46,25 @@ public class Robot extends TimedRobot {
   private boolean isNearTrench = false;
   private boolean isScoring = false;
   private boolean isShooting = false;
-  private double airTime = 0.5;
   private final Timer shootingTimer = new Timer();
 
+  // Shoot on the Move Variables
+  private double hubX = 182.11 * 0.0254; // The x-position of the hub on the field in meters.
+  private double hubY = 158.84 * 0.0254; // The y-position of the hub on the field in meters.
+  private double robotX;
+  private double robotY;
+  private double robotXVel;
+  private double robotYVel;
+  private double distanceToTarget;
+  private double airTimeApproximation;
+  private double aimX;
+  private double aimY;
+
+  // Teleop Variables
+  private double xVel = 0.0;
+  private double yVel = 0.0;
+  private double angVel = 0.0;
+  
   // Sim Variables
   public static final double dTime = 0.020;  // units: seconds
   private final double startingXPosSim = 3.725;  // m
@@ -140,7 +156,7 @@ public class Robot extends TimedRobot {
     intake.periodic();
     shooter.periodic();
 
-    airTime = calcAirTime();
+    updateTrajectory();
 
     swerve.updateOdometry(); // Keeps track of the position of the robot on the field. Must be called each period.
     swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
@@ -447,7 +463,7 @@ public class Robot extends TimedRobot {
     intake.periodic();
     shooter.periodic();
 
-    airTime = calcAirTime();
+    updateTrajectory();
 
     isNearTrench = (nearTrenchX - trenchTolerance < swerve.getXPos() && swerve.getXPos() < nearTrenchX + trenchTolerance) || (farTrenchX - trenchTolerance < swerve.getXPos() && swerve.getXPos() < farTrenchX + trenchTolerance);
 
@@ -509,9 +525,9 @@ public class Robot extends TimedRobot {
     }
     
     // Applies a deadband to controller inputs. Also limits the acceleration of controller inputs.
-    double xVel = xAccLimiter.calculate(MathUtil.applyDeadband(-driver.getLeftY(), 0.05)*speedScaleFactor)*Drivetrain.maxVelTeleop;
-    double yVel = yAccLimiter.calculate(MathUtil.applyDeadband(-driver.getLeftX(), 0.05)*speedScaleFactor)*Drivetrain.maxVelTeleop;
-    double angVel = angAccLimiter.calculate(MathUtil.applyDeadband(-driver.getRightX(), 0.05)*rotationScaleFactor)*Drivetrain.maxAngVelTeleop;
+    xVel = xAccLimiter.calculate(MathUtil.applyDeadband(-driver.getLeftY(), 0.05)*speedScaleFactor)*Drivetrain.maxVelTeleop;
+    yVel = yAccLimiter.calculate(MathUtil.applyDeadband(-driver.getLeftX(), 0.05)*speedScaleFactor)*Drivetrain.maxVelTeleop;
+    angVel = angAccLimiter.calculate(MathUtil.applyDeadband(-driver.getRightX(), 0.05)*rotationScaleFactor)*Drivetrain.maxAngVelTeleop;
 
     if (driver.getRawButton(4)) { //  button
       swerveLock = true; // Pressing the X-button causes the swerve modules to lock (for defense).
@@ -556,6 +572,9 @@ public class Robot extends TimedRobot {
 
   public void disabledPeriodic() {
     swerve.updateOdometry(); // Keeps track of the position of the robot on the field. Must be called each period.
+
+    updateTrajectory();
+    
     autoSelected = autoChooser.getSelected();
     if (!autoCompleted) {
       switch (autoSelected) {
@@ -608,18 +627,16 @@ public class Robot extends TimedRobot {
   }
 
   // This method calculates the amount of time the fuel will be in the air based on the distance to the hub and the velocity of the robot. It uses an iterative approach to account for the fact that the aim point changes based on the velocity of the robot and the air time, which changes the distance to the hub, which changes the air time, which changes the aim point, etc. After 10 iterations, the change in air time should be negligible.
-  private double calcAirTime() {
-    double hubX = 182.11 * 0.0254; // The x-position of the hub on the field in meters.
-    double hubY = 158.84 * 0.0254; // The y-position of the hub on the field in meters.
-    double robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
-    double robotY = swerve.getYPos(); // The current y-position of the robot on the field in meters.
-    double robotXVel = swerve.getXVel(); // The current x-velocity of the robot on the field in meters per second.
-    double robotYVel = swerve.getYVel(); // The current y-velocity of the robot on the field in meters per second.
+  private void updateTrajectory() {
+    robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
+    robotY = swerve.getYPos(); // The current y-position of the robot on the field in meters.
+    robotXVel = swerve.getXVel(); // The current x-velocity of the robot on the field in meters per second.
+    robotYVel = swerve.getYVel(); // The current y-velocity of the robot on the field in meters per second.
 
-    double distanceToTarget = Math.sqrt(Math.pow(hubX - robotX, 2) + Math.pow(hubY - robotY, 2)); // The distance from the robot to the hub in meters, calculated using the Pythagorean theorem.
-    double airTimeApproximation = interpolateAirTime(distanceToTarget); // The amount of time the fuel will be in the air after being shot, in seconds. Calculated based on distance to the hub using the interpolateAirTime method, which uses a calibration array to return air time values based on distance to the hub.
-    double aimX = hubX - robotXVel*airTimeApproximation; // The x-position the robot should aim at to account for the movement of the fuel while it's in the air. Calculated by taking the position of the hub and subtracting the distance the fuel will travel while it's in the air (velocity multiplied by airtime).
-    double aimY = hubY - robotYVel*airTimeApproximation; // The y-position the robot should aim at to account for the movement of the fuel while it's in the air. Calculated by taking the position of the hub and subtracting the distance the fuel will travel while it's in the air (velocity multiplied by airtime).
+    distanceToTarget = Math.sqrt(Math.pow(hubX - robotX, 2) + Math.pow(hubY - robotY, 2)); // The distance from the robot to the hub in meters, calculated using the Pythagorean theorem.
+    airTimeApproximation = interpolateAirTime(distanceToTarget); // The amount of time the fuel will be in the air after being shot, in seconds. Calculated based on distance to the hub using the interpolateAirTime method, which uses a calibration array to return air time values based on distance to the hub.
+    aimX = hubX - robotXVel*airTimeApproximation; // The x-position the robot should aim at to account for the movement of the fuel while it's in the air. Calculated by taking the position of the hub and subtracting the distance the fuel will travel while it's in the air (velocity multiplied by airtime).
+    aimY = hubY - robotYVel*airTimeApproximation; // The y-position the robot should aim at to account for the movement of the fuel while it's in the air. Calculated by taking the position of the hub and subtracting the distance the fuel will travel while it's in the air (velocity multiplied by airtime).
 
     for (int i = 0; i < 20; i++) { // Iteratively recalculates the airtime based on the new aim point. This is necessary because the aim point changes the distance the fuel will travel, which changes the airtime, which changes the aim point, etc. After 20 iterations, the change in airtime should be negligible.
       distanceToTarget = Math.sqrt(Math.pow(aimX - robotX, 2) + Math.pow(aimY - robotY, 2)); // distance to aim point
@@ -628,20 +645,11 @@ public class Robot extends TimedRobot {
       aimY = hubY - robotYVel*airTimeApproximation; // Recalculates aim point based on new airtime.
     }
 
-    return airTimeApproximation;
+    distanceToTarget = Math.sqrt(Math.pow(aimX - robotX, 2) + Math.pow(aimY - robotY, 2)); // distance to aim point
   }
 
   // Finds the heading the robot needs to aim at.
   public double calcHubHeading() {
-    double hubX = 182.11 * 0.0254; // The x-position of the hub on the field in meters.
-    double hubY = 158.84 * 0.0254; // The y-position of the hub on the field in meters.
-    double robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
-    double robotY = swerve.getYPos(); // The current y-position of the robot on the field in meters.
-    double robotXVel = swerve.getXVel(); // The current x-velocity of the robot on the field in meters per second.
-    double robotYVel = swerve.getYVel(); // The current y-velocity of the robot on the field in meters per second.
-    double aimX = hubX - robotXVel*airTime; // The x-position the robot should aim at to account for the movement of the fuel while it's in the air. Calculated by taking the position of the hub and subtracting the distance the fuel will travel while it's in the air (velocity multiplied by airtime).
-    double aimY = hubY - robotYVel*airTime; // The y-position the robot should aim at to account for the movement of the fuel while it's in the air. Calculated by taking the position of the hub and subtracting the distance the fuel will travel while it's in the air (velocity multiplied by airtime).
-
     if (robotX != aimX) { // If the robot is directly in line with the hub on the x-axis, the heading is either 90 or -90 degrees depending on whether the robot is above or below the hub. Otherwise, the heading is calculated using the arctangent of the change in y over the change in x.
       return Math.toDegrees(Math.atan((aimY - robotY) / (aimX - robotX))); // Returns the heading from the robot to the target in degrees.
     } else {
@@ -656,58 +664,38 @@ public class Robot extends TimedRobot {
   private double[] shooterCalibrationDistances = {2.0, 6.0}; // Distance array (need tested👈)
   private double[] shooterCalibrationValues = {2500.0, 3800.0}; // Distance array (need tested👈)
   public double calcShooterRPM() {
-    double hubX = 182.11 * 0.0254; // The x-position of the hub on the field in meters.
-    double hubY = 158.84 * 0.0254; // The y-position of the hub on the field in meters.
-    double robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
-    double robotY = swerve.getYPos(); // The current y-position of the robot on the field in meters.
-    double robotXVel = swerve.getXVel(); // The current x-velocity of the robot on the field in meters per second.
-    double robotYVel = swerve.getYVel(); // The current y-velocity of the robot on the field in meters per second.
-    double aimX = hubX - robotXVel*airTime; // The x-position the robot should aim at to account for the movement of the fuel while it's in the air. Calculated by taking the position of the hub and subtracting the distance the fuel will travel while it's in the air (velocity multiplied by airtime).
-    double aimY = hubY - robotYVel*airTime; // The y-position the robot should aim at to account for the movement of the fuel while it's in the air. Calculated by taking the position of the hub and subtracting the distance the fuel will travel while it's in the air (velocity multiplied by airtime).
-    double distance = Math.sqrt(Math.pow(aimX - robotX, 2) + Math.pow(aimY - robotY, 2)); // distance to aim point
-
-    if (distance >= shooterCalibrationDistances[shooterCalibrationDistances.length - 1]) {
+    if (distanceToTarget >= shooterCalibrationDistances[shooterCalibrationDistances.length - 1]) {
       return shooterCalibrationValues[shooterCalibrationValues.length - 1]; // Return RPM for largest distance
-    } else if (distance <= shooterCalibrationDistances[0]) {
+    } else if (distanceToTarget <= shooterCalibrationDistances[0]) {
       return shooterCalibrationValues[0]; // Return RPM for smallest distance
     } else {
       int lowerIndex = -1; // Index for distance immediately smaller than current distance
       for (int i = 0; i < shooterCalibrationDistances.length - 1; i++) {
-        if (shooterCalibrationDistances[i + 1] > distance && lowerIndex == -1) {
+        if (shooterCalibrationDistances[i + 1] > distanceToTarget && lowerIndex == -1) {
           lowerIndex = i;
         }
       } 
-      return shooterCalibrationValues[lowerIndex] + ((shooterCalibrationValues[lowerIndex + 1] - shooterCalibrationValues[lowerIndex]) / (shooterCalibrationDistances[lowerIndex + 1] - shooterCalibrationDistances[lowerIndex])) * (distance - shooterCalibrationDistances[lowerIndex]);
+      return shooterCalibrationValues[lowerIndex] + ((shooterCalibrationValues[lowerIndex + 1] - shooterCalibrationValues[lowerIndex]) / (shooterCalibrationDistances[lowerIndex + 1] - shooterCalibrationDistances[lowerIndex])) * (distanceToTarget - shooterCalibrationDistances[lowerIndex]);
     }
   }
 
   private double[] hoodCalibrationDistances = {2.0, 3.0, 4.0, 5.0, 6.0}; // Distance array (need tested👈)
   private double[] hoodCalibrationValues = {0.05, 0.0625, 0.07, 0.065, 0.06}; // Hood array (need tested👈)
   public double calcHoodPosition() {
-    double hubX = 182.11 * 0.0254; // The x-position of the hub on the field in meters.
-    double hubY = 158.84 * 0.0254; // The y-position of the hub on the field in meters.
-    double robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
-    double robotY = swerve.getYPos(); // The current y-position of the robot on the field in meters.
-    double robotXVel = swerve.getXVel(); // The current x-velocity of the robot on the field in meters per second.
-    double robotYVel = swerve.getYVel(); // The current y-velocity of the robot on the field in meters per second.
-    double aimX = hubX - robotXVel*airTime; // The x-position the robot should aim at to account for the movement of the fuel while it's in the air. Calculated by taking the position of the hub and subtracting the distance the fuel will travel while it's in the air (velocity multiplied by airtime).
-    double aimY = hubY - robotYVel*airTime; // The y-position the robot should aim at to account for the movement of the fuel while it's in the air. Calculated by taking the position of the hub and subtracting the distance the fuel will travel while it's in the air (velocity multiplied by airtime).
-    double distance = Math.sqrt(Math.pow(aimX - robotX, 2) + Math.pow(aimY - robotY, 2)); // distance to aim point
-
-    if (distance >= hoodCalibrationDistances[hoodCalibrationDistances.length - 1]) {
+    if (distanceToTarget >= hoodCalibrationDistances[hoodCalibrationDistances.length - 1]) {
       return hoodCalibrationValues[hoodCalibrationValues.length - 1]; // Return RPM for largest distance
     } 
-    else if (distance <= hoodCalibrationDistances[0]) {
+    else if (distanceToTarget <= hoodCalibrationDistances[0]) {
       return hoodCalibrationValues[0]; // Return RPM for smallest distance
     } 
     else {
       int lowerIndex = -1; // Index for distance immediately smaller than current distance
       for (int i = 0; i < hoodCalibrationDistances.length - 1; i++) {
-        if (hoodCalibrationDistances[i + 1] > distance && lowerIndex == -1) {
+        if (hoodCalibrationDistances[i + 1] > distanceToTarget && lowerIndex == -1) {
           lowerIndex = i;
         }
       } 
-      return hoodCalibrationValues[lowerIndex] + ((hoodCalibrationValues[lowerIndex + 1] - hoodCalibrationValues[lowerIndex]) / (hoodCalibrationDistances[lowerIndex + 1] - hoodCalibrationDistances[lowerIndex])) * (distance - hoodCalibrationDistances[lowerIndex]);
+      return hoodCalibrationValues[lowerIndex] + ((hoodCalibrationValues[lowerIndex + 1] - hoodCalibrationValues[lowerIndex]) / (hoodCalibrationDistances[lowerIndex + 1] - hoodCalibrationDistances[lowerIndex])) * (distanceToTarget - hoodCalibrationDistances[lowerIndex]);
     }
   }
 
@@ -822,7 +810,7 @@ public class Robot extends TimedRobot {
     System.out.println("intake isReady: " + intake.isReady());
     intake.updateDash();
 
-    System.out.println("calcAirTime: " + calcAirTime());
+    updateTrajectory();
     System.out.println("calcShooterRPM: " + calcShooterRPM());
     System.out.println("calcHoodPosition: " + calcHoodPosition());
     System.out.println("getHubHeading: " + calcHubHeading());
