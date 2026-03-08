@@ -17,8 +17,8 @@ public class Indexer {
   private final TalonFX shooterIndexMotor = new TalonFX(10, canivore);
   private final VoltageOut hopperIndexMotorVoltageRequest = new VoltageOut(0.0).withEnableFOC(true);
   private final VoltageOut shooterIndexMotorVoltageRequest = new VoltageOut(0.0).withEnableFOC(true);
-  private Mode currMode = Mode.IDLE;
   private final Timer indexTimer = new Timer();
+  private Mode currMode = Mode.IDLE;
   private double indexVoltage = 12.0;
 
   // Simulation
@@ -63,10 +63,6 @@ public class Indexer {
     }
   }
 
-  public void setIndexVoltage(double voltage) {
-    indexVoltage = voltage;
-  }
-
   // Marks the Indexer as running forward (not shooting) and resets the jam timer.
   public void start() {
     currMode = Mode.INDEX;
@@ -75,6 +71,10 @@ public class Indexer {
   //Marks the indexer as idle, stops shooting, and reset the jam timer.
   public void stop() {
     currMode = Mode.IDLE;
+  }
+
+  public void setIndexVoltage(double voltage) {
+    indexVoltage = voltage;
   }
 
   // Returns the current mode that the indexer is in.

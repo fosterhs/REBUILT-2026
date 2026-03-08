@@ -63,12 +63,13 @@ public class Intake {
   private final Timer rightHomingTimer = new Timer();
   private final Timer armOscillationTimer = new Timer();
   private final double armPosTol = 0.5;
-  private double armIntakePosition = 11.3; // Can adjust
   private final double armStowPosition = 0.3; // Can adjust
   public enum Mode {HOME, LEFT, RIGHT, STOW}
   private Mode currMode = Mode.HOME;
+  private double armIntakePosition = 11.3; // Can adjust
   private boolean leftArmIsHomed = false;
   private boolean rightArmIsHomed = false;
+  private boolean isHomed = false;
   private double desiredLeftArmPosition = 0.0;
   private double desiredRightArmPosition = 0.0;
   private boolean leftArmIsStowed = true;
@@ -97,21 +98,13 @@ public class Intake {
     leftHomingTimer.restart();
     rightHomingTimer.restart();
     armOscillationTimer.restart();
+    if (isHomed) stow();
   }
 
   public void periodic() {
     armIntakePosition = armIntakePosition + 0.6*Math.sin(armOscillationTimer.get()*Math.PI*2.0);
-
-    if (getLeftArmPosition() < 2.0) {
-      leftRollerVoltage = 2.0;
-    } else {
-      leftRollerVoltage = 6.0;
-    }
-    if (getRightArmPosition() < 2.0) {
-      rightRollerVoltage = 2.0;
-    } else {
-      rightRollerVoltage = 6.0;
-    }
+    leftRollerVoltage = getLeftArmPosition() < 2.0 ? 2.0 : 6.0;
+    rightRollerVoltage = getRightArmPosition() < 2.0 ? 2.0 : 6.0;
 
     switch (currMode) {
       case HOME:
@@ -137,6 +130,7 @@ public class Intake {
         }
 
         if (leftArmIsHomed && rightArmIsHomed) {
+          isHomed = true;
           currMode = Mode.STOW;
           desiredLeftArmPosition = armStowPosition;
           desiredRightArmPosition = armStowPosition;
@@ -184,6 +178,7 @@ public class Intake {
         rightArmMotor.setControl(rightArmMotorPositionRequest.withPosition(armStowPosition));
       break;
     }
+
     if (leftArmIsStowed) {
       leftRollerMotor.setControl(leftRollerMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
       leftCenteringMotor.setControl(leftCenteringMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
@@ -202,6 +197,7 @@ public class Intake {
   
   public void home() {
     currMode = Mode.HOME;
+    isHomed = false;
     desiredLeftArmPosition = 0.0;
     desiredRightArmPosition = 0.0;
     leftArmIsStowed = false;
@@ -267,7 +263,7 @@ public class Intake {
   }
 
   public boolean leftArmInPosition() {
-    return Math.abs(getLeftArmPosition() - desiredLeftArmPosition) < armPosTol;
+    return Math.abs(getLeftArmPosition() - getLeftArmDesiredPosition()) < armPosTol;
   }
 
   public double getRightArmPosition() {
@@ -283,7 +279,7 @@ public class Intake {
   }
   
   public boolean rightArmInPosition() {
-    return Math.abs(getRightArmPosition() - desiredRightArmPosition) < armPosTol;
+    return Math.abs(getRightArmPosition() - getRightArmDesiredPosition()) < armPosTol;
   }
 
   public boolean isReady() {

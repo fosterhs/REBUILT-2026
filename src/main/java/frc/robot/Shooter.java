@@ -40,12 +40,13 @@ public class Shooter {
   private final double hoodTol = 0.010; // Can adjust
   public final double hoodMinPosition = 0.020; // Can adjust
   public final double hoodMaxPosition = 0.115; // Can adjust
+  private final Timer shooterAtSpeedTimer = new Timer(); // Timer to track how long the shooter has been at speed. Used to prevent the shooter from being considered ready if it is only briefly at speed.
+  private final Timer shooterNotAtSpeedTimer = new Timer(); // Timer to track how long the shooter has not been at speed. Used to prevent the shooter from being considered ready if it is only briefly at speed.
+  private final double shooterDelay = 0.5; // Seconds that the shooter must be at speed before it is considered ready. Can adjust.
+  private boolean flywheelIsReady = false; // Whether the shooter is at speed long enough to be considered ready. Updated periodically based on the shooterAtSpeedTimer and shooterNotAtSpeedTimer.
+  private boolean flywheelIsAtSpeed = false; // Whether the shooter is currently at speed. Updated periodically in periodic().
   private double shootingRPM = 3000.0; // Can adjust
   private double desiredHoodPosition = hoodMinPosition;
-  private Timer shooterAtSpeedTimer = new Timer(); // Timer to track how long the shooter has been at speed. Used to prevent the shooter from being considered ready if it is only briefly at speed.
-  private Timer shooterNotAtSpeedTimer = new Timer(); // Timer to track how long the shooter has not been at speed. Used to prevent the shooter from being considered ready if it is only briefly at speed.
-  private double shooterDelay = 0.5; // Seconds that the shooter must be at speed before it is considered ready. Can adjust.
-  private boolean shooterIsAtSpeed = false; // Whether the shooter is at speed long enough to be considered ready. Updated periodically based on the shooterAtSpeedTimer and shooterNotAtSpeedTimer.
 
   // Simulation
   private final TalonFXSimState hoodMotorSim = hoodMotor.getSimState();
@@ -72,15 +73,18 @@ public class Shooter {
   public void init() {
     shooterAtSpeedTimer.restart();
     shooterNotAtSpeedTimer.restart();
+    spinDown();
+    lowerHood();
+    flywheelIsReady = false;
   }
   
   public void periodic() {
-    boolean shooterIsCurrentlyAtSpeed = Math.abs(shootingRPM - getLeftShooterRPM()) < rpmTol && Math.abs(shootingRPM - getRightShooterRPM()) < rpmTol;
-    if (!shooterIsCurrentlyAtSpeed) shooterAtSpeedTimer.restart();
-    if (shooterIsCurrentlyAtSpeed) shooterNotAtSpeedTimer.restart();
+    flywheelIsAtSpeed = Math.abs(shootingRPM - getLeftFlywheelMotorRPM()) < rpmTol && Math.abs(shootingRPM - getRightFlywheelMotorRPM()) < rpmTol;
+    if (!flywheelIsAtSpeed) shooterAtSpeedTimer.restart();
+    if (flywheelIsAtSpeed) shooterNotAtSpeedTimer.restart();
 
-    if (shooterAtSpeedTimer.get() > shooterDelay && !shooterIsAtSpeed) shooterIsAtSpeed = true;
-    if (shooterNotAtSpeedTimer.get() > shooterDelay && shooterIsAtSpeed) shooterIsAtSpeed = false;
+    if (shooterAtSpeedTimer.get() > shooterDelay && !flywheelIsReady) flywheelIsReady = true;
+    if (shooterNotAtSpeedTimer.get() > shooterDelay && flywheelIsReady) flywheelIsReady = false;
   }
   
   // Turns on motor. Sets the speed of the motor in rotations per minute.
@@ -97,9 +101,9 @@ public class Shooter {
     shootMotorLeft.setControl(shooterMotorLeftFollowerRequest);
   }
 
-  public void setShootingRPM(double rpm) {
-    if (rpm > 5800.0) {
-      shootingRPM = 5800.0;
+  public void setFlywheelRPM(double rpm) {
+    if (rpm > 5000.0) {
+      shootingRPM = 5000.0;
     } else if (rpm < 600.0) {
       shootingRPM = 600.0;
     } else {
@@ -137,22 +141,22 @@ public class Shooter {
   }
 
   // Returns true or false based on whether the shooter motor is near the desired RPM.
-  public boolean shooterIsAtSpeed() {
-    return shooterIsAtSpeed;
+  public boolean flywheelIsReady() {
+    return flywheelIsReady;
   }
 
   // Returns the motor velocity in RPM (Rotations Per Minute)
-  public double getLeftShooterRPM() {
+  public double getLeftFlywheelMotorRPM() {
     return shooterVelocityLeft.refresh().getValueAsDouble()*60.0;
   }
 
   // Returns the motor velocity in RPM (Rotations Per Minute)
-  public double getRightShooterRPM() {
+  public double getRightFlywheelMotorRPM() {
     return shooterVelocityRight.refresh().getValueAsDouble()*60.0;
   }
 
   public boolean isReady() {
-    return shooterIsAtSpeed() && hoodIsInPosition();
+    return flywheelIsReady() && hoodIsInPosition();
   }
 
   // Publish Shooter information (Motor state, Velocity) to SmartDashboard.
