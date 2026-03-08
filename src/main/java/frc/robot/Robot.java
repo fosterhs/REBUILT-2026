@@ -160,7 +160,7 @@ public class Robot extends TimedRobot {
 
     isScoring = true;
     updateTrajectory();
-    shooter.setFlywheelRPM(calcShooterRPM());
+    shooter.setFlywheelRPM(calcFlywheelRPM());
     indexer.setIndexVoltage(calcIndexerVoltage());
 
     climber.perioidic();
@@ -232,6 +232,7 @@ public class Robot extends TimedRobot {
             swerve.followPath(2); // Brings the robot back to a shooting position from the neutral zone.
             shooter.spinUp(); // Turns the shooter on.
             if (swerve.atPathEndpoint(2)) {
+              swerve.resetDriveController(calcShootingHeading());
               shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
               autoStage = 7; // Advances to the next stage once the robot has reached the shooting position.
             }
@@ -466,7 +467,7 @@ public class Robot extends TimedRobot {
     isScoring = swerve.getXPos() < nearTrenchX - trenchTolerance;
     isNearTrench = (nearTrenchX - trenchTolerance < swerve.getXPos() && swerve.getXPos() < nearTrenchX + trenchTolerance) || (farTrenchX - trenchTolerance < swerve.getXPos() && swerve.getXPos() < farTrenchX + trenchTolerance);
     updateTrajectory();
-    shooter.setFlywheelRPM(calcShooterRPM());
+    shooter.setFlywheelRPM(calcFlywheelRPM());
     indexer.setIndexVoltage(calcIndexerVoltage());
 
     climber.perioidic(); 
@@ -641,7 +642,7 @@ public class Robot extends TimedRobot {
   private double[] scoringFlywheelCalibrationValues = {2500.0, 3800.0};
   private double[] passingFlywheelCalibrationDistances = {2.0, 6.0};
   private double[] passingFlywheelCalibrationValues = {2500.0, 3800.0};
-  private double calcShooterRPM() {
+  private double calcFlywheelRPM() {
     if (isScoring) {
       return interpolate(distanceToTarget, scoringFlywheelCalibrationDistances, scoringFlywheelCalibrationValues);
     } else {
@@ -820,7 +821,7 @@ public class Robot extends TimedRobot {
     intake.updateDash();
 
     updateTrajectory();
-    System.out.println("calcShooterRPM: " + calcShooterRPM());
+    System.out.println("calcShooterRPM: " + calcFlywheelRPM());
     System.out.println("calcHoodPosition: " + calcHoodPosition());
     System.out.println("getHubHeading: " + calcShootingHeading());
     updateDash();
