@@ -135,6 +135,9 @@ class SwerveModule {
     motorConfigs.Slot0.kV = 0.12; // The amount of voltage required to create 1 motor rotation per second.
     motorConfigs.Slot0.kS = 0.16; // The amount of voltage required to barely overcome static friction in the swerve wheel.
 
+    motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 120.0;
+
     motor.getConfigurator().apply(motorConfigs, 0.03);
   }
 
@@ -158,6 +161,9 @@ class SwerveModule {
     motorConfigs.Feedback.SensorToMechanismRatio = 1.0;
     motorConfigs.Feedback.RotorToSensorRatio = turnGearRatio;
     motorConfigs.ClosedLoopGeneral.ContinuousWrap = true;
+
+    motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 40.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03);
   }

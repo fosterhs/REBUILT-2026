@@ -46,6 +46,7 @@ public class Robot extends TimedRobot {
   private boolean isNearTrench = false;
   private boolean isScoring = false;
   private boolean isShooting = false;
+  private double airTime = 0.5;
   private final Timer shootingTimer = new Timer();
 
   // Sim Variables
@@ -92,6 +93,7 @@ public class Robot extends TimedRobot {
     climber.init(); 
     indexer.init();
     intake.init();
+    shooter.init();
 
     autoCompleted = true;
     autoStage = 1;
@@ -136,6 +138,9 @@ public class Robot extends TimedRobot {
     climber.perioidic();
     indexer.periodic();
     intake.periodic();
+    shooter.periodic();
+
+    airTime = calcAirTime();
 
     swerve.updateOdometry(); // Keeps track of the position of the robot on the field. Must be called each period.
     swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
@@ -159,7 +164,7 @@ public class Robot extends TimedRobot {
 
           case 2:
             // Auto 1, Stage 2 code goes here.
-            swerve.aimDrive(0.0, 0.0, getHubHeading(), true); // Rotates the robot to a rotation where it'll have the least misses.
+            swerve.aimDrive(0.0, 0.0, calcHubHeading(), true); // Rotates the robot to a rotation where it'll have the least misses.
             if (shooter.isReady() && swerve.atDriveGoal()) {
               shootingTimer.restart(); // Restarts the shooting timer.
               autoStage = 3; // Advances to the next stage once the robot has started shooting.
@@ -213,7 +218,7 @@ public class Robot extends TimedRobot {
 
           case 7:
             // Auto 1, Stage 7 code goes here.
-            swerve.aimDrive(0.0, 0.0, getHubHeading(), true); // Rotates the robot to a rotation where it'll have the least misses.
+            swerve.aimDrive(0.0, 0.0, calcHubHeading(), true); // Rotates the robot to a rotation where it'll have the least misses.
             if (shooter.isReady() && swerve.atDriveGoal()) {
               shootingTimer.restart(); // Restarts the shooting timer.
               autoStage = 8; // Advances to the next stage once the robot has started shooting.
@@ -247,7 +252,7 @@ public class Robot extends TimedRobot {
 
           case 2:
             // Auto 2, Stage 2 code goes here.
-            swerve.aimDrive(0.0, 0.0, getHubHeading(), true); // Rotates the robot to a rotation where it'll have the least misses.
+            swerve.aimDrive(0.0, 0.0, calcHubHeading(), true); // Rotates the robot to a rotation where it'll have the least misses.
             if (shooter.isReady() && swerve.atDriveGoal()) {
               shootingTimer.restart(); // Restarts the shooting timer.
               autoStage = 3; // Advances to the next stage once the robot has started shooting.
@@ -301,7 +306,7 @@ public class Robot extends TimedRobot {
 
           case 7:
             // Auto 2, Stage 7 code goes here.
-            swerve.aimDrive(0.0, 0.0, getHubHeading(), true); // Rotates the robot to a rotation where it'll have the least misses.
+            swerve.aimDrive(0.0, 0.0, calcHubHeading(), true); // Rotates the robot to a rotation where it'll have the least misses.
             if (shooter.isReady() && swerve.atDriveGoal()) {
               shootingTimer.restart(); // Restarts the shooting timer.
               autoStage = 8; // Advances to the next stage once the robot has started shooting.
@@ -335,7 +340,7 @@ public class Robot extends TimedRobot {
 
           case 2:
             // Auto 3, Stage 2 code goes here.
-            swerve.aimDrive(0.0, 0.0, getHubHeading(), true); // Rotates the robot to a rotation where it'll have the least misses.
+            swerve.aimDrive(0.0, 0.0, calcHubHeading(), true); // Rotates the robot to a rotation where it'll have the least misses.
             if (shooter.isReady() && swerve.atDriveGoal()) {
               shootingTimer.restart(); // Restarts the shooting timer.
               autoStage = 3; // Advances to the next stage once the robot has started shooting.
@@ -389,7 +394,7 @@ public class Robot extends TimedRobot {
 
           case 7:
             // Auto 3, Stage 7 code goes here.
-            swerve.aimDrive(0.0, 0.0, getHubHeading(), true); // Rotates the robot to a rotation where it'll have the least misses.
+            swerve.aimDrive(0.0, 0.0, calcHubHeading(), true); // Rotates the robot to a rotation where it'll have the least misses.
             if (shooter.isReady() && swerve.atDriveGoal()) {
               shootingTimer.restart(); // Restarts the shooting timer.
               autoStage = 8; // Advances to the next stage once the robot has started shooting.
@@ -426,6 +431,7 @@ public class Robot extends TimedRobot {
     climber.init(); 
     indexer.init();
     intake.init();
+    shooter.init();
     isShooting = false;
   }
 
@@ -439,6 +445,9 @@ public class Robot extends TimedRobot {
     climber.perioidic(); 
     indexer.periodic();
     intake.periodic();
+    shooter.periodic();
+
+    airTime = calcAirTime();
 
     isNearTrench = (nearTrenchX - trenchTolerance < swerve.getXPos() && swerve.getXPos() < nearTrenchX + trenchTolerance) || (farTrenchX - trenchTolerance < swerve.getXPos() && swerve.getXPos() < farTrenchX + trenchTolerance);
 
@@ -459,7 +468,7 @@ public class Robot extends TimedRobot {
       isScoring = swerve.getXPos() < nearTrenchX - trenchTolerance;
       shooter.spinUp(); 
       if (isScoring) {
-        swerve.resetDriveController(getHubHeading());
+        swerve.resetDriveController(calcHubHeading());
         shooter.setHoodPosition(calcHoodPosition());
       } else {
         shooter.setHoodPosition(shooter.hoodMaxPosition);     
@@ -474,6 +483,8 @@ public class Robot extends TimedRobot {
       indexer.stop();
     } 
 
+    if (driver.getPOV() == 0) intake.home();
+
     if (driver.getLeftBumperButtonPressed()) {
       if (intake.getMode() == Intake.Mode.LEFT) {
         intake.stow();
@@ -487,10 +498,7 @@ public class Robot extends TimedRobot {
         intake.rightIntake();
       }
     }
-    
-    if (driver.getPOV() == 180) {
-      intake.home();
-    }
+
     if (driver.getRawButtonPressed(2)) boostMode = true; // A button sets boost mode. (100% speed up from default of 60%).
     if (driver.getRawButtonPressed(3)) boostMode = false; // B Button sets default mode (60% of full speed).
 
@@ -515,13 +523,13 @@ public class Robot extends TimedRobot {
       swerve.xLock(); // Locks the swerve modules (for defense).
     } else if (isShooting) {
       if (isScoring) {
-        swerve.aimDrive(xVel, yVel, getHubHeading(), true);
+        swerve.aimDrive(xVel, yVel, calcHubHeading(), true);
         shooter.setHoodPosition(calcHoodPosition());
       } else {
         swerve.aimDrive(xVel, yVel, 180.0, true);
         shooter.setHoodPosition(shooter.hoodMaxPosition);
       }
-      if (shooter.hoodIsInPosition() && shooter.shooterIsAtSpeed() && swerve.atDriveGoal()) {
+      if (shooter.isReady() && swerve.atDriveGoal()) {
         indexer.start();
       } else {
         indexer.stop();
@@ -579,18 +587,65 @@ public class Robot extends TimedRobot {
 
   }
 
-  public double getHubHeading() {
+  private double[] airTimeCalibrationDistances = {2.0, 3.0, 4.0, 5.0, 6.0}; // Represents the distance to the hub in meters for each air time calibration value.
+  private double[] airTimeCalibrationValues = {0.6, 0.7, 0.8, 0.9, 1.0}; // Represents the amount of time the fuel will be in the air in seconds for each distance to the hub in the airTimeCalibrationDistances array. The values in this array should correspond to the distances in the airTimeCalibrationDistances array (i.e. the first value in this array is the air time for the first distance in the airTimeCalibrationDistances array, etc.). These values are used to calculate the aim point of the robot based on its velocity and distance to the hub.
+  
+  // This method takes in a distance to the hub and returns an estimated air time based on the airTimeCalibrationDistances and airTimeCalibrationValues arrays. If the distance is greater than the largest distance in the airTimeCalibrationDistances array, it will return the corresponding air time for the largest distance. If the distance is smaller than the smallest distance in the airTimeCalibrationDistances array, it will return the corresponding air time for the smallest distance. If the distance is between two distances in the airTimeCalibrationDistances array, it will return an interpolated air time based on the two corresponding air times in the airTimeCalibrationValues array.
+  private double interpolateAirTime(double distance) {
+    if (distance >= airTimeCalibrationDistances[airTimeCalibrationDistances.length - 1]) {
+      return airTimeCalibrationValues[airTimeCalibrationValues.length - 1]; // Return air time for largest distance
+    } else if (distance <= airTimeCalibrationDistances[0]) {
+      return airTimeCalibrationValues[0]; // Return air time for smallest distance
+    } else {
+      int lowerIndex = -1; // Index for distance immediately smaller than current distance
+      for (int i = 0; i < airTimeCalibrationDistances.length - 1; i++) {
+        if (airTimeCalibrationDistances[i + 1] > distance && lowerIndex == -1) {
+          lowerIndex = i;
+        }
+      } 
+      return airTimeCalibrationValues[lowerIndex] + ((airTimeCalibrationValues[lowerIndex + 1] - airTimeCalibrationValues[lowerIndex]) / (airTimeCalibrationDistances[lowerIndex + 1] - airTimeCalibrationDistances[lowerIndex])) * (distance - airTimeCalibrationDistances[lowerIndex]);
+    }
+  }
+
+  // This method calculates the amount of time the fuel will be in the air based on the distance to the hub and the velocity of the robot. It uses an iterative approach to account for the fact that the aim point changes based on the velocity of the robot and the air time, which changes the distance to the hub, which changes the air time, which changes the aim point, etc. After 10 iterations, the change in air time should be negligible.
+  private double calcAirTime() {
     double hubX = 182.11 * 0.0254; // The x-position of the hub on the field in meters.
     double hubY = 158.84 * 0.0254; // The y-position of the hub on the field in meters.
     double robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
     double robotY = swerve.getYPos(); // The current y-position of the robot on the field in meters.
+    double robotXVel = swerve.getXVel(); // The current x-velocity of the robot on the field in meters per second.
+    double robotYVel = swerve.getYVel(); // The current y-velocity of the robot on the field in meters per second.
 
-    if (robotX > hubX) {
-      return Math.toDegrees(Math.atan((hubY - robotY) / (hubX - robotX))); // Returns the heading from the robot to the hub in degrees.
-    } else if (robotX < hubX) {
-      return Math.toDegrees(Math.atan((hubY - robotY) / (hubX - robotX))); // Returns the heading from the robot to the hub in degrees.
+    double distanceToTarget = Math.sqrt(Math.pow(hubX - robotX, 2) + Math.pow(hubY - robotY, 2)); // The distance from the robot to the hub in meters, calculated using the Pythagorean theorem.
+    double airTimeApproximation = interpolateAirTime(distanceToTarget); // The amount of time the fuel will be in the air after being shot, in seconds. Calculated based on distance to the hub using the interpolateAirTime method, which uses a calibration array to return air time values based on distance to the hub.
+    double aimX = hubX - robotXVel*airTimeApproximation; // The x-position the robot should aim at to account for the movement of the fuel while it's in the air. Calculated by taking the position of the hub and subtracting the distance the fuel will travel while it's in the air (velocity multiplied by airtime).
+    double aimY = hubY - robotYVel*airTimeApproximation; // The y-position the robot should aim at to account for the movement of the fuel while it's in the air. Calculated by taking the position of the hub and subtracting the distance the fuel will travel while it's in the air (velocity multiplied by airtime).
+
+    for (int i = 0; i < 20; i++) { // Iteratively recalculates the airtime based on the new aim point. This is necessary because the aim point changes the distance the fuel will travel, which changes the airtime, which changes the aim point, etc. After 20 iterations, the change in airtime should be negligible.
+      distanceToTarget = Math.sqrt(Math.pow(aimX - robotX, 2) + Math.pow(aimY - robotY, 2)); // distance to aim point
+      airTimeApproximation = interpolateAirTime(distanceToTarget); // Recalculates airtime based on new distance to aim point.
+      aimX = hubX - robotXVel*airTimeApproximation; // Recalculates aim point based on new airtime.
+      aimY = hubY - robotYVel*airTimeApproximation; // Recalculates aim point based on new airtime.
+    }
+
+    return airTimeApproximation;
+  }
+
+  // Finds the heading the robot needs to aim at.
+  public double calcHubHeading() {
+    double hubX = 182.11 * 0.0254; // The x-position of the hub on the field in meters.
+    double hubY = 158.84 * 0.0254; // The y-position of the hub on the field in meters.
+    double robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
+    double robotY = swerve.getYPos(); // The current y-position of the robot on the field in meters.
+    double robotXVel = swerve.getXVel(); // The current x-velocity of the robot on the field in meters per second.
+    double robotYVel = swerve.getYVel(); // The current y-velocity of the robot on the field in meters per second.
+    double aimX = hubX - robotXVel*airTime; // The x-position the robot should aim at to account for the movement of the fuel while it's in the air. Calculated by taking the position of the hub and subtracting the distance the fuel will travel while it's in the air (velocity multiplied by airtime).
+    double aimY = hubY - robotYVel*airTime; // The y-position the robot should aim at to account for the movement of the fuel while it's in the air. Calculated by taking the position of the hub and subtracting the distance the fuel will travel while it's in the air (velocity multiplied by airtime).
+
+    if (robotX != aimX) { // If the robot is directly in line with the hub on the x-axis, the heading is either 90 or -90 degrees depending on whether the robot is above or below the hub. Otherwise, the heading is calculated using the arctangent of the change in y over the change in x.
+      return Math.toDegrees(Math.atan((aimY - robotY) / (aimX - robotX))); // Returns the heading from the robot to the target in degrees.
     } else {
-      if (robotY > hubY) {
+      if (robotY > aimY) {
         return 90.0;
       } else {
         return -90.0;
@@ -598,70 +653,68 @@ public class Robot extends TimedRobot {
     }
   }
 
-  private double[] distanceRPMArray = {2.0, 6.0}; // Distance array (need tested👈)
-  private double[] RPMArray = {2500.0, 3800.0}; // Distance array (need tested👈)
+  private double[] shooterCalibrationDistances = {2.0, 6.0}; // Distance array (need tested👈)
+  private double[] shooterCalibrationValues = {2500.0, 3800.0}; // Distance array (need tested👈)
   public double calcShooterRPM() {
     double hubX = 182.11 * 0.0254; // The x-position of the hub on the field in meters.
     double hubY = 158.84 * 0.0254; // The y-position of the hub on the field in meters.
     double robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
     double robotY = swerve.getYPos(); // The current y-position of the robot on the field in meters.
-    double distance = Math.sqrt(Math.pow(hubX - robotX, 2) + Math.pow(hubY - robotY, 2)); // distance to hub
+    double robotXVel = swerve.getXVel(); // The current x-velocity of the robot on the field in meters per second.
+    double robotYVel = swerve.getYVel(); // The current y-velocity of the robot on the field in meters per second.
+    double aimX = hubX - robotXVel*airTime; // The x-position the robot should aim at to account for the movement of the fuel while it's in the air. Calculated by taking the position of the hub and subtracting the distance the fuel will travel while it's in the air (velocity multiplied by airtime).
+    double aimY = hubY - robotYVel*airTime; // The y-position the robot should aim at to account for the movement of the fuel while it's in the air. Calculated by taking the position of the hub and subtracting the distance the fuel will travel while it's in the air (velocity multiplied by airtime).
+    double distance = Math.sqrt(Math.pow(aimX - robotX, 2) + Math.pow(aimY - robotY, 2)); // distance to aim point
 
-    if (distance >= distanceRPMArray[distanceRPMArray.length - 1]) {
-      return RPMArray[RPMArray.length - 1]; // Return RPM for largest distance
-    } else if (distance <= distanceRPMArray[0]) {
-      return RPMArray[0]; // Return RPM for smallest distance
+    if (distance >= shooterCalibrationDistances[shooterCalibrationDistances.length - 1]) {
+      return shooterCalibrationValues[shooterCalibrationValues.length - 1]; // Return RPM for largest distance
+    } else if (distance <= shooterCalibrationDistances[0]) {
+      return shooterCalibrationValues[0]; // Return RPM for smallest distance
     } else {
       int lowerIndex = -1; // Index for distance immediately smaller than current distance
-      for (int i = 0; i < distanceRPMArray.length - 1; i++) {
-        if (distanceRPMArray[i + 1] > distance && lowerIndex == -1) {
+      for (int i = 0; i < shooterCalibrationDistances.length - 1; i++) {
+        if (shooterCalibrationDistances[i + 1] > distance && lowerIndex == -1) {
           lowerIndex = i;
         }
       } 
-      return RPMArray[lowerIndex] + ((RPMArray[lowerIndex + 1] - RPMArray[lowerIndex]) / (distanceRPMArray[lowerIndex + 1] - distanceRPMArray[lowerIndex])) * (distance - distanceRPMArray[lowerIndex]);
+      return shooterCalibrationValues[lowerIndex] + ((shooterCalibrationValues[lowerIndex + 1] - shooterCalibrationValues[lowerIndex]) / (shooterCalibrationDistances[lowerIndex + 1] - shooterCalibrationDistances[lowerIndex])) * (distance - shooterCalibrationDistances[lowerIndex]);
     }
   }
 
-  double test = 0.065;
-  private double[] distanceArray = {2.0 , 3.0, 4.0, 5.0, 6.0,}; // Distance array (need tested👈)
-  private double[] hoodArray = {0.05, 0.0625, 0.07, 0.065, 0.06}; // Hood array (need tested👈)
+  private double[] hoodCalibrationDistances = {2.0, 3.0, 4.0, 5.0, 6.0}; // Distance array (need tested👈)
+  private double[] hoodCalibrationValues = {0.05, 0.0625, 0.07, 0.065, 0.06}; // Hood array (need tested👈)
   public double calcHoodPosition() {
     double hubX = 182.11 * 0.0254; // The x-position of the hub on the field in meters.
     double hubY = 158.84 * 0.0254; // The y-position of the hub on the field in meters.
     double robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
-    double robotY = swerve.getYPos(); // The current y-position of the robot
-    double distance = Math.sqrt(Math.pow(hubX - robotX, 2) + Math.pow(hubY - robotY, 2)); // distance to hub
+    double robotY = swerve.getYPos(); // The current y-position of the robot on the field in meters.
+    double robotXVel = swerve.getXVel(); // The current x-velocity of the robot on the field in meters per second.
+    double robotYVel = swerve.getYVel(); // The current y-velocity of the robot on the field in meters per second.
+    double aimX = hubX - robotXVel*airTime; // The x-position the robot should aim at to account for the movement of the fuel while it's in the air. Calculated by taking the position of the hub and subtracting the distance the fuel will travel while it's in the air (velocity multiplied by airtime).
+    double aimY = hubY - robotYVel*airTime; // The y-position the robot should aim at to account for the movement of the fuel while it's in the air. Calculated by taking the position of the hub and subtracting the distance the fuel will travel while it's in the air (velocity multiplied by airtime).
+    double distance = Math.sqrt(Math.pow(aimX - robotX, 2) + Math.pow(aimY - robotY, 2)); // distance to aim point
 
-    if (distance >= distanceArray[distanceArray.length - 1]) {
-      return hoodArray[hoodArray.length - 1]; // Return RPM for largest distance
+    if (distance >= hoodCalibrationDistances[hoodCalibrationDistances.length - 1]) {
+      return hoodCalibrationValues[hoodCalibrationValues.length - 1]; // Return RPM for largest distance
     } 
-    else if (distance <= distanceArray[0]) {
-      return hoodArray[0]; // Return RPM for smallest distance
+    else if (distance <= hoodCalibrationDistances[0]) {
+      return hoodCalibrationValues[0]; // Return RPM for smallest distance
     } 
     else {
       int lowerIndex = -1; // Index for distance immediately smaller than current distance
-      for (int i = 0; i < distanceArray.length - 1; i++) {
-        if (distanceArray[i + 1] > distance && lowerIndex == -1) {
+      for (int i = 0; i < hoodCalibrationDistances.length - 1; i++) {
+        if (hoodCalibrationDistances[i + 1] > distance && lowerIndex == -1) {
           lowerIndex = i;
         }
       } 
-      return hoodArray[lowerIndex] + ((hoodArray[lowerIndex + 1] - hoodArray[lowerIndex]) / (distanceArray[lowerIndex + 1] - distanceArray[lowerIndex])) * (distance - distanceArray[lowerIndex]);
+      return hoodCalibrationValues[lowerIndex] + ((hoodCalibrationValues[lowerIndex + 1] - hoodCalibrationValues[lowerIndex]) / (hoodCalibrationDistances[lowerIndex + 1] - hoodCalibrationDistances[lowerIndex])) * (distance - hoodCalibrationDistances[lowerIndex]);
     }
   }
 
   // Publishes information to the dashboard.
   public void updateDash() {
-    //SmartDashboard.putBoolean("Boost Mode", boostMode);
+    SmartDashboard.putBoolean("Boost Mode", boostMode);
     //SmartDashboard.putNumber("Speed Scale Factor", speedScaleFactor);
-    double hubX = 182.11 * 0.0254; // The x-position of the hub on the field in meters.
-    double hubY = 158.84 * 0.0254; // The y-position of the hub on the field in meters.
-    double robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
-    double robotY = swerve.getYPos(); // The current y-position of the robot
-    double distance = Math.sqrt(Math.pow(hubX - robotX, 2) + Math.pow(hubY - robotY, 2)); // distance to hub
-    SmartDashboard.putNumber("Distance to Hub", distance);
-    SmartDashboard.putNumber("cal Shooter RPM", calcShooterRPM());
-
-
     if (Robot.isSimulation()) {
       SmartDashboard.putNumber("sim/Auto Stage", autoStage);
       SmartDashboard.putBoolean("sim/At Drive Goal", swerve.atDriveGoal());
@@ -728,6 +781,8 @@ public class Robot extends TimedRobot {
     System.out.println("climber getVelocity: " + climber.getVelocity());
     climber.updateDash();
     
+    shooter.init();
+    shooter.periodic();
     shooter.spinUp();
     shooter.spinDown();
     shooter.setShootingRPM(3000.0);
@@ -767,8 +822,10 @@ public class Robot extends TimedRobot {
     System.out.println("intake isReady: " + intake.isReady());
     intake.updateDash();
 
-    System.out.println("calcHoodAngle: " + calcHoodPosition());
-    System.out.println("getHubHeading(): " + getHubHeading());
+    System.out.println("calcAirTime: " + calcAirTime());
+    System.out.println("calcShooterRPM: " + calcShooterRPM());
+    System.out.println("calcHoodPosition: " + calcHoodPosition());
+    System.out.println("getHubHeading: " + calcHubHeading());
     updateDash();
   }
 }

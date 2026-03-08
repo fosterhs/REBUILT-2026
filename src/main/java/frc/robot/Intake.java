@@ -64,7 +64,7 @@ public class Intake {
   private final Timer armOscillationTimer = new Timer();
   private final double armPosTol = 0.5;
   private double armIntakePosition = 11.3; // Can adjust
-  private final double armStowPosition = 0.2; // Can adjust
+  private final double armStowPosition = 0.3; // Can adjust
   public enum Mode {HOME, LEFT, RIGHT, STOW}
   private Mode currMode = Mode.HOME;
   private boolean leftArmIsHomed = false;
@@ -73,6 +73,10 @@ public class Intake {
   private double desiredRightArmPosition = 0.0;
   private boolean leftArmIsStowed = true;
   private boolean rightArmIsStowed = true;
+  private double leftRollerVoltage = 6.0;
+  private double rightRollerVoltage = 6.0;
+  private double leftCenteringVoltage = 4.0;
+  private double rightCenteringVoltage = 4.0;
 
   public Intake() {
     configArmMotor(leftArmMotor, true);
@@ -96,7 +100,19 @@ public class Intake {
   }
 
   public void periodic() {
-    armIntakePosition = 11.3 + 0.6*Math.sin(armOscillationTimer.get()*Math.PI*2.0);
+    armIntakePosition = armIntakePosition + 0.6*Math.sin(armOscillationTimer.get()*Math.PI*2.0);
+
+    if (getLeftArmPosition() < 2.0) {
+      leftRollerVoltage = 2.0;
+    } else {
+      leftRollerVoltage = 6.0;
+    }
+    if (getRightArmPosition() < 2.0) {
+      rightRollerVoltage = 2.0;
+    } else {
+      rightRollerVoltage = 6.0;
+    }
+
     switch (currMode) {
       case HOME:
         if (Robot.isSimulation()) {
@@ -172,26 +188,30 @@ public class Intake {
       leftRollerMotor.setControl(leftRollerMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
       leftCenteringMotor.setControl(leftCenteringMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
     } else {
-      leftRollerMotor.setControl(leftRollerMotorVoltageRequest.withOutput(6.0).withEnableFOC(true));
-      leftCenteringMotor.setControl(leftCenteringMotorVoltageRequest.withOutput(3.0).withEnableFOC(true));
+      leftRollerMotor.setControl(leftRollerMotorVoltageRequest.withOutput(leftRollerVoltage).withEnableFOC(true));
+      leftCenteringMotor.setControl(leftCenteringMotorVoltageRequest.withOutput(leftCenteringVoltage).withEnableFOC(true));
     }
     if (rightArmIsStowed) {
       rightRollerMotor.setControl(rightRollerMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
       rightCenteringMotor.setControl(rightCenteringMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
     } else {
-      rightRollerMotor.setControl(rightRollerMotorVoltageRequest.withOutput(6.0).withEnableFOC(true));
-      rightCenteringMotor.setControl(rightCenteringMotorVoltageRequest.withOutput(3.0).withEnableFOC(true));
+      rightRollerMotor.setControl(rightRollerMotorVoltageRequest.withOutput(rightRollerVoltage).withEnableFOC(true));
+      rightCenteringMotor.setControl(rightCenteringMotorVoltageRequest.withOutput(rightCenteringVoltage).withEnableFOC(true));
     }
   }
-    public void home() {
+  
+  public void home() {
     currMode = Mode.HOME;
+    desiredLeftArmPosition = 0.0;
+    desiredRightArmPosition = 0.0;
+    leftArmIsStowed = false;
+    rightArmIsStowed = false;
     leftArmIsHomed = false;
     rightArmIsHomed = false;
-    leftArmIsStowed = true;
-    rightArmIsStowed = true;
     leftHomingTimer.restart();
     rightHomingTimer.restart();
   }
+
   public void leftIntake() {
     if (getMode() != Mode.HOME) {
       currMode = Mode.LEFT;
@@ -312,6 +332,9 @@ public class Intake {
 		motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 		motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
 
+    motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 30.0;
+
     motor.getConfigurator().apply(motorConfigs, 0.03);
   }
 
@@ -323,6 +346,9 @@ public class Intake {
 
 		motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 		motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
+
+    motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 30.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03);
   }
@@ -339,8 +365,9 @@ public class Intake {
 		motorConfigs.Slot0.kD = 18.0/18.75; // Units: amperes per 1 rotation / 1 second of error.
 		motorConfigs.MotionMagic.MotionMagicAcceleration = 5800.0/60.0; // Units: rotations per second per second.
 		motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 5800.0/60.0; // Units: rotations per second.
-    motorConfigs.CurrentLimits.StatorCurrentLimit = 30.0;
+
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 30.0;
 
 		motor.getConfigurator().apply(motorConfigs, 0.03);
   }

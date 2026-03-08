@@ -21,6 +21,7 @@ import com.ctre.phoenix6.sim.TalonFXSimState;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.Timer;
 
 public class Shooter {
   private final CANBus canivore = new CANBus("canivore");
@@ -36,11 +37,15 @@ public class Shooter {
   private final Follower shooterMotorLeftFollowerRequest = new Follower(12, MotorAlignmentValue.Opposed);
   private final MotionMagicTorqueCurrentFOC hoodMotorPositionRequest = new MotionMagicTorqueCurrentFOC(0.0); 
   private final double rpmTol = 200.0; // Can adjust
-  private final double hoodTol = 0.005; // Can adjust
+  private final double hoodTol = 0.010; // Can adjust
   public final double hoodMinPosition = 0.020; // Can adjust
   public final double hoodMaxPosition = 0.115; // Can adjust
   private double shootingRPM = 3000.0; // Can adjust
   private double desiredHoodPosition = hoodMinPosition;
+  private Timer shooterAtSpeedTimer = new Timer(); // Timer to track how long the shooter has been at speed. Used to prevent the shooter from being considered ready if it is only briefly at speed.
+  private Timer shooterNotAtSpeedTimer = new Timer(); // Timer to track how long the shooter has not been at speed. Used to prevent the shooter from being considered ready if it is only briefly at speed.
+  private double shooterDelay = 0.5; // Seconds that the shooter must be at speed before it is considered ready. Can adjust.
+  private boolean shooterIsAtSpeed = false; // Whether the shooter is at speed long enough to be considered ready. Updated periodically based on the shooterAtSpeedTimer and shooterNotAtSpeedTimer.
 
   // Simulation
   private final TalonFXSimState hoodMotorSim = hoodMotor.getSimState();
@@ -62,6 +67,20 @@ public class Shooter {
     shooterVoltageRight = shootMotorRight.getMotorVoltage();
     BaseStatusSignal.setUpdateFrequencyForAll(250.0, shooterVelocityRight, shooterVelocityLeft, hoodPosition, shooterVoltageRight);
 	  ParentDevice.optimizeBusUtilizationForAll(shootMotorLeft, hoodMotor, hoodEncoder);
+  }
+
+  public void init() {
+    shooterAtSpeedTimer.restart();
+    shooterNotAtSpeedTimer.restart();
+  }
+  
+  public void periodic() {
+    boolean shooterIsCurrentlyAtSpeed = Math.abs(shootingRPM - getLeftShooterRPM()) < rpmTol && Math.abs(shootingRPM - getRightShooterRPM()) < rpmTol;
+    if (!shooterIsCurrentlyAtSpeed) shooterAtSpeedTimer.restart();
+    if (shooterIsCurrentlyAtSpeed) shooterNotAtSpeedTimer.restart();
+
+    if (shooterAtSpeedTimer.get() > shooterDelay && !shooterIsAtSpeed) shooterIsAtSpeed = true;
+    if (shooterNotAtSpeedTimer.get() > shooterDelay && shooterIsAtSpeed) shooterIsAtSpeed = false;
   }
   
   // Turns on motor. Sets the speed of the motor in rotations per minute.
@@ -119,9 +138,7 @@ public class Shooter {
 
   // Returns true or false based on whether the shooter motor is near the desired RPM.
   public boolean shooterIsAtSpeed() {
-    // use abs() on the left/right shooter to compare magnitudes 
-    // otherwise you may have (2800 - -2800) = 5600 rpm which shows as not ready
-    return Math.abs(shootingRPM - Math.abs(getLeftShooterRPM())) < rpmTol && Math.abs(shootingRPM - Math.abs(getRightShooterRPM())) < rpmTol;
+    return shooterIsAtSpeed;
   }
 
   // Returns the motor velocity in RPM (Rotations Per Minute)
@@ -179,16 +196,15 @@ public class Shooter {
     motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake;
     motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
 
-
-    // P = 0.25 , I = 0.5, D = 0.0, V = 0.12, S = 0.16
-
-
     // VelocityVoltage closed-loop control configuration.
     motorConfigs.Slot0.kP = 0.20; // Units: volts per 1 motor rotation per second of error.
     motorConfigs.Slot0.kI = 0.5; // Units: volts per 1 motor rotation per second * 1 second of error.
     motorConfigs.Slot0.kD = 0.02; // Units: volts per 1 motor rotation per second / 1 second of error.
     motorConfigs.Slot0.kV = 0.12; // The amount of voltage required to create 1 motor rotation per second.
     motorConfigs.Slot0.kS = 0.16; // The amount of voltage required to barely overcome static friction.
+
+    motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 120.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03);
   }
@@ -204,6 +220,9 @@ public class Shooter {
     motorConfigs.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
     motorConfigs.Feedback.SensorToMechanismRatio = 1.0;
     motorConfigs.Feedback.RotorToSensorRatio = 211.68;
+
+    motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 30.0;
 
     // MotionMagicTorqueFOC closed-loop control configuration.
     motorConfigs.Slot0.kP = 800.0*211.68/18.75; // Units: amperes per 1 swerve wheel rotation of error.

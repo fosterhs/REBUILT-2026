@@ -83,7 +83,7 @@ class Drivetrain {
   private final int minCalibrationFrames = 3; // The minimum amount of LL frames that must be processed to accept a calibration.
   private double[][] calibrationArray = new double[3][maxCalibrationFrames]; // An array that stores the LL botpose for the most recent frames, up to the number of frames specified by maxCalibrationFrames
   private int calibrationIndex = 0; // The index of the most recent entry into the calibrationPosition array. The index begins at 0 and goes up to calibrationFrames-1, after which it returns to 0 and repeats.
-  public int calibrationFrames = 0; // The current number of frames stored in the calibrationPosition array. 
+  private int calibrationFrames = 0; // The current number of frames stored in the calibrationPosition array. 
   private final Timer calibrationTimer = new Timer(); // Keeps track of how long it has been since the robot's position has been updated using vision.
   private final Timer accurateCalibrationTimer = new Timer(); // Keeps track of how long it has been since the robot's position has been updated using a highly trusted vision reading.
   private int priorityLimelightIndex = 0; // Stores the index of the most reliable limelight camera based on the number and size of the April Tags visible.
@@ -99,8 +99,10 @@ class Drivetrain {
   private final PIDController yPathController = new PIDController(1.5, 0.0, 0.0);
   private final PIDController anglePathController = new PIDController(1.5, 0.0, 0.0);
   private boolean atDriveGoal = false; // Whether the robot is at the target within the tolerance specified by posTol and angTol when controlled by aimDrive() or moveToTarget()
-  private double posTol = 0.1; // The allowable error in the x and y position of the robot in meters.
-  private double angTol = 1.0; // The allowable error in the angle of the robot in degrees.
+  private double posTol = 0.10; // The allowable error in the x and y position of the robot in meters.
+  private double angTol = 2.0; // The allowable error in the angle of the robot in degrees.
+  private double minVel = 0.02; // The minimum velocity that the robot will be commanded to move at when it is not at the target in meters per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
+  private double minAngVel = 0.02; // The minimum velocity that the robot will be commanded to rotate at when it is not at the target in radians per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
   
   // These variables are updated each period so they can be passed along to the user or the dashboard.
   private double xVel = 0.0; // Unit: meters per second
@@ -189,16 +191,28 @@ class Drivetrain {
     atDriveGoal = false;
   }
 
+  // Sets the allowable error for the driveTo(), followPath() and aimDrive() methods. Units: meters for position.
+  public void setPosTol(double _posTol) {
+    posTol = _posTol;
+  }
+
+  // Sets the allowable error for the driveTo(), followPath() and aimDrive() methods. Units: degrees for angle.
+  public void setAngTol(double _angTol) {
+    angTol = _angTol;
+  }
+
   // Should be called periodically to rotate the robot to the demanded angle in degrees while translating the robot at the specified speed in meter per second.
   public void aimDrive(double _xVel, double _yVel, double targetAngle, boolean fieldRelative) {
     double angleDistance = getAngleDistance(getFusedAng(), targetAngle);
     atDriveGoal = Math.abs(angleDistance) < angTol;
     double _angVel = angleDriveController.calculate(angleDistance*Math.PI/180.0, 0.0);
-    if (atDriveGoal) _angVel = 0.0;
+    
+    if (_angVel < minAngVel) _angVel = 0.0;
 
     if (Math.abs(_angVel) > Drivetrain.maxAngVelAuto) {
       _angVel = _angVel > 0.0 ? Drivetrain.maxAngVelAuto : -Drivetrain.maxAngVelAuto;
     }
+
     drive(_xVel, _yVel, _angVel, fieldRelative, 0.0, 0.0);
   }
 
@@ -215,9 +229,9 @@ class Drivetrain {
 
     // Checks to see if all 3 targets have been achieved. Sets velocities to 0 to prevent twitchy robot motions at near 0 velocities.
     atDriveGoal = atXTarget && atYTarget && atAngTarget;
-    if (atXTarget) xVelSetpoint = 0.0;
-    if (atYTarget) yVelSetpoint = 0.0;
-    if (atAngTarget) angVelSetpoint = 0.0;
+    if (xVelSetpoint < minVel) xVelSetpoint = 0.0;
+    if (yVelSetpoint < minVel) yVelSetpoint = 0.0;
+    if (angVelSetpoint < minAngVel) angVelSetpoint = 0.0;
 
     // Caps the velocities if the PID controllers return values above the specified maximums.
     if (Math.abs(xVelSetpoint) > maxVelAuto) {
@@ -287,11 +301,9 @@ class Drivetrain {
 
       // Checks to see if all 3 targets have been achieved. Sets velocities to 0 to prevent twitchy robot motions at near 0 velocities.
       atDriveGoal = atPathEndpoint(pathIndex);
-      if (atDriveGoal) {
-        xVelSetpoint = 0.0;
-        yVelSetpoint = 0.0;
-        angVelSetpoint = 0.0;
-      }
+      if (xVelSetpoint < minVel) xVelSetpoint = 0.0;
+      if (yVelSetpoint < minVel) yVelSetpoint = 0.0;
+      if (angVelSetpoint < minAngVel) angVelSetpoint = 0.0;
 
       // Caps the velocities if the PID controllers return values above the specified maximums.
       if (Math.abs(xVelSetpoint) > maxVelAuto) {

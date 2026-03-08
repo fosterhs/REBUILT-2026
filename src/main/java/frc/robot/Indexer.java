@@ -19,6 +19,7 @@ public class Indexer {
   private final VoltageOut shooterIndexMotorVoltageRequest = new VoltageOut(0.0).withEnableFOC(true);
   private Mode currMode = Mode.IDLE;
   private final Timer indexTimer = new Timer();
+  private double indexVoltage = 12.0;
 
   // Simulation
   private final TalonFXSimState hopperIndexMotorSim = hopperIndexMotor.getSimState();
@@ -43,12 +44,12 @@ public class Indexer {
   public void periodic() {
     switch (currMode) {
       case INDEX://just going forward
-        if (indexTimer.get() < 2.7) {
-          hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(12.0).withEnableFOC(true));
-          shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(12.0).withEnableFOC(true));
-        } else if (indexTimer.get() < 3.0) {
-          hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(-12.0).withEnableFOC(true));
-          shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(-12.0).withEnableFOC(true));
+        if (indexTimer.get() < 1.7) {
+          hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(indexVoltage).withEnableFOC(true));
+          shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(indexVoltage).withEnableFOC(true));
+        } else if (indexTimer.get() < 2.0) {
+          hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(-indexVoltage).withEnableFOC(true));
+          shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(-indexVoltage).withEnableFOC(true));
         } else {
           indexTimer.restart();
         }
@@ -60,6 +61,10 @@ public class Indexer {
         shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
       break;
     }
+  }
+
+  public void setIndexVoltage(double voltage) {
+    indexVoltage = voltage;
   }
 
   // Marks the Indexer as running forward (not shooting) and resets the jam timer.
@@ -92,6 +97,9 @@ public class Indexer {
 
     motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake;
     motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
+
+    motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 30.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03);
   }
