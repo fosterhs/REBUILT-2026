@@ -676,12 +676,24 @@ public class Robot extends TimedRobot {
     }
   }
 
-  // Finds the heading the robot needs to aim at.
+  // This method calculates the heading the robot needs to be at to shoot accurately based on the position of the robot and the target. It uses basic trigonometry to calculate the angle between the robot and the target, and then adjusts that angle based on which quadrant the target is in relative to the robot.
   private double calcShootingHeading() {
-    if (robotX != targetX) { // If the robot is directly in line with the hub on the x-axis, the heading is either 90 or -90 degrees depending on whether the robot is above or below the hub. Otherwise, the heading is calculated using the arctangent of the change in y over the change in x.
-      return Math.toDegrees(Math.atan((targetY - robotY) / (targetX - robotX))); // Returns the heading from the robot to the target in degrees.
-    } else {
-      return robotY > targetY ? 90.0 : -90.0; // If the robot is directly in line with the hub on the x-axis, the heading is either 90 or -90 degrees depending on whether the robot is to the left or right of the hub.
+    if (robotX < targetX) { // If the target is in front of the robot (i.e. the x position of the target is greater than the x position of the robot), the heading can be calculated directly using the arctangent of the difference in y positions divided by the difference in x positions.
+      return Math.toDegrees(Math.atan((targetY - robotY) / (targetX - robotX))); 
+    } else if (robotX > targetX) { // If the target is behind the robot (i.e. the x position of the target is less than the x position of the robot), 180 degrees must be added or subtracted from the heading calculated using the arctangent to account for the fact that the robot needs to turn around to face the target. Whether 180 degrees is added or subtracted depends on whether the target is above or below the robot (i.e. whether the y position of the target is greater than or less than the y position of the robot).
+      if (robotY <= targetY) {
+        return Math.toDegrees(Math.atan((targetY - robotY) / (targetX - robotX))) + 180.0; 
+      } else {
+        return Math.toDegrees(Math.atan((targetY - robotY) / (targetX - robotX))) - 180.0; 
+      }
+    } else { // If the robot and the target are in the same vertical line (i.e. they have the same x position), the heading is either 90 or -90 degrees depending on whether the target is above or below the robot. If the target is exactly on top of the robot, the heading doesn't matter, so it returns 0.
+      if (robotY > targetY) {
+        return -90.0;
+      } else if (robotY < targetY) {
+        return 90.0;
+      } else {
+        return 0.0; 
+      }
     }
   }
 
