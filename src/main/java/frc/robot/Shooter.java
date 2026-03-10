@@ -36,13 +36,14 @@ public class Shooter {
   private final VelocityVoltage shooterMotorRightVelocityRequest = new VelocityVoltage(0.0).withEnableFOC(true);
   private final Follower shooterMotorLeftFollowerRequest = new Follower(12, MotorAlignmentValue.Opposed);
   private final MotionMagicTorqueCurrentFOC hoodMotorPositionRequest = new MotionMagicTorqueCurrentFOC(0.0); 
-  private final double rpmTol = 200.0; // Can adjust
+  private final double rpmTol = 300.0; // Can adjust
   private final double hoodTol = 0.010; // Can adjust
   public final double hoodMinPosition = 0.020; // Can adjust
   public final double hoodMaxPosition = 0.115; // Can adjust
   private final Timer shooterAtSpeedTimer = new Timer(); // Timer to track how long the shooter has been at speed. Used to prevent the shooter from being considered ready if it is only briefly at speed.
   private final Timer shooterNotAtSpeedTimer = new Timer(); // Timer to track how long the shooter has not been at speed. Used to prevent the shooter from being considered ready if it is only briefly at speed.
-  private final double shooterDelay = 0.5; // Seconds that the shooter must be at speed before it is considered ready. Can adjust.
+  private final double shooterOffDelay = 0.6; // Seconds that the shooter must be at speed before it is considered ready. Can adjust.
+  private final double shooterOnDelay = 0.3; // Seconds that the shooter must be at speed before it is considered ready. Can adjust.
   private boolean flywheelIsReady = false; // Whether the shooter is at speed long enough to be considered ready. Updated periodically based on the shooterAtSpeedTimer and shooterNotAtSpeedTimer.
   private boolean flywheelIsAtSpeed = false; // Whether the shooter is currently at speed. Updated periodically in periodic().
   private double shootingRPM = 3000.0; // Can adjust
@@ -79,12 +80,12 @@ public class Shooter {
   }
   
   public void periodic() {
-    flywheelIsAtSpeed = Math.abs(shootingRPM - getLeftFlywheelMotorRPM()) < rpmTol && Math.abs(shootingRPM - getRightFlywheelMotorRPM()) < rpmTol;
+    flywheelIsAtSpeed = Math.abs(shootingRPM - getRightFlywheelMotorRPM()) < rpmTol && Math.abs(shootingRPM - getLeftFlywheelMotorRPM()) < rpmTol;
     if (!flywheelIsAtSpeed) shooterAtSpeedTimer.restart();
     if (flywheelIsAtSpeed) shooterNotAtSpeedTimer.restart();
 
-    if (shooterAtSpeedTimer.get() > shooterDelay && !flywheelIsReady) flywheelIsReady = true;
-    if (shooterNotAtSpeedTimer.get() > shooterDelay && flywheelIsReady) flywheelIsReady = false;
+    if (shooterAtSpeedTimer.get() > shooterOnDelay && !flywheelIsReady) flywheelIsReady = true;
+    if (shooterNotAtSpeedTimer.get() > shooterOffDelay && flywheelIsReady) flywheelIsReady = false;
   }
   
   // Turns on motor. Sets the speed of the motor in rotations per minute.
@@ -161,14 +162,16 @@ public class Shooter {
 
   // Publish Shooter information (Motor state, Velocity) to SmartDashboard.
   public void updateDash() {
-    // SmartDashboard.putNumber("Shooter getRightShooterRPM", getRightShooterRPM());
-    // SmartDashboard.putNumber("Shooter getLeftShooterRPM", getLeftShooterRPM());
-    // SmartDashboard.putBoolean("Shooter shooterIsAtSpeed", shooterIsAtSpeed());
-    // SmartDashboard.putNumber("Shooter shootingRPM", shootingRPM);
-    // SmartDashboard.putNumber("Shooter getHoodPosition", getHoodPosition());
-    // SmartDashboard.putBoolean("Shooter hoodIsInPosition", hoodIsInPosition());
-    // SmartDashboard.putNumber("Shooter desiredHoodPosition", desiredHoodPosition);
-    // SmartDashboard.putBoolean("Shooter isReady", isReady());
+    //SmartDashboard.putNumber("Shooter getRightShooterRPM", getRightShooterRPM());
+    //SmartDashboard.putNumber("Shooter getLeftShooterRPM", getLeftShooterRPM());
+    //SmartDashboard.putBoolean("Shooter shooterIsAtSpeed", shooterIsAtSpeed());
+    //SmartDashboard.putNumber("Shooter shootingRPM", shootingRPM);
+    //SmartDashboard.putNumber("Shooter getHoodPosition", getHoodPosition());
+    //SmartDashboard.putBoolean("Shooter hoodIsInPosition", hoodIsInPosition());
+    //SmartDashboard.putNumber("Shooter desiredHoodPosition", desiredHoodPosition);
+    //SmartDashboard.putBoolean("Shooter isReady", isReady());
+    //SmartDashboard.putBoolean("Shooter flywheelIsReady", flywheelIsReady());
+    //SmartDashboard.putBoolean("Shooter flywheelIsAtSpeed", flywheelIsAtSpeed);
   }
 
   public void simulationPeriodic() {

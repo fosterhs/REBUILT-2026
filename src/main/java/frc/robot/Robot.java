@@ -46,6 +46,7 @@ public class Robot extends TimedRobot {
   private static final String auto1 = "Fuel Collection Via Neutral Zone, Right Side Start."; 
   private static final String auto2 = "Fuel Collection Via Neutral Zone, Left Side Start."; 
   private static final String auto3 = "Climbing, Center Start."; 
+  private static final String auto4 = "Test"; 
   private String autoSelected;
   private int autoStage = 1;
   private boolean autoCompleted = false;
@@ -76,6 +77,7 @@ public class Robot extends TimedRobot {
     autoChooser.setDefaultOption(auto1, auto1);
     autoChooser.addOption(auto2, auto2);
     autoChooser.addOption(auto3, auto3);
+    autoChooser.addOption(auto4, auto4);
     SmartDashboard.putData("Autos", autoChooser);
 
     // Auto 1 Paths : Fuel Collection from Neutral Zone, Right Starting Position. 0-2
@@ -131,6 +133,11 @@ public class Robot extends TimedRobot {
         swerve.pushCalibration(true, 180.0); // Updates the robot's position on the field.
         swerve.resetPathController(6); 
       break;
+
+      case auto4:
+        // AutoInit 4 code goes here.
+        swerve.pushCalibration(true, 0.0); // Updates the robot's position on the field.
+        swerve.resetDriveController(0.0);
     }
 
     if (Robot.isSimulation()) {
@@ -444,6 +451,13 @@ public class Robot extends TimedRobot {
             }
           break;
         }
+
+      case auto4:
+        switch (autoStage) {
+          case 1:
+            swerve.driveTo(1.0, 0.0, 0.0);
+          break;
+        }
       break;
     }
   }
@@ -580,6 +594,10 @@ public class Robot extends TimedRobot {
         
         case auto3:
           swerve.updateVisionHeading(true, 180.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
+        break;
+
+        case auto4:
+          swerve.updateVisionHeading(true, 0.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
         break;
       }
     } else {

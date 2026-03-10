@@ -63,7 +63,7 @@ public class Intake {
   private final Timer rightHomingTimer = new Timer();
   private final Timer armOscillationTimer = new Timer();
   private final double armPosTol = 0.5;
-  private final double armStowPosition = 0.3; // Can adjust
+  private final double armStowPosition = 0.4; // Can adjust
   public enum Mode {HOME, LEFT, RIGHT, STOW}
   private Mode currMode = Mode.HOME;
   private double armIntakePosition = 11.3; // Can adjust
@@ -329,7 +329,7 @@ public class Intake {
 		motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
 
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
-    motorConfigs.CurrentLimits.StatorCurrentLimit = 30.0;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 60.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03);
   }
@@ -344,7 +344,7 @@ public class Intake {
 		motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
 
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
-    motorConfigs.CurrentLimits.StatorCurrentLimit = 30.0;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 60.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03);
   }
@@ -363,7 +363,7 @@ public class Intake {
 		motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 5800.0/60.0; // Units: rotations per second.
 
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
-    motorConfigs.CurrentLimits.StatorCurrentLimit = 30.0;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 60.0;
 
 		motor.getConfigurator().apply(motorConfigs, 0.03);
   }

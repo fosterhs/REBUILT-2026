@@ -44,10 +44,10 @@ public class Indexer {
   public void periodic() {
     switch (currMode) {
       case INDEX://just going forward
-        if (indexTimer.get() < 1.7) {
+        if (indexTimer.get() < 2.5) {
           hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(indexVoltage).withEnableFOC(true));
           shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(indexVoltage).withEnableFOC(true));
-        } else if (indexTimer.get() < 2.0) {
+        } else if (indexTimer.get() < 3.0) {
           hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(-indexVoltage).withEnableFOC(true));
           shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(-indexVoltage).withEnableFOC(true));
         } else {
@@ -99,7 +99,7 @@ public class Indexer {
     motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
 
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
-    motorConfigs.CurrentLimits.StatorCurrentLimit = 30.0;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 60.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03);
   }

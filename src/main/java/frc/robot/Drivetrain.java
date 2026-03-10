@@ -29,16 +29,16 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DifferentialDrivetrainSim;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.Timer;
 import frc.robot.LimelightHelpers.PoseEstimate;
 
 class Drivetrain {
   public static final double maxAcc = 1.0*9.80665/Math.sqrt(2.0); // The maximum acceleration of the robot, typically limited by the coefficient of friction between the swerve wheels and the field.
-  public static final double wheelbaseX = (31.0-2*2.625)*0.0254; // The length of the robot from front to back in units of meters. Measured from the centers of each swerve wheel.
-  public static final double wheelbaseY = (24.0-2*2.625)*0.0254; // The length of the robot from left to right in units of meters. Measured from the centers of each swerve wheel.
+  public static final double wheelbaseX = (24.0-2*2.625)*0.0254; // The length of the robot from front to back in units of meters. Measured from the centers of each swerve wheel.
+  public static final double wheelbaseY = (31.0-2*2.625)*0.0254; // The length of the robot from left to right in units of meters. Measured from the centers of each swerve wheel.
   public static final double wheelbaseR = Math.sqrt(Math.pow(wheelbaseX/2.0, 2) + Math.pow(wheelbaseY/2.0, 2)); // The "radius" of the robot from robot center to the center of the swerve wheel in units of meters.
   public static final double fieldWidth = 8.0137; // The X width of the field in meters. Used to translate between Blue and Red coordinate systems.
   public static final double fieldLength = 651.22*0.0254; // The Y length of the field in meters.
@@ -59,10 +59,10 @@ class Drivetrain {
   private static final SwerveDriveKinematics kinematics = new SwerveDriveKinematics(frontLeftModulePos, frontRightModulePos, backRightModulePos, backLeftModulePos);
 
   // Initializes each swerve module.
-  private final SwerveModule frontLeftModule = new SwerveModule(3, 4, 25, false, -0.433350, "canivore"); 
-  private final SwerveModule frontRightModule = new SwerveModule(1, 2, 24, true, 0.069092 , "canivore");
-  private final SwerveModule backRightModule = new SwerveModule(5, 6, 27, true, -0.327148 , "canivore");
-  private final SwerveModule backLeftModule = new SwerveModule(7, 8, 26, false, -0.164795, "canivore");
+  private final SwerveModule frontLeftModule = new SwerveModule(3, 4, 25, false, -0.431641, "canivore"); 
+  private final SwerveModule frontRightModule = new SwerveModule(1, 2, 24, true, 0.064453 , "canivore");
+  private final SwerveModule backRightModule = new SwerveModule(5, 6, 27, true, -0.326172, "canivore");
+  private final SwerveModule backLeftModule = new SwerveModule(7, 8, 26, false, -0.163574, "canivore");
   private final SwerveModule[] modules = {frontLeftModule, frontRightModule, backRightModule, backLeftModule};
   private SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(0.0, 0.0, 0.0, new Rotation2d()));
   private SwerveModulePosition[] modulePositions = new SwerveModulePosition[4];
@@ -94,15 +94,15 @@ class Drivetrain {
   private final Timer pathTimer = new Timer(); // Keeps track of how long the robot has been following a path. Used to sample Path Planner trajectories.
   private final ProfiledPIDController xDriveController = new ProfiledPIDController(3.0, 0.0, 0.0, new TrapezoidProfile.Constraints(maxVelAuto, maxAccAuto)); // Controls the x-position of the robot.
   private final ProfiledPIDController yDriveController = new ProfiledPIDController(3.0, 0.0, 0.0, new TrapezoidProfile.Constraints(maxVelAuto, maxAccAuto)); // Controls the y-position of the robot.
-  private final ProfiledPIDController angleDriveController = new ProfiledPIDController(4.0, 0.0, 0.0, new TrapezoidProfile.Constraints(maxAngVelAuto, maxAngAccAuto)); // Controls the angle of the robot.
+  private final ProfiledPIDController angleDriveController = new ProfiledPIDController(8.0, 0.0, 0.0, new TrapezoidProfile.Constraints(maxAngVelAuto, maxAngAccAuto)); // Controls the angle of the robot.
   private final PIDController xPathController = new PIDController(1.5, 0.0, 0.0);
   private final PIDController yPathController = new PIDController(1.5, 0.0, 0.0);
   private final PIDController anglePathController = new PIDController(1.5, 0.0, 0.0);
   private boolean atDriveGoal = false; // Whether the robot is at the target within the tolerance specified by posTol and angTol when controlled by aimDrive() or moveToTarget()
-  private double posTol = 0.10; // The allowable error in the x and y position of the robot in meters.
-  private double angTol = 2.0; // The allowable error in the angle of the robot in degrees.
+  private double posTol = 0.20; // The allowable error in the x and y position of the robot in meters.
+  private double angTol = 5.0; // The allowable error in the angle of the robot in degrees.
   private double minVel = 0.02; // The minimum velocity that the robot will be commanded to move at when it is not at the target in meters per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
-  private double minAngVel = 0.02; // The minimum velocity that the robot will be commanded to rotate at when it is not at the target in radians per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
+  private double minAngVel = 0.01; // The minimum velocity that the robot will be commanded to rotate at when it is not at the target in radians per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
   
   // These variables are updated each period so they can be passed along to the user or the dashboard.
   private double xVel = 0.0; // Unit: meters per second
@@ -207,7 +207,7 @@ class Drivetrain {
     atDriveGoal = Math.abs(angleDistance) < angTol;
     double _angVel = angleDriveController.calculate(angleDistance*Math.PI/180.0, 0.0);
     
-    if (_angVel < minAngVel) _angVel = 0.0;
+    if (Math.abs(_angVel) < minAngVel) _angVel = 0.0;
 
     if (Math.abs(_angVel) > Drivetrain.maxAngVelAuto) {
       _angVel = _angVel > 0.0 ? Drivetrain.maxAngVelAuto : -Drivetrain.maxAngVelAuto;
@@ -229,9 +229,9 @@ class Drivetrain {
 
     // Checks to see if all 3 targets have been achieved. Sets velocities to 0 to prevent twitchy robot motions at near 0 velocities.
     atDriveGoal = atXTarget && atYTarget && atAngTarget;
-    if (xVelSetpoint < minVel) xVelSetpoint = 0.0;
-    if (yVelSetpoint < minVel) yVelSetpoint = 0.0;
-    if (angVelSetpoint < minAngVel) angVelSetpoint = 0.0;
+    if (Math.abs(xVelSetpoint) < minVel) xVelSetpoint = 0.0;
+    if (Math.abs(yVelSetpoint) < minVel) yVelSetpoint = 0.0;
+    if (Math.abs(angVelSetpoint) < minAngVel) angVelSetpoint = 0.0;
 
     // Caps the velocities if the PID controllers return values above the specified maximums.
     if (Math.abs(xVelSetpoint) > maxVelAuto) {
@@ -301,9 +301,9 @@ class Drivetrain {
 
       // Checks to see if all 3 targets have been achieved. Sets velocities to 0 to prevent twitchy robot motions at near 0 velocities.
       atDriveGoal = atPathEndpoint(pathIndex);
-      if (xVelSetpoint < minVel) xVelSetpoint = 0.0;
-      if (yVelSetpoint < minVel) yVelSetpoint = 0.0;
-      if (angVelSetpoint < minAngVel) angVelSetpoint = 0.0;
+      if (Math.abs(xVelSetpoint) < minVel) xVelSetpoint = 0.0;
+      if (Math.abs(yVelSetpoint) < minVel) yVelSetpoint = 0.0;
+      if (Math.abs(angVelSetpoint) < minAngVel) angVelSetpoint = 0.0;
 
       // Caps the velocities if the PID controllers return values above the specified maximums.
       if (Math.abs(xVelSetpoint) > maxVelAuto) {
@@ -594,15 +594,15 @@ class Drivetrain {
     //SmartDashboard.putNumber("Front Left Swerve Module Position", frontLeftModule.getDriveMotorPos());
     //SmartDashboard.putNumber("Front Right Swerve Module Position", frontRightModule.getDriveMotorPos());
     //SmartDashboard.putNumber("Back Right Swerve Module Position", backRightModule.getDriveMotorPos());
-    //SmartDashboard.putNumber("Back LeftF Swerve Module Position", backLeftModule.getDriveMotorPos());
+    //SmartDashboard.putNumber("Back Left Swerve Module Position", backLeftModule.getDriveMotorPos());
     //SmartDashboard.putNumber("Front Left Swerve Module Wheel Encoder Angle", frontLeftModule.getWheelAngle());
     //SmartDashboard.putNumber("Front Right Swerve Module Wheel Encoder Angle", frontRightModule.getWheelAngle());
     //SmartDashboard.putNumber("Back Right Swerve Module Wheel Encoder Angle", backRightModule.getWheelAngle());
     //SmartDashboard.putNumber("Back Left Swerve Module Wheel Encoder Angle", backLeftModule.getWheelAngle());
-    SmartDashboard.putNumber("Robot X Position", getXPos());
-    SmartDashboard.putNumber("Robot Y Position", getYPos());
-    SmartDashboard.putNumber("Robot Angular Position (Fused)", getFusedAng());
-    SmartDashboard.putNumber("Robot Angular Position (Gyro)", getGyroAng());
+    //SmartDashboard.putNumber("Robot X Position", getXPos());
+    //SmartDashboard.putNumber("Robot Y Position", getYPos());
+    //SmartDashboard.putNumber("Robot Angular Position (Fused)", getFusedAng());
+    //SmartDashboard.putNumber("Robot Angular Position (Gyro)", getGyroAng());
     //SmartDashboard.putNumber("Robot Pitch", getGyroPitch());
     //SmartDashboard.putNumber("Robot Roll", getGyroRoll());
     //SmartDashboard.putNumber("Robot Angular Rate", getGyroAngVel());

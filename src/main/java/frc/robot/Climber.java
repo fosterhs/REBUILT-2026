@@ -133,7 +133,7 @@ public class Climber {
 		motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 5800.0/60.0; // Units: rotations per second.
 
 		motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
-    	motorConfigs.CurrentLimits.StatorCurrentLimit = 120.0;
+    	motorConfigs.CurrentLimits.StatorCurrentLimit = 0.0;
 
 		motor.getConfigurator().apply(motorConfigs, 0.03);
 	}
