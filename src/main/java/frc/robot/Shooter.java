@@ -21,7 +21,6 @@ import com.ctre.phoenix6.sim.TalonFXSimState;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj.Timer;
 
 public class Shooter {
   private final CANBus canivore = new CANBus("canivore");
@@ -29,25 +28,25 @@ public class Shooter {
   private final TalonFX shootMotorRight = new TalonFX(12, canivore);  
   private final TalonFX shootMotorLeft = new TalonFX(11, canivore); 
   private final CANcoder hoodEncoder = new CANcoder(28, canivore); 
+
   private final StatusSignal<AngularVelocity> shooterVelocityRight;
   private final StatusSignal<AngularVelocity> shooterVelocityLeft;
   private final StatusSignal<Angle> hoodPosition;
   private final StatusSignal<Voltage> shooterVoltageRight;
+
   private final VelocityVoltage shooterMotorRightVelocityRequest = new VelocityVoltage(0.0).withEnableFOC(true);
-  private final Follower shooterMotorLeftFollowerRequest = new Follower(12, MotorAlignmentValue.Opposed);
+  private final Follower shooterMotorLeftFollowerRequest = new Follower(shootMotorRight.getDeviceID(), MotorAlignmentValue.Opposed);
   private final MotionMagicTorqueCurrentFOC hoodMotorPositionRequest = new MotionMagicTorqueCurrentFOC(0.0); 
+
   private final double rpmTol = 300.0; // Can adjust
   private final double hoodTol = 0.010; // Can adjust
   public final double hoodMinPosition = 0.020; // Can adjust
   public final double hoodMaxPosition = 0.115; // Can adjust
-  private final Timer shooterAtSpeedTimer = new Timer(); // Timer to track how long the shooter has been at speed. Used to prevent the shooter from being considered ready if it is only briefly at speed.
-  private final Timer shooterNotAtSpeedTimer = new Timer(); // Timer to track how long the shooter has not been at speed. Used to prevent the shooter from being considered ready if it is only briefly at speed.
-  private final double shooterOffDelay = 0.6; // Seconds that the shooter must be at speed before it is considered ready. Can adjust.
-  private final double shooterOnDelay = 0.3; // Seconds that the shooter must be at speed before it is considered ready. Can adjust.
-  private boolean flywheelIsReady = false; // Whether the shooter is at speed long enough to be considered ready. Updated periodically based on the shooterAtSpeedTimer and shooterNotAtSpeedTimer.
-  private boolean flywheelIsAtSpeed = false; // Whether the shooter is currently at speed. Updated periodically in periodic().
+  public final double maxFlywheelRPM = 5000.0; // Can adjust
+  public final double minFlywheelRPM = 2000.0; // Can adjust
+  public enum Mode {SHOOT, IDLE}
+  private Mode currMode = Mode.IDLE;
   private double shootingRPM = 3000.0; // Can adjust
-  private boolean isSpunUp = false; // Whether the shooter is currently spun up. Updated in spinUp() and spinDown().
   private double desiredHoodPosition = hoodMinPosition;
 
   // Simulation
@@ -73,47 +72,42 @@ public class Shooter {
   }
 
   public void init() {
-    shooterAtSpeedTimer.restart();
-    shooterNotAtSpeedTimer.restart();
+    currMode = Mode.IDLE;
     spinDown();
     lowerHood();
-    flywheelIsReady = false;
-    isSpunUp = false;
   }
   
   public void periodic() {
-    flywheelIsAtSpeed = Math.abs(shootingRPM - getRightFlywheelMotorRPM()) < rpmTol && Math.abs(shootingRPM - getLeftFlywheelMotorRPM()) < rpmTol;
-    if (!flywheelIsAtSpeed) shooterAtSpeedTimer.restart();
-    if (flywheelIsAtSpeed) shooterNotAtSpeedTimer.restart();
+    switch (currMode) {
+      case SHOOT:
+        shootMotorRight.setControl(shooterMotorRightVelocityRequest.withVelocity(shootingRPM/60.0).withEnableFOC(true));
+      break;
 
-    if (shooterAtSpeedTimer.get() > shooterOnDelay && !flywheelIsReady) flywheelIsReady = true;
-    if (shooterNotAtSpeedTimer.get() > shooterOffDelay && flywheelIsReady) flywheelIsReady = false;
-    if (isSpunUp) {
-      shootMotorRight.setControl(shooterMotorRightVelocityRequest.withVelocity(shootingRPM/60.0).withEnableFOC(true));
-      shootMotorLeft.setControl(shooterMotorLeftFollowerRequest);
-    } else {
-      shootMotorRight.setControl(shooterMotorRightVelocityRequest.withVelocity(0.0).withEnableFOC(true));
-      shootMotorLeft.setControl(shooterMotorLeftFollowerRequest);
-    }
+      case IDLE:
+        shootMotorRight.setControl(shooterMotorRightVelocityRequest.withVelocity(0.0).withEnableFOC(true));
+      break;
+    } 
+    shootMotorLeft.setControl(shooterMotorLeftFollowerRequest);
+    hoodMotor.setControl(hoodMotorPositionRequest.withPosition(desiredHoodPosition));
   }
   
   // Turns on motor. Sets the speed of the motor in rotations per minute.
   public void spinUp() {
+    currMode = Mode.SHOOT;
     desiredRPMSim = shootingRPM;
-    isSpunUp = true;
   }
 
   // Turn off motor.
   public void spinDown() {
+    currMode = Mode.IDLE;
     desiredRPMSim = 0;
-    isSpunUp = false;
   }
 
-  public void setFlywheelRPM(double rpm) {
-    if (rpm > 5000.0) {
-      shootingRPM = 5000.0;
-    } else if (rpm < 600.0) {
-      shootingRPM = 600.0;
+  public void setShootingRPM(double rpm) {
+    if (rpm > maxFlywheelRPM) {
+      shootingRPM = maxFlywheelRPM;
+    } else if (rpm < minFlywheelRPM) {
+      shootingRPM = minFlywheelRPM;
     } else {
       shootingRPM = rpm;
     }
@@ -121,20 +115,20 @@ public class Shooter {
 
   public void setHoodPosition(double position) {
     if (position < hoodMinPosition) {
-      hoodMotor.setControl(hoodMotorPositionRequest.withPosition(hoodMinPosition));
       desiredHoodPosition = hoodMinPosition;
     } else if (position > hoodMaxPosition) {
-      hoodMotor.setControl(hoodMotorPositionRequest.withPosition(hoodMaxPosition));
       desiredHoodPosition = hoodMaxPosition;
     } else {
-      hoodMotor.setControl(hoodMotorPositionRequest.withPosition(position));
       desiredHoodPosition = position;
     }
   }
 
   public void lowerHood() {
-    hoodMotor.setControl(hoodMotorPositionRequest.withPosition(hoodMinPosition));
     desiredHoodPosition = hoodMinPosition;
+  }
+
+  public Mode getMode() {
+    return currMode;
   }
 
   public boolean hoodIsInPosition() {
@@ -149,8 +143,8 @@ public class Shooter {
   }
 
   // Returns true or false based on whether the shooter motor is near the desired RPM.
-  public boolean flywheelIsReady() {
-    return flywheelIsReady;
+  public boolean flywheelIsAtSpeed() {
+    return Math.abs(shootingRPM - getRightFlywheelMotorRPM()) < rpmTol && Math.abs(shootingRPM - getLeftFlywheelMotorRPM()) < rpmTol;
   }
 
   // Returns the motor velocity in RPM (Rotations Per Minute)
@@ -164,7 +158,7 @@ public class Shooter {
   }
 
   public boolean isReady() {
-    return flywheelIsReady() && hoodIsInPosition();
+    return flywheelIsAtSpeed() && hoodIsInPosition();
   }
 
   // Publish Shooter information (Motor state, Velocity) to SmartDashboard.
@@ -179,6 +173,7 @@ public class Shooter {
     //SmartDashboard.putBoolean("Shooter isReady", isReady());
     //SmartDashboard.putBoolean("Shooter flywheelIsReady", flywheelIsReady());
     //SmartDashboard.putBoolean("Shooter flywheelIsAtSpeed", flywheelIsAtSpeed);
+    //SmartDashboard.putString("Shooter getMode", getMode().toString());
   }
 
   public void simulationPeriodic() {
@@ -217,7 +212,9 @@ public class Shooter {
     motorConfigs.Slot0.kV = 0.12; // The amount of voltage required to create 1 motor rotation per second.
     motorConfigs.Slot0.kS = 0.16; // The amount of voltage required to barely overcome static friction.
 
+    motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
+    motorConfigs.CurrentLimits.SupplyCurrentLimit = 70.0;
     motorConfigs.CurrentLimits.StatorCurrentLimit = 120.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03);
@@ -235,7 +232,9 @@ public class Shooter {
     motorConfigs.Feedback.SensorToMechanismRatio = 1.0;
     motorConfigs.Feedback.RotorToSensorRatio = 211.68;
 
+    motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
+    motorConfigs.CurrentLimits.SupplyCurrentLimit = 10.0;
     motorConfigs.CurrentLimits.StatorCurrentLimit = 30.0;
 
     // MotionMagicTorqueFOC closed-loop control configuration.

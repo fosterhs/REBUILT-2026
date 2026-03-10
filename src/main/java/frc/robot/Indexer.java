@@ -98,8 +98,10 @@ public class Indexer {
     motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake;
     motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
 
+    motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
-    motorConfigs.CurrentLimits.StatorCurrentLimit = 60.0;
+    motorConfigs.CurrentLimits.SupplyCurrentLimit = 30.0;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 120.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03);
   }

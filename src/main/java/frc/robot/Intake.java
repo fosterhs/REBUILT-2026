@@ -328,7 +328,9 @@ public class Intake {
 		motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 		motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
 
+    motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
+    motorConfigs.CurrentLimits.SupplyCurrentLimit = 10.0;
     motorConfigs.CurrentLimits.StatorCurrentLimit = 60.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03);
@@ -343,8 +345,10 @@ public class Intake {
 		motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 		motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
 
+    motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
-    motorConfigs.CurrentLimits.StatorCurrentLimit = 60.0;
+    motorConfigs.CurrentLimits.SupplyCurrentLimit = 20.0;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 80.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03);
   }
@@ -362,8 +366,10 @@ public class Intake {
 		motorConfigs.MotionMagic.MotionMagicAcceleration = 5800.0/60.0; // Units: rotations per second per second.
 		motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 5800.0/60.0; // Units: rotations per second.
 
+    motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
-    motorConfigs.CurrentLimits.StatorCurrentLimit = 60.0;
+    motorConfigs.CurrentLimits.SupplyCurrentLimit = 20.0;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 80.0;
 
 		motor.getConfigurator().apply(motorConfigs, 0.03);
   }

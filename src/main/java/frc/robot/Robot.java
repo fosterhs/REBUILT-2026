@@ -33,6 +33,12 @@ public class Robot extends TimedRobot {
   private boolean isNearTrench = false;
   private boolean isScoring = false;
   private boolean isShooting = false;
+  private final Timer isReadyToShootTimer = new Timer();
+  private final Timer isNotReadyToShootTimer = new Timer();
+  private final double readyOnDelay = 0.3;
+  private final double readyOffDelay = 0.8;
+  private boolean isReadyToShoot = false;
+  private boolean isCurrentyReadyToShoot = false;
 
   // Initializes the different subsystems of the robot.
   private final Drivetrain swerve = new Drivetrain(); // Contains the Swerve Modules, Gyro, Path Follower, Target Tracking, Odometry, and Vision Calibration.
@@ -166,7 +172,7 @@ public class Robot extends TimedRobot {
 
     isScoring = true;
     updateTrajectory();
-    shooter.setFlywheelRPM(calcFlywheelRPM());
+    shooter.setShootingRPM(calcFlywheelRPM());
     indexer.setIndexVoltage(calcIndexerVoltage());
 
     climber.perioidic();
@@ -576,6 +582,10 @@ public class Robot extends TimedRobot {
     intake.init();
     shooter.init();
     isShooting = false;
+    isCurrentyReadyToShoot = false;
+    isReadyToShoot = false;
+    isReadyToShootTimer.restart();
+    isNotReadyToShootTimer.restart();
   }
 
   public void teleopPeriodic() {
@@ -585,10 +595,18 @@ public class Robot extends TimedRobot {
       swerve.addVisionEstimate(limelightIndex, true); // Checks to see ifs there are reliable April Tags in sight of the Limelight and updates the robot position on the field.
     }
 
+    isCurrentyReadyToShoot = shooter.isReady() && swerve.atDriveGoal();
+
+    if (!isCurrentyReadyToShoot) isReadyToShootTimer.restart();
+    if (isCurrentyReadyToShoot) isNotReadyToShootTimer.restart();
+
+    if (isReadyToShootTimer.get() > readyOnDelay && !isReadyToShoot) isReadyToShoot = true;
+    if (isNotReadyToShootTimer.get() > readyOffDelay && isReadyToShoot) isReadyToShoot = false;
+
     isScoring = swerve.getXPos() < nearTrenchX - trenchTolerance;
     isNearTrench = (nearTrenchX - trenchTolerance < swerve.getXPos() && swerve.getXPos() < nearTrenchX + trenchTolerance) || (farTrenchX - trenchTolerance < swerve.getXPos() && swerve.getXPos() < farTrenchX + trenchTolerance);
     updateTrajectory();
-    shooter.setFlywheelRPM(calcFlywheelRPM());
+    shooter.setShootingRPM(calcFlywheelRPM());
     indexer.setIndexVoltage(calcIndexerVoltage());
 
     climber.perioidic(); 
@@ -660,7 +678,7 @@ public class Robot extends TimedRobot {
     } else if (isShooting) {
       swerve.aimDrive(xVelTeleop, yVelTeleop, calcShootingHeading(), true);
       shooter.setHoodPosition(calcHoodPosition());
-      if (shooter.isReady() && swerve.atDriveGoal()) {
+      if (isReadyToShoot) {
         indexer.start();
       } else {
         indexer.stop();
@@ -919,15 +937,16 @@ public class Robot extends TimedRobot {
     shooter.periodic();
     shooter.spinUp();
     shooter.spinDown();
-    shooter.setFlywheelRPM(3000.0);
+    shooter.setShootingRPM(3000.0);
     shooter.setHoodPosition(calcHoodPosition());
     shooter.lowerHood();
     System.out.println("shooter hoodIsInPosition: " + shooter.hoodIsInPosition());
     System.out.println("shooter getHoodPosition: " + shooter.getHoodPosition());
-    System.out.println("shooter isAtSpeed(): " + shooter.flywheelIsReady());    
+    System.out.println("shooter flywheelIsAtSpeed(): " + shooter.flywheelIsAtSpeed());    
     System.out.println("shooter getLeftShooterRPM: " + shooter.getLeftFlywheelMotorRPM());
     System.out.println("shooter getRightShooterRPM: " + shooter.getRightFlywheelMotorRPM());
     System.out.println("shooter isReady: " + shooter.isReady());
+    System.out.println("shooter getMode: " + shooter.getMode().toString());
     shooter.updateDash();
 
     indexer.init();
