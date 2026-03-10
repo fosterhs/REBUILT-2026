@@ -47,6 +47,7 @@ public class Shooter {
   private boolean flywheelIsReady = false; // Whether the shooter is at speed long enough to be considered ready. Updated periodically based on the shooterAtSpeedTimer and shooterNotAtSpeedTimer.
   private boolean flywheelIsAtSpeed = false; // Whether the shooter is currently at speed. Updated periodically in periodic().
   private double shootingRPM = 3000.0; // Can adjust
+  private boolean isSpunUp = false; // Whether the shooter is currently spun up. Updated in spinUp() and spinDown().
   private double desiredHoodPosition = hoodMinPosition;
 
   // Simulation
@@ -77,6 +78,7 @@ public class Shooter {
     spinDown();
     lowerHood();
     flywheelIsReady = false;
+    isSpunUp = false;
   }
   
   public void periodic() {
@@ -86,20 +88,25 @@ public class Shooter {
 
     if (shooterAtSpeedTimer.get() > shooterOnDelay && !flywheelIsReady) flywheelIsReady = true;
     if (shooterNotAtSpeedTimer.get() > shooterOffDelay && flywheelIsReady) flywheelIsReady = false;
+    if (isSpunUp) {
+      shootMotorRight.setControl(shooterMotorRightVelocityRequest.withVelocity(shootingRPM/60.0).withEnableFOC(true));
+      shootMotorLeft.setControl(shooterMotorLeftFollowerRequest);
+    } else {
+      shootMotorRight.setControl(shooterMotorRightVelocityRequest.withVelocity(0.0).withEnableFOC(true));
+      shootMotorLeft.setControl(shooterMotorLeftFollowerRequest);
+    }
   }
   
   // Turns on motor. Sets the speed of the motor in rotations per minute.
   public void spinUp() {
     desiredRPMSim = shootingRPM;
-    shootMotorRight.setControl(shooterMotorRightVelocityRequest.withVelocity(shootingRPM/60.0).withEnableFOC(true));
-    shootMotorLeft.setControl(shooterMotorLeftFollowerRequest);
+    isSpunUp = true;
   }
 
   // Turn off motor.
   public void spinDown() {
     desiredRPMSim = 0;
-    shootMotorRight.setControl(shooterMotorRightVelocityRequest.withVelocity(0.0).withEnableFOC(true));
-    shootMotorLeft.setControl(shooterMotorLeftFollowerRequest);
+    isSpunUp = false;
   }
 
   public void setFlywheelRPM(double rpm) {
