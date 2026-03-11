@@ -282,6 +282,7 @@ public class Robot extends TimedRobot {
             if (swerve.getXPos() <= 3.5) {
               swerve.drive(0.0, 0.0, 0.0, false, 0.0, 0.0); // Stops the robot.
               shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+              swerve.resetDriveController(calcShootingHeading());
               autoStage = 2; // Advances to the next stage once the robot has gotten to the shooting position.
             }
           break;
@@ -336,6 +337,7 @@ public class Robot extends TimedRobot {
             shooter.spinUp(); // Turns the shooter on.
             if (swerve.atPathEndpoint(3)) {
               shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+              swerve.resetDriveController(calcShootingHeading());
               autoStage = 7; // Advances to the next stage once the robot has reached the shooting position.
             }
           break;
@@ -370,6 +372,7 @@ public class Robot extends TimedRobot {
             shooter.spinUp(); // Turns the shooter on.
             if (swerve.atPathEndpoint(4)) {
               shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+              swerve.resetDriveController(calcShootingHeading());
               autoStage = 2; // Advances to the next stage once the robot has gotten to the shooting position.
             }
           break;
@@ -424,6 +427,7 @@ public class Robot extends TimedRobot {
             shooter.spinUp(); // Turns the shooter on.
             if (swerve.atPathEndpoint(6)) {
               shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+              swerve.resetDriveController(calcShootingHeading());
               autoStage = 7; // Advances to the next stage once the robot has reached the shooting position.
             }
           break;
@@ -523,7 +527,7 @@ public class Robot extends TimedRobot {
 
           case 6:
             // Auto 4, Stage 6 code goes here.
-            swerve.driveTo(0.51, 0.65, calcShootingHeading()); // Brings the robot to the outpost for fuel.
+            swerve.driveTo(0.61, 0.65, calcShootingHeading()); // Brings the robot to the outpost for fuel.
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
             if (shooter.isReady()) {
               shootingTimer.restart(); // Restarts the shooting timer.
