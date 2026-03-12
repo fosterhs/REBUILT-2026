@@ -51,7 +51,7 @@ public class Robot extends TimedRobot {
   private final SendableChooser<String> autoChooser = new SendableChooser<>();
   private static final String auto1 = "Fuel Collection Via Neutral Zone, Right Side Start."; 
   private static final String auto2 = "Fuel Collection Via Neutral Zone, Left Side Start."; 
-  private static final String auto3 = "Climbing, Center Start."; 
+  //private static final String auto3 = "Climbing, Center Start."; 
   private static final String auto4 = "Right Side. Shoot, collect from neutral zone, shoot, collect fuel from the human player station."; 
   private String autoSelected;
   private int autoStage = 1;
@@ -82,7 +82,7 @@ public class Robot extends TimedRobot {
     // Configures the auto chooser on the dashboard.
     autoChooser.setDefaultOption(auto1, auto1);
     autoChooser.addOption(auto2, auto2);
-    autoChooser.addOption(auto3, auto3);
+  //  autoChooser.addOption(auto3, auto3);
     autoChooser.addOption(auto4, auto4);
     SmartDashboard.putData("Autos", autoChooser);
 
@@ -138,11 +138,11 @@ public class Robot extends TimedRobot {
         swerve.pushCalibration(true, -90.0); // Updates the robot's position on the field.
       break;
 
-      case auto3:
-        // AutoInit 3 code goes here.
-        swerve.pushCalibration(true, 180.0); // Updates the robot's position on the field.
-        swerve.resetPathController(4); 
-      break;
+      // case auto3:
+      //   // AutoInit 3 code goes here.
+      //   swerve.pushCalibration(true, 180.0); // Updates the robot's position on the field.
+      //   swerve.resetPathController(4); 
+      // break;
 
       case auto4:
         // AutoInit 4 code goes here.
@@ -159,9 +159,9 @@ public class Robot extends TimedRobot {
         case auto2:
           swerve.initPathPose(3);
         break;
-        case auto3:
-          swerve.initPathPose(6);
-        break;
+        // case auto3:
+        //   swerve.initPathPose(6);
+        // break;
         default:
           swerve.initPathPose(0);
       }
@@ -237,8 +237,8 @@ public class Robot extends TimedRobot {
 
           case 5:
             // Auto 1, Stage 5 code goes here.
-            swerve.drive(0.0, 1.5, 0.0, true, 0.0, 0.0); // Moves the robot in the neutral zone, collecting fuel.
-            if (swerve.getYPos() >= 3.9) {
+            swerve.driveTo(7.700,3.575,-90.719); // Moves the robot in the neutral zone, collecting fuel.
+            if (swerve.atDriveGoal()) {
               swerve.drive(0.0, 0.0, 0.0, true, 0.0, 0.0); // Holds the robot still.
               intake.stow(); // Stows the intake.
               swerve.resetPathController(1);
@@ -270,7 +270,7 @@ public class Robot extends TimedRobot {
             // Auto 1, Stage 8 code goes here.
             swerve.drive(0.0, 0.0, 0.0, false, 0.0, 0.0); // Holds the robot still.
             indexer.start(); // Turns on the indexer.
-            if (shootingTimer.get() > 3.0) {
+            if (shootingTimer.get() > 2.0) {
               shooter.spinDown(); // Turns the shooter off.
               shooter.lowerHood(); // Lowers the hood of the shooter.
               indexer.stop(); // Turns the indexer off.
@@ -283,9 +283,9 @@ public class Robot extends TimedRobot {
         switch (autoStage) {
           case 1:
             // Auto 2, Stage 1 code goes here.
-            swerve.drive(-0.3, 0.0, 0.0, true, 0.0, 0.0); // Brings the robot slightly backwards.
+            swerve.driveTo(3.500,7.310,-177.723); // Brings the robot slightly backwards.
             shooter.spinUp(); // Turns the shooter on.
-            if (swerve.getXPos() <= 3.5) {
+            if (swerve.atDriveGoal()) {
               swerve.drive(0.0, 0.0, 0.0, false, 0.0, 0.0); // Stops the robot.
               shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
               swerve.resetDriveController(calcShootingHeading());
@@ -306,7 +306,7 @@ public class Robot extends TimedRobot {
             // Auto 2, Stage 3 code goes here.
             swerve.drive(0.0, 0.0, 0.0, false, 0.0, 0.0); // Holds the robot still.
             indexer.start(); // Turns on the indexer.
-            if (shootingTimer.get() > 3.0) {
+            if (shootingTimer.get() > 2.0) {
               shooter.spinDown(); // Turns the shooter off.
               shooter.lowerHood(); // Lowers the hood of the shooter.
               indexer.stop(); // Turns the indexer off.
@@ -328,8 +328,8 @@ public class Robot extends TimedRobot {
 
           case 5:
             // Auto 2, Stage 5 code goes here.
-            swerve.drive(0.0, -1.5, 0.0, true, 0.0, 0.0); // Moves the robot in the neutral zone, collecting fuel.
-            if (swerve.getYPos() <= 4.475) {
+            swerve.driveTo(7.700,4.475, 89.098);// Moves the robot in the neutral zone, collecting fuel.
+            if (swerve.atDriveGoal()) {
               swerve.drive(0.0, 0.0, 0.0, true, 0.0, 0.0); // Holds the robot still.
               intake.stow(); // Stows the intake.
               swerve.resetPathController(3);
@@ -370,108 +370,108 @@ public class Robot extends TimedRobot {
         }
       break; 
 
-      case auto3:
-        switch (autoStage) {
-          case 1:
-            // Auto 3, Stage 1 code goes here.
-            swerve.driveTo(3.51, 5.1, calcShootingHeading()); // Brings the robot to a shooting position.
-            shooter.spinUp(); // Turns the shooter on.
-            if (swerve.atPathEndpoint(4)) {
-              shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
-              swerve.resetDriveController(calcShootingHeading());
-              autoStage = 2; // Advances to the next stage once the robot has gotten to the shooting position.
-            }
-          break;
+      // case auto3:
+      //   switch (autoStage) {
+      //     case 1:
+      //       // Auto 3, Stage 1 code goes here.
+      //       swerve.driveTo(3.51, 5.1, calcShootingHeading()); // Brings the robot to a shooting position.
+      //       shooter.spinUp(); // Turns the shooter on.
+      //       if (swerve.atPathEndpoint(4)) {
+      //         shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+      //         swerve.resetDriveController(calcShootingHeading());
+      //         autoStage = 2; // Advances to the next stage once the robot has gotten to the shooting position.
+      //       }
+      //     break;
 
-          case 2:
-            // Auto 3, Stage 2 code goes here.
-            swerve.aimDrive(0.0, 0.0, calcShootingHeading(), true); // Rotates the robot to a rotation where it'll have the least misses.
-            if (shooter.isReady() && swerve.atDriveGoal()) {
-              shootingTimer.restart(); // Restarts the shooting timer.
-              autoStage = 3; // Advances to the next stage once the robot has started shooting.
-            }
-          break;
+      //     case 2:
+      //       // Auto 3, Stage 2 code goes here.
+      //       swerve.aimDrive(0.0, 0.0, calcShootingHeading(), true); // Rotates the robot to a rotation where it'll have the least misses.
+      //       if (shooter.isReady() && swerve.atDriveGoal()) {
+      //         shootingTimer.restart(); // Restarts the shooting timer.
+      //         autoStage = 3; // Advances to the next stage once the robot has started shooting.
+      //       }
+      //     break;
 
-          case 3:
-            // Auto 3, Stage 3 code goes here.
-            swerve.drive(0.0, 0.0, 0.0, false, 0.0, 0.0); // Holds the robot still.
-            indexer.start(); // Turns on the indexer.
-            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
-            if (shootingTimer.get() > 3.0) {
-              shooter.spinDown(); // Turns the shooter off.
-              shooter.lowerHood(); // Lowers the hood of the shooter.
-              indexer.stop(); // Turns the indexer off.
-              swerve.resetPathController(4); 
-              autoStage = 4; // Advances to the next stage once the robot has finished shooting.
-            }
-          break;
+      //     case 3:
+      //       // Auto 3, Stage 3 code goes here.
+      //       swerve.drive(0.0, 0.0, 0.0, false, 0.0, 0.0); // Holds the robot still.
+      //       indexer.start(); // Turns on the indexer.
+      //       shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+      //       if (shootingTimer.get() > 3.0) {
+      //         shooter.spinDown(); // Turns the shooter off.
+      //         shooter.lowerHood(); // Lowers the hood of the shooter.
+      //         indexer.stop(); // Turns the indexer off.
+      //         swerve.resetPathController(4); 
+      //         autoStage = 4; // Advances to the next stage once the robot has finished shooting.
+      //       }
+      //     break;
 
-          case 4:
-            // Auto 3, Stage 4 code goes here.
-            swerve.followPath(4); // Brings the robot to the depot.
-            if (swerve.getXPos() < 1.8) {
-                intake.leftIntake(); // When the X position is less than 1.8, the left intake will deploy.
-            }
-            if (swerve.atPathEndpoint(4) && intake.isReady()) {
-              autoStage = 5; // Advances to the next stage once the robot has gotten to the neutral zone.
-            }
-          break;
+      //     case 4:
+      //       // Auto 3, Stage 4 code goes here.
+      //       swerve.followPath(4); // Brings the robot to the depot.
+      //       if (swerve.getXPos() < 1.8) {
+      //           intake.leftIntake(); // When the X position is less than 1.8, the left intake will deploy.
+      //       }
+      //       if (swerve.atPathEndpoint(4) && intake.isReady()) {
+      //         autoStage = 5; // Advances to the next stage once the robot has gotten to the neutral zone.
+      //       }
+      //     break;
 
-          case 5:
-            // Auto 3, Stage 5 code goes here.
-            swerve.drive(0.0, 1.0, 0.0, true, 0.0, 0.0); // Moves the robot in the depot, collecting fuel.
-            if (swerve.getYPos() >= 6.1) {
-              swerve.drive(0.0, 0.0, 0.0, true, 0.0, 0.0); // Holds the robot still.
-              intake.stow(); // Stows the intake.
-              swerve.resetPathController(5);
-              autoStage = 6; // Advances to the next stage once the robot has finished intaking.
-            }
-          break;
+      //     case 5:
+      //       // Auto 3, Stage 5 code goes here.
+      //       swerve.drive(0.0, 1.0, 0.0, true, 0.0, 0.0); // Moves the robot in the depot, collecting fuel.
+      //       if (swerve.getYPos() >= 6.1) {
+      //         swerve.drive(0.0, 0.0, 0.0, true, 0.0, 0.0); // Holds the robot still.
+      //         intake.stow(); // Stows the intake.
+      //         swerve.resetPathController(5);
+      //         autoStage = 6; // Advances to the next stage once the robot has finished intaking.
+      //       }
+      //     break;
 
-          case 6:
-            // Auto 3, Stage 6 code goes here.
-            swerve.followPath(5); // Brings the robot back to a shooting position from the neutral zone.
-            shooter.spinUp(); // Turns the shooter on.
-            if (swerve.atPathEndpoint(5)) {
-              shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
-              swerve.resetDriveController(calcShootingHeading());
-              autoStage = 7; // Advances to the next stage once the robot has reached the shooting position.
-            }
-          break;
+      //     case 6:
+      //       // Auto 3, Stage 6 code goes here.
+      //       swerve.followPath(5); // Brings the robot back to a shooting position from the neutral zone.
+      //       shooter.spinUp(); // Turns the shooter on.
+      //       if (swerve.atPathEndpoint(5)) {
+      //         shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+      //         swerve.resetDriveController(calcShootingHeading());
+      //         autoStage = 7; // Advances to the next stage once the robot has reached the shooting position.
+      //       }
+      //     break;
 
-          case 7:
-            // Auto 3, Stage 7 code goes here.
-            swerve.aimDrive(0.0, 0.0, calcShootingHeading(), true); // Rotates the robot to a rotation where it'll have the least misses.
-            if (shooter.isReady() && swerve.atDriveGoal()) {
-              shootingTimer.restart(); // Restarts the shooting timer.
-              autoStage = 8; // Advances to the next stage once the robot has started shooting.
-            }
-          break;
+      //     case 7:
+      //       // Auto 3, Stage 7 code goes here.
+      //       swerve.aimDrive(0.0, 0.0, calcShootingHeading(), true); // Rotates the robot to a rotation where it'll have the least misses.
+      //       if (shooter.isReady() && swerve.atDriveGoal()) {
+      //         shootingTimer.restart(); // Restarts the shooting timer.
+      //         autoStage = 8; // Advances to the next stage once the robot has started shooting.
+      //       }
+      //     break;
           
-          case 8:
-            // Auto 3, Stage 8 code goes here.
-            swerve.drive(0.0, 0.0, 0.0, false, 0.0, 0.0); // Holds the robot still.
-            indexer.start(); // Turns on the indexer.
-            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
-            if (shootingTimer.get() > 3.0) {
-              shooter.spinDown(); // Turns the shooter off.
-              shooter.lowerHood(); // Lowers the hood of the shooter.
-              indexer.stop(); // Turns the indexer off.
-              climber.moveUp(); // Moves the climber up.
-              swerve.resetPathController(6);
-              autoStage = 9; // Moves onto the next stage once the robot has finished shooting.
-            }
-          break;
+      //     case 8:
+      //       // Auto 3, Stage 8 code goes here.
+      //       swerve.drive(0.0, 0.0, 0.0, false, 0.0, 0.0); // Holds the robot still.
+      //       indexer.start(); // Turns on the indexer.
+      //       shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+      //       if (shootingTimer.get() > 3.0) {
+      //         shooter.spinDown(); // Turns the shooter off.
+      //         shooter.lowerHood(); // Lowers the hood of the shooter.
+      //         indexer.stop(); // Turns the indexer off.
+      //         climber.moveUp(); // Moves the climber up.
+      //         swerve.resetPathController(6);
+      //         autoStage = 9; // Moves onto the next stage once the robot has finished shooting.
+      //       }
+      //     break;
 
-          case 9:
-            // Auto 3, Stage 9 code goes here.
-            swerve.followPath(6); // Brings the robot to the tower to climb.
-            if (swerve.atPathEndpoint(6)) {
-              climber.moveDown(); // Moves the climber down so the robot is actually climbing the rung.
-            }
-          break;
-        }
-        break;
+      //     case 9:
+      //       // Auto 3, Stage 9 code goes here.
+      //       swerve.followPath(6); // Brings the robot to the tower to climb.
+      //       if (swerve.atPathEndpoint(6)) {
+      //         climber.moveDown(); // Moves the climber down so the robot is actually climbing the rung.
+      //       }
+      //     break;
+      //   }
+      //   break;
 
       case auto4:
         switch (autoStage) {
@@ -514,7 +514,7 @@ public class Robot extends TimedRobot {
 
           case 4:
             // Auto 4, Stage 4 code goes here.
-            swerve.aimDrive(0.0, 2.0, 180.0, true); // Moves the robot in the neutral zone, collecting fuel.
+            swerve.driveTo(7.700,3.575,-90.719); // Moves the robot in the neutral zone, collecting fuel.
             if (swerve.getYPos() > 3.2) {
               intake.stow(); // Stows the intake.
               swerve.resetPathController(1);
@@ -699,9 +699,9 @@ public class Robot extends TimedRobot {
           swerve.updateVisionHeading(true, -90.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
         break;
         
-        case auto3:
-          swerve.updateVisionHeading(true, 180.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
-        break;
+        // case auto3:
+        //   swerve.updateVisionHeading(true, 180.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
+        // break;
 
         case auto4:
           swerve.updateVisionHeading(true, 90.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
