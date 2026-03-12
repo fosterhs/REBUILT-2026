@@ -23,31 +23,31 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Voltage;
 
 public class Shooter {
-  private final CANBus canivore = new CANBus("canivore");
-  private final TalonFX hoodMotor = new TalonFX(9, canivore);  
-  private final TalonFX shootMotorRight = new TalonFX(12, canivore);  
-  private final TalonFX shootMotorLeft = new TalonFX(11, canivore); 
-  private final CANcoder hoodEncoder = new CANcoder(28, canivore); 
+  private final CANBus canivore = new CANBus("canivore"); // Creates a new CAN bus called "canivore". This is the name of the CAN bus that the shooter motors and hood encoder are connected to. Make sure to set this correctly based on your robot's wiring.
+  private final TalonFX hoodMotor = new TalonFX(9, canivore); // Creates a new TalonFX motor controller for the hood motor. The motor is assigned an ID of 9 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
+  private final TalonFX shootMotorRight = new TalonFX(12, canivore); // Creates a new TalonFX motor controller for the right shooter motor. The motor is assigned an ID of 12 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
+  private final TalonFX shootMotorLeft = new TalonFX(11, canivore); // Creates a new TalonFX motor controller for the left shooter motor. The motor is assigned an ID of 11 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
+  private final CANcoder hoodEncoder = new CANcoder(28, canivore); // Creates a new CANcoder for the hood encoder. The encoder is assigned an ID of 28 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
 
-  private final StatusSignal<AngularVelocity> shooterVelocityRight;
-  private final StatusSignal<AngularVelocity> shooterVelocityLeft;
-  private final StatusSignal<Angle> hoodPosition;
-  private final StatusSignal<Voltage> shooterVoltageRight;
+  private final StatusSignal<AngularVelocity> shooterVelocityRight; // Creates a new StatusSignal for the velocity of the right shooter motor. This will allow us to read the velocity of the motor in real-time and use it to determine if the motor is at the desired speed.
+  private final StatusSignal<AngularVelocity> shooterVelocityLeft; // Creates a new StatusSignal for the velocity of the left shooter motor. This will allow us to read the velocity of the motor in real-time and use it to determine if the motor is at the desired speed.
+  private final StatusSignal<Angle> hoodPosition; // Creates a new StatusSignal for the position of the hood motor. This will allow us to read the position of the motor in real-time and use it to determine if the motor is at the desired position.
+  private final StatusSignal<Voltage> shooterVoltageRight; // Creates a new StatusSignal for the voltage of the right shooter motor. This will allow us to read the voltage of the motor in real-time and use it to monitor the health of the motor and ensure that it is not being overworked.
 
-  private final VelocityVoltage shooterMotorRightVelocityRequest = new VelocityVoltage(0.0).withEnableFOC(true);
-  private final Follower shooterMotorLeftFollowerRequest = new Follower(shootMotorRight.getDeviceID(), MotorAlignmentValue.Opposed);
-  private final MotionMagicTorqueCurrentFOC hoodMotorPositionRequest = new MotionMagicTorqueCurrentFOC(0.0); 
+  private final VelocityVoltage shooterMotorRightVelocityRequest = new VelocityVoltage(0.0).withEnableFOC(true); // Creates a new VelocityVoltage control mode for the right shooter motor. This will allow us to set the velocity that we want to apply to the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
+  private final Follower shooterMotorLeftFollowerRequest = new Follower(shootMotorRight.getDeviceID(), MotorAlignmentValue.Opposed); // Creates a new Follower control mode for the left shooter motor. This will allow us to set the left shooter motor to follow the right shooter motor, so that we only have to set the velocity for the right shooter motor and the left shooter motor will automatically match it. The MotorAlignmentValue.Opposed part means that the left shooter motor will run in the opposite direction of the right shooter motor, which is necessary for our shooter configuration.
+  private final MotionMagicTorqueCurrentFOC hoodMotorPositionRequest = new MotionMagicTorqueCurrentFOC(0.0); // Creates a new MotionMagicTorqueCurrentFOC control mode for the hood motor. This will allow us to set the position that we want to apply to the motor when it is moving the hood. We will configure the PID values for this control mode in the configHoodMotor method.
 
-  private final double rpmTol = 300.0; // Can adjust
-  private final double hoodTol = 0.010; // Can adjust
-  public final double hoodMinPosition = 0.020; // Can adjust
-  public final double hoodMaxPosition = 0.115; // Can adjust
-  public final double maxFlywheelRPM = 5000.0; // Can adjust
-  public final double minFlywheelRPM = 2000.0; // Can adjust
-  public enum Mode {SHOOT, IDLE}
-  private Mode currMode = Mode.IDLE;
-  private double shootingRPM = 3000.0; // Can adjust
-  private double desiredHoodPosition = hoodMinPosition;
+  private final double rpmTol = 300.0; // Tolerance for checking if the shooter motors are at the desired RPM. This can be adjusted based on the performance of the motors and the requirements of the shooter.
+  private final double hoodTol = 0.010; // Tolerance for checking if the hood is at the desired position. This can be adjusted based on the performance of the hood mechanism and the requirements of the shooter.
+  public final double hoodMinPosition = 0.020; // The minimum position of the hood in hood rotations.
+  public final double hoodMaxPosition = 0.115; // The maximum position of the hood in hood rotations.
+  public final double maxFlywheelRPM = 5000.0; // The maximum RPM of the flywheel.
+  public final double minFlywheelRPM = 2000.0; // The minimum RPM of the flywheel.
+  public enum Mode {SHOOT, IDLE} // SHOOT mode runs the shooter motors to shoot fuel. IDLE mode stops the shooter motors.
+  private Mode currMode = Mode.IDLE; // Initializes the current mode of the shooter to IDLE. This means that when the robot is first turned on, the shooter will be in the IDLE state and will not be running.
+  private double shootingRPM = 3000.0; // Initializes the desired shooting RPM of the shooter motors. 
+  private double desiredHoodPosition = hoodMinPosition; // Initializes the desired position of the hood. 
 
   // Simulation
   private final TalonFXSimState hoodMotorSim = hoodMotor.getSimState();
@@ -57,52 +57,55 @@ public class Shooter {
   private double desiredRPMSim = 0;
   public static final double hoodGearRatio = 1;
 
-  // Initialize Shooter: configure motor, and obtain a data for velocity
+  // Constructor for the Shooter class. This is where we will configure the shooter motors and hood encoder with the appropriate settings for our robot. We will set the neutral mode to brake, set the motor direction based on the invert parameter, configure current limits for the motors, and configure the PID values for the hood motor. We will also optimize bus utilization for the motors and encoder to improve performance.
   public Shooter() {
     configHoodEncoder(hoodEncoder);
     configShootMotor(shootMotorRight, true);
-    configShootMotor(shootMotorLeft, false); // Configures the motor with counterclockwise rotation positive.
+    configShootMotor(shootMotorLeft, false); 
     configHoodMotor(hoodMotor, false);
     shooterVelocityRight = shootMotorRight.getVelocity();
     shooterVelocityLeft = shootMotorLeft.getVelocity();
     hoodPosition = hoodEncoder.getAbsolutePosition();
     shooterVoltageRight = shootMotorRight.getMotorVoltage();
     BaseStatusSignal.setUpdateFrequencyForAll(250.0, shooterVelocityRight, shooterVelocityLeft, hoodPosition, shooterVoltageRight);
-	  ParentDevice.optimizeBusUtilizationForAll(shootMotorLeft, hoodMotor, hoodEncoder);
+    ParentDevice.optimizeBusUtilizationForAll(shootMotorLeft, hoodMotor, hoodEncoder);
   }
 
+  // Resets the shooter to the default state: sets the current mode to IDLE, stops the shooter motors, and lowers the hood. Should be called when the robot is enabled to ensure that the shooter starts in a known state.
   public void init() {
     currMode = Mode.IDLE;
     spinDown();
     lowerHood();
   }
   
+  // Runs code every 20ms: if the current state is SHOOT, then run the shooter motors at the specified shooting RPM. If the current state is IDLE, then stop the shooter motors. In both cases, set the left shooter motor to follow the right shooter motor, and set the hood motor to move to the desired hood position using MotionMagicTorqueCurrentFOC control mode.
   public void periodic() {
     switch (currMode) {
-      case SHOOT:
+      case SHOOT: // Runs the shooter motors at the specified shooting RPM.
         shootMotorRight.setControl(shooterMotorRightVelocityRequest.withVelocity(shootingRPM/60.0).withEnableFOC(true));
       break;
 
-      case IDLE:
+      case IDLE: // Stops the shooter motors.
         shootMotorRight.setControl(shooterMotorRightVelocityRequest.withVelocity(0.0).withEnableFOC(true));
       break;
     } 
-    shootMotorLeft.setControl(shooterMotorLeftFollowerRequest);
-    hoodMotor.setControl(hoodMotorPositionRequest.withPosition(desiredHoodPosition));
+    shootMotorLeft.setControl(shooterMotorLeftFollowerRequest); // Sets the left shooter motor to follow the right shooter motor.
+    hoodMotor.setControl(hoodMotorPositionRequest.withPosition(desiredHoodPosition)); // Sets the hood motor to move to the desired hood position using MotionMagicTorqueCurrentFOC control mode.
   }
-  
-  // Turns on motor. Sets the speed of the motor in rotations per minute.
+
+  // Sets the current state to SHOOT, which will cause the shooter to run in the periodic method at the specified shooting RPM.
   public void spinUp() {
     currMode = Mode.SHOOT;
     desiredRPMSim = shootingRPM;
   }
 
-  // Turn off motor.
+  // Sets the current state to IDLE, which will cause the shooter to stop in the periodic method.
   public void spinDown() {
     currMode = Mode.IDLE;
     desiredRPMSim = 0;
   }
 
+  // Sets the desired shooting RPM of the shooter motors. If the specified RPM is above the maximum RPM, it will be set to the maximum RPM. If the specified RPM is below the minimum RPM, it will be set to the minimum RPM. Otherwise, it will be set to the specified RPM.
   public void setShootingRPM(double rpm) {
     if (rpm > maxFlywheelRPM) {
       shootingRPM = maxFlywheelRPM;
@@ -113,6 +116,7 @@ public class Shooter {
     }
   }
 
+  // Sets the desired position of the hood. If the specified position is above the maximum position, it will be set to the maximum position. If the specified position is below the minimum position, it will be set to the minimum position. Otherwise, it will be set to the specified position.
   public void setHoodPosition(double position) {
     if (position < hoodMinPosition) {
       desiredHoodPosition = hoodMinPosition;
@@ -123,14 +127,17 @@ public class Shooter {
     }
   }
 
+  // Sets the desired position of the hood to the minimum position, which will lower the hood.
   public void lowerHood() {
     desiredHoodPosition = hoodMinPosition;
   }
 
+  // Gets the current mode that the shooter is in. This will return either SHOOT or IDLE, which can be used to determine if the shooter is currently running or not.
   public Mode getMode() {
     return currMode;
   }
 
+  // Returns true or false based on whether the hood is near the desired position.
   public boolean hoodIsInPosition() {
     // TODO: Fix simulationPeriodic
     if (Robot.isSimulation()) return true;
@@ -138,30 +145,32 @@ public class Shooter {
     return Math.abs(desiredHoodPosition - getHoodPosition()) < hoodTol;
   }
 
+  // Returns the current position of the hood in hood rotations.
   public double getHoodPosition() {
     return hoodPosition.refresh().getValueAsDouble();
   }
 
-  // Returns true or false based on whether the shooter motor is near the desired RPM.
+  // Returns true or false based on whether the shooter motors are near the desired shooting RPM.
   public boolean flywheelIsAtSpeed() {
     return Math.abs(shootingRPM - getRightFlywheelMotorRPM()) < rpmTol && Math.abs(shootingRPM - getLeftFlywheelMotorRPM()) < rpmTol;
   }
 
-  // Returns the motor velocity in RPM (Rotations Per Minute)
+  // Returns the left shooter motor velocity in RPM (Rotations Per Minute)
   public double getLeftFlywheelMotorRPM() {
     return shooterVelocityLeft.refresh().getValueAsDouble()*60.0;
   }
 
-  // Returns the motor velocity in RPM (Rotations Per Minute)
+  // Returns the right shooter motor velocity in RPM (Rotations Per Minute)
   public double getRightFlywheelMotorRPM() {
     return shooterVelocityRight.refresh().getValueAsDouble()*60.0;
   }
 
+  // Returns true or false based on whether the shooter motors are near the desired shooting RPM and the hood is near the desired position. This can be used to determine if the shooter is ready to shoot fuel.
   public boolean isReady() {
     return flywheelIsAtSpeed() && hoodIsInPosition();
   }
 
-  // Publish Shooter information (Motor state, Velocity) to SmartDashboard.
+  // Updates the SmartDashboard with the current mode, shooting RPM, hood position, and whether the shooter is at speed and in position. Useful for debugging and tuning.
   public void updateDash() {
     //SmartDashboard.putNumber("Shooter getRightShooterRPM", getRightShooterRPM());
     //SmartDashboard.putNumber("Shooter getLeftShooterRPM", getLeftShooterRPM());
@@ -188,22 +197,23 @@ public class Shooter {
     hoodEncoderSim.setRawPosition(desiredHoodPosition/hoodGearRatio);
   }
 
+  // Configures the hood encoder with the appropriate settings for our robot. Sets the absolute sensor discontinuity point, magnet offset, and sensor direction based on the physical configuration of the encoder on our robot. These settings are important to ensure that the encoder readings are accurate and consistent with the actual position of the hood.
   private void configHoodEncoder(CANcoder CANsensor) {
-    CANcoderConfiguration sensorConfigs = new CANcoderConfiguration();
+    CANcoderConfiguration sensorConfigs = new CANcoderConfiguration(); // Creates a new configuration object for the CANcoder. This object will hold all the settings that we want to apply to the encoder.
 
-    sensorConfigs.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 0.5; 
-    sensorConfigs.MagnetSensor.MagnetOffset = 0.378662109375;
-    sensorConfigs.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive;
+    sensorConfigs.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 0.5; // The point at which the sensor's absolute position reading discontinuously jumps from 1.0 back to 0.0. This should be set based on the physical configuration of the encoder on our robot. 
+    sensorConfigs.MagnetSensor.MagnetOffset = 0.378662109375; // The offset to apply to the sensor's absolute position reading to align it with the actual position of the hood. This should be set based on the physical configuration of the encoder on our robot.
+    sensorConfigs.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive; // The direction that the sensor counts as positive. This should be set based on the physical configuration of the encoder on our robot.
 
-    CANsensor.getConfigurator().apply(sensorConfigs, 0.03);
+    CANsensor.getConfigurator().apply(sensorConfigs, 0.03); // Applies the configuration to the encoder with a timeout of 0.03 seconds. This will set all the settings that we specified in the sensorConfigs object to the encoder.
   }
 
-  // Configs the motor settings and PID
+  // Configures the shooter motors with the appropriate settings for our robot. Sets the neutral mode to brake, sets the motor direction based on the invert parameter, configures current limits for the motor, and configures the PID values for velocity control. These settings are important to ensure that the shooter motors perform well and are protected from damage.
   private void configShootMotor(TalonFX motor, boolean invert) {
-    TalonFXConfiguration motorConfigs = new TalonFXConfiguration();
+    TalonFXConfiguration motorConfigs = new TalonFXConfiguration(); // Creates a new configuration object for the motor. This object will hold all the settings that we want to apply to the motor.
 
-    motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-    motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
+    motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake; // Sets the motor to brake mode, which means it will resist being moved when no power is applied. This is important for the shooter motors to help them maintain their speed and position when they are not being actively powered.
+    motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive; // Sets the motor direction. If invert is true, then positive voltage will make the motor spin clockwise. If false, then positive voltage will make the motor spin counterclockwise. This should be set based on the physical configuration of the motor on our robot to ensure that positive voltage makes the shooter spin in the correct direction to shoot fuel.
 
     // VelocityVoltage closed-loop control configuration.
     motorConfigs.Slot0.kP = 0.20; // Units: volts per 1 motor rotation per second of error.
@@ -212,26 +222,27 @@ public class Shooter {
     motorConfigs.Slot0.kV = 0.12; // The amount of voltage required to create 1 motor rotation per second.
     motorConfigs.Slot0.kS = 0.16; // The amount of voltage required to barely overcome static friction.
 
+    // Current limit configuration. These settings will help protect the motors from drawing too much current and potentially damaging themselves or the electrical system of the robot. 
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.SupplyCurrentLimit = 70.0;
     motorConfigs.CurrentLimits.StatorCurrentLimit = 120.0;
 
-    motor.getConfigurator().apply(motorConfigs, 0.03);
+    motor.getConfigurator().apply(motorConfigs, 0.03); // Applies the configuration to the motor with a timeout of 0.03 seconds. This will set all the settings that we specified in the motorConfigs object to the motor.
   }
 
-  // Configs the motor settings and PID
+  // Configures the hood motor with the appropriate settings for our robot. Sets the neutral mode to brake, sets the motor direction based on the invert parameter, configures current limits for the motor, and configures the PID values for MotionMagicTorqueFOC closed-loop control. These settings are important to ensure that the hood motor performs well and is protected from damage.
   private void configHoodMotor(TalonFX motor, boolean invert) {
-    TalonFXConfiguration motorConfigs = new TalonFXConfiguration();
+    TalonFXConfiguration motorConfigs = new TalonFXConfiguration(); // Creates a new configuration object for the motor. This object will hold all the settings that we want to apply to the motor.
 
-    motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-    motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
+    motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake; // Sets the motor to brake mode, which means it will resist being moved when no power is applied. This is important for the hood motor to help it maintain its position when it is not being actively powered.
+    motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive; // Sets the motor direction. If invert is true, then positive voltage will make the motor spin clockwise. If false, then positive voltage will make the motor spin counterclockwise. This should be set based on the physical configuration of the motor on our robot to ensure that positive voltage makes the hood move in the correct direction to raise and lower.
 
-    motorConfigs.Feedback.FeedbackRemoteSensorID = hoodEncoder.getDeviceID();
-    motorConfigs.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
-    motorConfigs.Feedback.SensorToMechanismRatio = 1.0;
-    motorConfigs.Feedback.RotorToSensorRatio = 211.68;
+    motorConfigs.Feedback.FeedbackRemoteSensorID = hoodEncoder.getDeviceID(); // Sets the ID of the remote sensor that will be used for feedback in closed-loop control. In this case, we are using the hood encoder as the feedback device for the hood motor, so we set this to the device ID of the hood encoder.
+    motorConfigs.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder; // Sets the source of the feedback sensor for closed-loop control. Since we are using the hood encoder as the feedback device, we set this to FusedCANcoder, which means that the motor will use both the integrated sensor and the remote CANcoder sensor for feedback.
+    motorConfigs.Feedback.RotorToSensorRatio = 211.68; // The ratio of motor rotations to sensor rotations. This should be set based on the gearing between the motor and the hood mechanism.
 
+    // Current limit configuration. These settings will help protect the motor from drawing too much current and potentially damaging itself or the electrical system of the robot.
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.SupplyCurrentLimit = 10.0;
@@ -244,6 +255,6 @@ public class Shooter {
     motorConfigs.MotionMagic.MotionMagicAcceleration = 10.0*5800.0/(60.0*211.68); // Units: rotations per second per second.
     motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 5800.0/(60.0*211.68); // Units: roations per second.
 
-    motor.getConfigurator().apply(motorConfigs, 0.03);
+    motor.getConfigurator().apply(motorConfigs, 0.03); // Applies the configuration to the motor with a timeout of 0.03 seconds. This will set all the settings that we specified in the motorConfigs object to the motor.
   }
 }

@@ -20,25 +20,25 @@ public class Robot extends TimedRobot {
   private final SlewRateLimiter angAccLimiter = new SlewRateLimiter(Drivetrain.maxAngAccTeleop / Drivetrain.maxAngVelTeleop);
 
   // Teleop Driving Variables
-  private double xVelTeleop = 0.0;
-  private double yVelTeleop = 0.0;
-  private double angVelTeleop = 0.0;
+  private double xVelTeleop = 0.0; // The x-velocity of the robot that results from controller inputs after being processed by the slew rate limiters. This is used to control the drivetrain during teleop.
+  private double yVelTeleop = 0.0; // The y-velocity of the robot that results from controller inputs after being processed by the slew rate limiters. This is used to control the drivetrain during teleop.
+  private double angVelTeleop = 0.0; // The angular velocity of the robot that results from controller inputs after being processed by the slew rate limiters. This is used to control the drivetrain during teleop.
   private double speedScaleFactor = 0.4; // Scales the translational speed of the robot that results from controller inputs. 1.0 corresponds to full speed. 0.0 is fully stopped.
   private double rotationScaleFactor = 0.3; // Scales the rotational speed of the robot that results from controller inputs. 1.0 corresponds to full speed. 0.0 is fully stopped.
   private boolean boostMode = false; // Stores whether the robot is at 100% speed (boost mode), or at ~65% speed (normal mode).
   private boolean swerveLock = false; // Controls whether the swerve drive is in x-lock (for defense) or is driving. 
-  private final double nearTrenchX = 182.11*0.0254;
-  private final double farTrenchX = Drivetrain.fieldLength - nearTrenchX;
-  private final double trenchTolerance = 0.5;
-  private boolean isNearTrench = false;
-  private boolean isScoring = false;
-  private boolean isShooting = false;
-  private final Timer isReadyToShootTimer = new Timer();
-  private final Timer isNotReadyToShootTimer = new Timer();
-  private final double readyOnDelay = 0.3;
-  private final double readyOffDelay = 0.8;
-  private boolean isReadyToShoot = false;
-  private boolean isCurrentyReadyToShoot = false;
+  private final double nearTrenchX = 182.11*0.0254; // The x-position of the near trench on the field in meters. This is used to determine whether the robot is in the near trench.
+  private final double farTrenchX = Drivetrain.fieldLength - nearTrenchX; // The x-position of the far trench on the field in meters. This is used to determine whether the robot is in the far trench.
+  private final double trenchTolerance = 0.5; // The amount of tolerance that the robot has to be within the trench x-positions to be considered "near" the trench in meters. 
+  private boolean isNearTrench = false; // Stores whether the robot is near the trench or not based on its current x-position on the field. 
+  private boolean isScoring = false; // Stores whether the robot is currently scoring or passing based on its position on the field. 
+  private boolean isShooting = false; // Stores whether the robot is currently shooting or not. Updated in teleop based on driver inputs.
+  private final Timer isReadyToShootTimer = new Timer(); // A timer that tracks how long the robot has been ready to shoot. This is used to prevent the indexer from running until the shooter has been up to speed and the robot has been at the shooting position for a certain amount of time, which can help improve accuracy by ensuring that fuel is not fed into the shooter until it's ready.
+  private final Timer isNotReadyToShootTimer = new Timer(); // A timer that tracks how long the robot has not been ready to shoot. 
+  private final double readyOnDelay = 0.3; // The amount of time that the robot needs to be ready to shoot before the isReadyToShoot variable is set to true and allows the indexer to run in seconds. This can help improve accuracy by ensuring that fuel is not fed into the shooter until it's ready.
+  private final double readyOffDelay = 2.0; // The amount of time that the robot needs to not be ready to shoot before the isReadyToShoot variable is set to false and prevents the indexer from running in seconds. 
+  private boolean isReadyToShoot = false; // Stores whether the robot is ready to shoot or not based on whether the shooter has been up to speed and the robot has been at the shooting position for longer than the ready on delay. This variable is used to control whether the indexer should be running or not to help improve accuracy by ensuring that fuel is not fed into the shooter until it's ready.
+  private boolean isCurrentyReadyToShoot = false; // Stores whether the robot is currently ready to shoot based on whether the shooter is up to speed and the robot is at the shooting position. 
 
   // Initializes the different subsystems of the robot.
   private final Drivetrain swerve = new Drivetrain(); // Contains the Swerve Modules, Gyro, Path Follower, Target Tracking, Odometry, and Vision Calibration.
@@ -52,7 +52,7 @@ public class Robot extends TimedRobot {
   private static final String auto1 = "Fuel Collection Via Neutral Zone, Right Side Start."; 
   private static final String auto2 = "Fuel Collection Via Neutral Zone, Left Side Start."; 
   private static final String auto3 = "Climbing, Center Start."; 
-  private static final String auto4 = "Test"; 
+  private static final String auto4 = "Right Side. Shoot, collect from neutral zone, shoot, collect fuel from the human player station."; 
   private String autoSelected;
   private int autoStage = 1;
   private boolean autoCompleted = false;
@@ -64,14 +64,14 @@ public class Robot extends TimedRobot {
   private final double passingX = 1.5; // The x-position of the point the robot will aim at when passing in meters.
   private final double passingYOffset = 1.5; // The y-distance from the edge of the field that the robot will aim at when passing in meters.
   private double passingY = 1.5; // The y-position of the point the robot will aim at when passing in meters.
-  private double robotX;
-  private double robotY;
-  private double robotXVel;
-  private double robotYVel;
-  private double distanceToTarget;
-  private double airTimeApproximation;
-  private double targetX;
-  private double targetY;
+  private double robotX; // The current x-position of the robot on the field in meters.
+  private double robotY; // The current y-position of the robot on the field in meters.
+  private double robotXVel; // The current x-velocity of the robot on the field in meters per second.
+  private double robotYVel; // The current y-velocity of the robot on the field in meters per second.
+  private double distanceToTarget; // The distance from the robot to the target point in meters.
+  private double airTimeApproximation; // An approximation of the time that the fuel will be in the air based on the distance to the target. This is used to calculate how much the robot will need to lead its shots by.
+  private double targetX; // The x-position of the point that the robot is aiming at when shooting in meters. This will either be the position of the hub or the position of the passing point, depending on whether the robot is passing or shooting directly at the hub. Includes an offset to lead shots while shooting on the move based on airtime and velocity.
+  private double targetY; // The y-position of the point that the robot is aiming at when shooting in meters. This will either be the position of the hub or the position of the passing point, depending on whether the robot is passing or shooting directly at the hub. Includes an offset to lead shots while shooting on the move based on airtime and velocity.
   
   // Sim Variables
   public static final double dTime = 0.020;  // units: seconds
@@ -112,10 +112,17 @@ public class Robot extends TimedRobot {
   }
 
   public void autonomousInit() {
+    // Runs the init method for each subsystem to reset them to their default states at the start of autonomous. This is important to ensure that there are no unexpected behaviors caused by leftover states.
     climber.init(); 
     indexer.init();
     intake.init();
     shooter.init();
+
+    // Resets all the shooting variables to their default values at the start of autonomous.
+    isCurrentyReadyToShoot = false;
+    isReadyToShoot = false;
+    isReadyToShootTimer.restart();
+    isNotReadyToShootTimer.restart();
 
     autoCompleted = true;
     autoStage = 1;
@@ -168,15 +175,17 @@ public class Robot extends TimedRobot {
       swerve.addVisionEstimate(limelightIndex, true); // Checks to see if there are reliable April Tags in sight of the Limelight and updates the robot position on the field.
     }
 
-    isScoring = true;
-    updateTrajectory();
-    shooter.setShootingRPM(calcFlywheelRPM());
-    indexer.setIndexVoltage(calcIndexerVoltage());
+    isScoring = true; // The robot is scoring during the entire autonomous period, so this variable is set to true to allow the shooting trajectory to update and be used in the shooter calculations.
+    updateTrajectory(); // Updates the shooting trajectory variables based on the current position of the robot on the field. This is used to calculate the optimal shooting parameters for the shooter subsystem.
+    shooter.setShootingRPM(calcFlywheelRPM()); // Sets the shooter RPM based on the shooting trajectory calculations.
+    indexer.setIndexVoltage(calcIndexerVoltage()); // Sets the indexer voltage based on the shooting trajectory calculations.
 
-    climber.perioidic();
-    indexer.periodic();
-    intake.periodic();
-    shooter.periodic();
+    // Controls the isReadyToShoot variable, which is used to determine whether the indexer should be running or not. The robot needs to be at the shooting position and the shooter needs to be up to speed for a certain amount of time.
+    isCurrentyReadyToShoot = shooter.isReady() && swerve.atDriveGoal(); // The robot is currently ready to shoot if the shooter is up to speed and the robot is at the shooting position.
+    if (!isCurrentyReadyToShoot) isReadyToShootTimer.restart(); // If the robot is not currently ready to shoot, the timer that tracks how long the robot has been ready to shoot is restarted.
+    if (isCurrentyReadyToShoot) isNotReadyToShootTimer.restart(); // If the robot is currently ready to shoot, the timer that tracks how long the robot has not been ready to shoot is restarted.
+    if (isReadyToShootTimer.get() > readyOnDelay && !isReadyToShoot) isReadyToShoot = true; // If the robot has been ready to shoot for longer than the ready on delay, the isReadyToShoot variable is set to true, allowing the indexer to run.
+    if (isNotReadyToShootTimer.get() > readyOffDelay && isReadyToShoot) isReadyToShoot = false; // If the robot has not been ready to shoot for longer than the ready off delay, the isReadyToShoot variable is set to false, preventing the indexer from running.
 
     switch (autoSelected) {
       case auto1:
@@ -468,57 +477,56 @@ public class Robot extends TimedRobot {
         switch (autoStage) {
           case 1:
             // Auto 4, Stage 1 code goes here.
-            swerve.driveTo(3.5, 7.31, calcShootingHeading()); // Brings the robot slightly backwards.
+            swerve.driveTo(3.5, 0.75, calcShootingHeading()); // Brings the robot slightly backwards.
             shooter.spinUp(); // Turns the shooter on.
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
-            if (swerve.atDriveGoal()) {
+            if (isReadyToShoot) {
               shootingTimer.restart(); // Restarts the shooting timer.
+              indexer.start(); // Turns on the indexer.
               autoStage = 2; // Advances to the next stage once the robot has gotten to the shooting position.
             }
           break;
 
           case 2:
             // Auto 4, Stage 2 code goes here.
-            swerve.drive(0.0, 0.0, 0.0, false, 0.0, 0.0); // Holds the robot still.
-            indexer.start(); // Turns on the indexer.
+            swerve.driveTo(3.5, 0.75, calcShootingHeading()); // Brings the robot slightly backwards.
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
-            if (shootingTimer.get() > 3.0) {
+            if (shootingTimer.get() > 4.0) {
               shooter.spinDown(); // Turns the shooter off.
               shooter.lowerHood(); // Lowers the hood of the shooter.
               indexer.stop(); // Turns the indexer off.
-              swerve.resetPathController(2); 
+              swerve.resetPathController(0); 
               autoStage = 3; // Advances to the next stage once the robot has finished shooting.
             }
           break;
 
           case 3:
             // Auto 4, Stage 3 code goes here.
-            swerve.followPath(2); // Brings the robot to the neutral zone to collect fuel.
+            swerve.followPath(0); // Brings the robot to the neutral zone to collect fuel.
             if (swerve.getXPos() > 5.5) {
-              intake.leftIntake(); // When the X position is greater than 5.5, the left intake will deploy.
+              intake.rightIntake(); // When the X position is greater than 5.5, the right intake will deploy.
             }
-            if (swerve.getXPos() > 7.5  && intake.isReady()) {
+            if (swerve.getXPos() > 7.3) {
               autoStage = 4; // Advances to the next stage once the robot has gotten to the neutral zone.
-              swerve.resetDriveController(90.0);
+              swerve.resetDriveController(180.0);
             }
           break;
 
           case 4:
             // Auto 4, Stage 4 code goes here.
-            swerve.aimDrive(0.0, 2.0, 90.0, true); // Moves the robot in the neutral zone, collecting fuel.
-            if (swerve.getYPos() <= 4.475) {
+            swerve.aimDrive(0.0, 2.0, 180.0, true); // Moves the robot in the neutral zone, collecting fuel.
+            if (swerve.getYPos() > 3.2) {
               intake.stow(); // Stows the intake.
-              swerve.resetPathController(3);
+              swerve.resetPathController(1);
+              shooter.spinUp(); // Turns the shooter on.
               autoStage = 5; // Advances to the next stage once the robot has finished intaking.
             }
           break;
 
           case 5:
             // Auto 4, Stage 5 code goes here.
-            swerve.followPath(3); // Brings the robot back to a shooting position from the neutral zone.
-            shooter.spinUp(); // Turns the shooter on.
+            swerve.followPath(1); // Brings the robot back to a shooting position from the neutral zone.
             if (swerve.getXPos() < 3.75) {
-              shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
               swerve.resetDriveController(calcShootingHeading());
               autoStage = 6; // Advances to the next stage once the robot has reached the shooting position.
             }
@@ -528,22 +536,31 @@ public class Robot extends TimedRobot {
             // Auto 4, Stage 6 code goes here.
             swerve.driveTo(0.61, 0.65, calcShootingHeading()); // Brings the robot to the outpost for fuel.
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
-            if (shooter.isReady()) {
-              shootingTimer.restart(); // Restarts the shooting timer.
+            if (isReadyToShoot) {
               indexer.start(); // Turns on the indexer.
             }
           break; 
         }
       break;
     }
+
+    // Runs the periodic methods for the subsystems that need to be updated.
+    climber.periodic();
+    indexer.periodic();
+    intake.periodic();
+    shooter.periodic();
   }
-  
+
   public void teleopInit() {
     swerve.pushCalibration(true, swerve.getFusedAng()); // Updates the robot's position on the field.
+
+    // Initializes the subsystems that need to be initialized for teleop. This is important to reset any variables and states in the subsystems that may have been changed during autonomous.
     climber.init(); 
     indexer.init();
     intake.init();
     shooter.init();
+
+    // Resets all the shooting variables to their default values at the start of teleop.
     isShooting = false;
     isCurrentyReadyToShoot = false;
     isReadyToShoot = false;
@@ -555,53 +572,70 @@ public class Robot extends TimedRobot {
     swerve.updateOdometry(); // Keeps track of the position of the robot on the field. Must be called each period.
     swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
     for (int limelightIndex = 0; limelightIndex < swerve.limelights.length; limelightIndex++) { // Iterates through each limelight.
-      swerve.addVisionEstimate(limelightIndex, true); // Checks to see ifs there are reliable April Tags in sight of the Limelight and updates the robot position on the field.
+      swerve.addVisionEstimate(limelightIndex, true); // Checks to see if there are reliable April Tags in sight of the Limelight and updates the robot position on the field.
     }
 
-    isCurrentyReadyToShoot = shooter.isReady() && swerve.atDriveGoal();
+    isScoring = swerve.getXPos() < nearTrenchX - trenchTolerance; // The robot is considered to be scoring if it's in front of the trench. This is used to determine whether the robot should be aiming for the hub or for the passing point.
+    isNearTrench = (nearTrenchX - trenchTolerance < swerve.getXPos() && swerve.getXPos() < nearTrenchX + trenchTolerance) || (farTrenchX - trenchTolerance < swerve.getXPos() && swerve.getXPos() < farTrenchX + trenchTolerance); // The robot is considered to be near the trench if it's within a certain distance of either edge of the trench. 
+    updateTrajectory(); // Updates the optimal shooting trajectory based on the position and velocity of the robot, which is used to calculate the flywheel RPM, hood position, and indexer voltage.
+    shooter.setShootingRPM(calcFlywheelRPM()); // Sets the flywheel RPM based on the optimal shooting trajectory.
+    indexer.setIndexVoltage(calcIndexerVoltage()); // Sets the indexer voltage based on the optimal shooting trajectory.
 
-    if (!isCurrentyReadyToShoot) isReadyToShootTimer.restart();
-    if (isCurrentyReadyToShoot) isNotReadyToShootTimer.restart();
+    // Controls the isReadyToShoot variable, which is used to determine whether the indexer should be running or not. The robot needs to be at the shooting position and the shooter needs to be up to speed for a certain amount of time.
+    isCurrentyReadyToShoot = shooter.isReady() && swerve.atDriveGoal(); // The robot is currently ready to shoot if the shooter is up to speed and the robot is at the shooting position.
+    if (!isCurrentyReadyToShoot) isReadyToShootTimer.restart(); // If the robot is not currently ready to shoot, the timer that tracks how long the robot has been ready to shoot is restarted.
+    if (isCurrentyReadyToShoot) isNotReadyToShootTimer.restart(); // If the robot is currently ready to shoot, the timer that tracks how long the robot has not been ready to shoot is restarted.
+    if (isReadyToShootTimer.get() > readyOnDelay && !isReadyToShoot) isReadyToShoot = true; // If the robot has been ready to shoot for longer than the ready on delay, the isReadyToShoot variable is set to true, allowing the indexer to run.
+    if (isNotReadyToShootTimer.get() > readyOffDelay && isReadyToShoot) isReadyToShoot = false; // If the robot has not been ready to shoot for longer than the ready off delay, the isReadyToShoot variable is set to false, preventing the indexer from running.
 
-    if (isReadyToShootTimer.get() > readyOnDelay && !isReadyToShoot) isReadyToShoot = true;
-    if (isNotReadyToShootTimer.get() > readyOffDelay && isReadyToShoot) isReadyToShoot = false;
-
-    isScoring = swerve.getXPos() < nearTrenchX - trenchTolerance;
-    isNearTrench = (nearTrenchX - trenchTolerance < swerve.getXPos() && swerve.getXPos() < nearTrenchX + trenchTolerance) || (farTrenchX - trenchTolerance < swerve.getXPos() && swerve.getXPos() < farTrenchX + trenchTolerance);
-    updateTrajectory();
-    shooter.setShootingRPM(calcFlywheelRPM());
-    indexer.setIndexVoltage(calcIndexerVoltage());
-
-    climber.perioidic(); 
-    indexer.periodic();
-    intake.periodic();
-    shooter.periodic();
-
-    if (swerve.getXPos() > 2.0) {
-      climber.stow();
-    } else if (driver.getRightTriggerAxis() > 0.25) {
-      intake.stow();
-      climber.moveUp();
-    } else if (driver.getLeftTriggerAxis() > 0.25 ) {
-      intake.stow();
-      climber.moveDown(); 
-    } 
-
-    if (!isNearTrench && driver.getRawButtonPressed(1)) {
-      isShooting = true;
-      shooter.spinUp(); 
-      swerve.resetDriveController(calcShootingHeading());
-    }
-
+    // Holding the A button will cause the robot to shoot if it's not in near the trench.
     if (isNearTrench || driver.getRawButtonReleased(1)) {
-      isShooting = false;
+      isShooting = false; // Releasing the A button or being near the trench will cause the robot to stop shooting.
+    } else if (!isNearTrench && driver.getRawButtonPressed(1)) {
+      isShooting = true; // Pressing the A button will cause the robot to start shooting if it's not near the trench.
+      swerve.resetDriveController(calcShootingHeading()); // Resets the drive controller to the current optimal shooting heading to prepare for rotation.
+    }
+
+    // The following code allows the driver to toggle between boost mode and default mode with the A and B buttons. In boost mode, the robot will drive at 60% of its maximum speed. In default mode, the robot will drive at 40% of its maximum speed.
+    if (driver.getRawButtonPressed(2)) boostMode = true; // A button sets boost mode. (100% speed up from default of 60%).
+    if (driver.getRawButtonPressed(3)) boostMode = false; // B Button sets default mode (60% of full speed).
+    speedScaleFactor = boostMode ? 1.0 : 0.6; // If boost mode is enabled, the speed scale factor is 1.0, otherwise it's 0.6.
+
+    // The following code controls the swerve lock. If the Y button is pressed, the swerve modules will lock for defense. If any of the joysticks are moved more than 5%, the swerve modules will unlock and the robot will be able to drive again.
+    if (driver.getRawButton(4)) { // Y button
+      swerveLock = true; // Pressing the Y-button causes the swerve modules to lock (for defense).
+      isShooting = false; // The robot cannot be shooting while the swerve is locked.
+    } else if (Math.abs(driver.getLeftY()) >= 0.05 || Math.abs(driver.getLeftX()) >= 0.05 || Math.abs(driver.getRightX()) >= 0.05) {
+      swerveLock = false; // Pressing any joystick more than 5% will cause the swerve modules stop locking and begin driving.
+    }
+
+    // The following code controls the shooter and indexer. If the robot is in shooting mode, the shooter will spin up and the hood will move to the calculated position. If the shooter is up to speed and the robot is at the shooting position, the indexer will start. If the robot is not in shooting mode, the shooter will spin down, the hood will lower, and the indexer will stop.
+    if (isShooting) {
+      shooter.spinUp(); 
+      shooter.setHoodPosition(calcHoodPosition());
+      if (isReadyToShoot) {
+        indexer.start();
+      } else {
+        indexer.stop();
+      }
+    } else {
       shooter.spinDown();
       shooter.lowerHood();
       indexer.stop();
+    }
+
+    // The following code allows the driver to control the climber with the trigger buttons. If the right trigger is pressed, the climber will move up. If the left trigger is pressed, the climber will move down. If the robot is past a certain point on the field, the climber will stow automatically.
+    if (swerve.getXPos() > 2.0) {
+      climber.stow();
+    } else if (driver.getRightTriggerAxis() > 0.25) {
+      climber.moveUp();
+    } else if (driver.getLeftTriggerAxis() > 0.25) {
+      climber.moveDown(); 
     } 
 
-    if (driver.getPOV() == 0) intake.home();
+    if (driver.getPOV() == 0) intake.home(); // D-pad up homes the intake incase the robot needs to recalibrate the position of the intake.
 
+    // The following code allows the driver to control the intake with the bumper buttons. If the left bumper is pressed, the intake will deploy and run on the left side. If the right bumper is pressed, the intake will deploy and run on the right side. If either bumper is pressed while that side of the intake is already deployed, the intake will stow.
     if (driver.getLeftBumperButtonPressed()) {
       if (intake.getMode() == Intake.Mode.LEFT) {
         intake.stow();
@@ -616,49 +650,34 @@ public class Robot extends TimedRobot {
       }
     }
 
-    if (driver.getRawButtonPressed(2)) boostMode = true; // A button sets boost mode. (100% speed up from default of 60%).
-    if (driver.getRawButtonPressed(3)) boostMode = false; // B Button sets default mode (60% of full speed).
+    // The following calls are used to update the subsystems and should be called every period.
+    climber.periodic(); 
+    indexer.periodic();
+    intake.periodic();
+    shooter.periodic();
 
-    if (boostMode) {
-      speedScaleFactor = 0.6;
-    } else {
-      speedScaleFactor = 0.4;
-    }
-    
     // Applies a deadband to controller inputs. Also limits the acceleration of controller inputs.
     xVelTeleop = xAccLimiter.calculate(MathUtil.applyDeadband(-driver.getLeftY(), 0.05)*speedScaleFactor)*Drivetrain.maxVelTeleop;
     yVelTeleop = yAccLimiter.calculate(MathUtil.applyDeadband(-driver.getLeftX(), 0.05)*speedScaleFactor)*Drivetrain.maxVelTeleop;
     angVelTeleop = angAccLimiter.calculate(MathUtil.applyDeadband(-driver.getRightX(), 0.05)*rotationScaleFactor)*Drivetrain.maxAngVelTeleop;
 
-    if (driver.getRawButton(4)) { //  button
-      swerveLock = true; // Pressing the X-button causes the swerve modules to lock (for defense).
-    } else if (Math.abs(driver.getLeftY()) >= 0.05 || Math.abs(driver.getLeftX()) >= 0.05 || Math.abs(driver.getRightX()) >= 0.05) {
-      swerveLock = false; // Pressing any joystick more than 5% will cause the swerve modules stop locking and begin driving.
-    }
-
     if (swerveLock) {
       swerve.xLock(); // Locks the swerve modules (for defense).
     } else if (isShooting) {
-      swerve.aimDrive(xVelTeleop, yVelTeleop, calcShootingHeading(), true);
-      shooter.setHoodPosition(calcHoodPosition());
-      if (isReadyToShoot) {
-        indexer.start();
-      } else {
-        indexer.stop();
-      }
+      swerve.aimDrive(xVelTeleop, yVelTeleop, calcShootingHeading(), true); // Allows the driver to adjust the position of the robot while aiming at the hub. The robot will automatically rotate to a rotation where it'll have the least misses.
     } else {
       swerve.drive(xVelTeleop, yVelTeleop, angVelTeleop, true, 0.0, 0.0); // Drive at the velocity demanded by the controller.
     }
 
-    // The following 3 calls allow the user to calibrate the position of the robot based on April Tag information. Should be called when the robot is stationary. Button 7 is "View", the right center button.
+    // The following calls allow the user to calibrate the position of the robot based on April Tag information. Should be called when the robot is stationary. Button 7 is "View", the left center button.
     if (driver.getRawButtonPressed(7)) {
-      swerve.calcPriorityLimelightIndex();
+      swerve.calcPriorityLimelightIndex(); // Calculates which Limelight has the best view of the April Tags and should be used for calibration.
       swerve.resetCalibration(); // Begins calculating the position of the robot on the field based on visible April Tags.
     }
-    if (driver.getRawButton(7)) swerve.addCalibrationEstimate(swerve.getPriorityLimelightIndex(), false); // Left center button
-    if (driver.getRawButtonReleased(7)) swerve.pushCalibration(false, 0.0); // Updates the position of the robot on the field based on previous calculations.  
+    if (driver.getRawButton(7)) swerve.addCalibrationEstimate(swerve.getPriorityLimelightIndex(), false); // Parses frames from the Limelight and adds to the calculation of the position of the robot on the field based on visible April Tags.
+    if (driver.getRawButtonReleased(7)) swerve.pushCalibration(false, 0.0); // Pushes the calculated position of the robot on the field to the drivetrain's odometry once calibration is complete.
 
-    if (driver.getRawButtonPressed(8)) swerve.resetGyro(); // Right center button re-zeros the angle reading of the gyro to the current angle of the robot. Should be called if the gyroscope readings are no longer well correlated with the field.
+    if (driver.getRawButtonPressed(8)) swerve.resetGyro(); // Button 8 is "Menu", the right center button. Sets the current heading of the robot as the new zero. Useful if no April Tags are available, such as driving around the shop.
   }
   
   public void disabledInit() { 
@@ -673,11 +692,11 @@ public class Robot extends TimedRobot {
     if (!autoCompleted) {
       switch (autoSelected) {
         case auto1:
-          swerve.updateVisionHeading(true, -90.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
+          swerve.updateVisionHeading(true, 90.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
         break;
 
         case auto2:
-          swerve.updateVisionHeading(true, 90.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
+          swerve.updateVisionHeading(true, -90.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
         break;
         
         case auto3:
@@ -685,13 +704,13 @@ public class Robot extends TimedRobot {
         break;
 
         case auto4:
-          swerve.updateVisionHeading(true, 0.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
+          swerve.updateVisionHeading(true, 90.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
         break;
       }
     } else {
       swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
     }
-    swerve.addCalibrationEstimate(swerve.getPriorityLimelightIndex(), true);
+    swerve.addCalibrationEstimate(swerve.getPriorityLimelightIndex(), true); 
   }
 
   public void simulationPeriodic() {
@@ -825,7 +844,7 @@ public class Robot extends TimedRobot {
       return yArray[lowerIndex] + ((yArray[lowerIndex + 1] - yArray[lowerIndex]) / (xArray[lowerIndex + 1] - xArray[lowerIndex])) * (x - xArray[lowerIndex]);
     }
   }
-  
+
   // Publishes information to the dashboard.
   private void updateDash() {
     SmartDashboard.putBoolean("Boost Mode", boostMode);
@@ -886,7 +905,7 @@ public class Robot extends TimedRobot {
     swerve.updateDash();
 
     climber.init();
-    climber.perioidic();
+    climber.periodic();
     climber.moveUp();
     climber.moveDown();
     climber.stow();
@@ -895,7 +914,7 @@ public class Robot extends TimedRobot {
     System.out.println("climber getPosition: " + climber.getPosition());
     System.out.println("climber getVelocity: " + climber.getVelocity());
     climber.updateDash();
-    
+
     shooter.init();
     shooter.periodic();
     shooter.spinUp();
@@ -926,8 +945,6 @@ public class Robot extends TimedRobot {
     intake.rightIntake();
     intake.stow();
     System.out.println("intake getMode: " + intake.getMode().toString());
-    System.out.println("intake getLeftArmEncoder: " + intake.getLeftArmEncoder());
-    System.out.println("intake getRightArmEncoder: " + intake.getRightArmEncoder());
     System.out.println("intake getLeftArmPosition: " + intake.getLeftArmPosition());
     System.out.println("intake getLeftArmVelocity: " + intake.getLeftArmVelocity());
     System.out.println("intake getLeftArmDesiredPosition: " + intake.getLeftArmDesiredPosition());

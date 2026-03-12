@@ -103,7 +103,7 @@ class Drivetrain {
   private double angTol = 5.0; // The allowable error in the angle of the robot in degrees.
   private double minVel = 0.02; // The minimum velocity that the robot will be commanded to move at when it is not at the target in meters per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
   private double minAngVel = 0.01; // The minimum velocity that the robot will be commanded to rotate at when it is not at the target in radians per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
-  
+
   // These variables are updated each period so they can be passed along to the user or the dashboard.
   private double xVel = 0.0; // Unit: meters per second
   private double yVel = 0.0; // Unit: meters per second
@@ -154,7 +154,7 @@ class Drivetrain {
 
     SmartDashboard.putData("Field", robotField);
   }
-  
+
   // Drives the robot at a certain speed and rotation rate. Units: meters per second for xVel and yVel, radians per second for angVel. 
   // fieldRelative determines field-oriented control vs. robot-oriented control. field-relative control is automatically disabled in the case of a gyro failure.
   // Center of Rotation variables define where the robot will rotate from. 0,0 corresponds to rotations about the center of the robot. +x is towards the front. +y is to the left side.
@@ -222,7 +222,7 @@ class Drivetrain {
     double yVelSetpoint = yDriveController.calculate(getYPos(), targetY);
     boolean atXTarget = Math.abs(getXPos() - targetX) < posTol;
     boolean atYTarget = Math.abs(getYPos() - targetY) < posTol;
-    
+
     double angleDistance = getAngleDistance(getFusedAng(), targetAngle);
     double angVelSetpoint = angleDriveController.calculate(angleDistance*Math.PI/180.0, 0.0);
     boolean atAngTarget = Math.abs(angleDistance) < angTol;
@@ -272,7 +272,7 @@ class Drivetrain {
     anglePathController.reset();
     pathTimer.restart();
   }
-  
+
   // Tracks the path. Should be called each period. The path controller should be reset if followPath() is not called for a period or more.
   public void followPath(int pathIndex) {
     if (paths.size() > pathIndex) {
@@ -321,7 +321,7 @@ class Drivetrain {
       drive(0.0, 0.0, 0.0, false, 0.0, 0.0);
     }
   }
-  
+
   // Tells whether the robot has reached the endpoint of the path, within the specified tolerance.
   // pathIndex: Which path to check, pathXTol and pathYTol: the allowable difference in position in meters, pathAngTol: the allowable difference in angle in degrees
   public boolean atPathEndpoint(int pathIndex) {
@@ -392,7 +392,7 @@ class Drivetrain {
   public int getPriorityLimelightIndex() {
     return priorityLimelightIndex;
   }
-  
+
   // Incorporates vision information to determine the position of the robot on the field. Should be used only when vision information is deemed to be highly reliable (>1 april tag, close to april tag...)
   // limelightIndex indicates the camera to use. 0 is corresponds to the first entry in the limelights[] array. 
   public void addVisionEstimate(int limelightIndex, boolean megaTag2) {
@@ -498,7 +498,7 @@ class Drivetrain {
     pigeon.setYaw(0.0);
     odometry.resetPosition(new Rotation2d(), getModulePositions(), new Pose2d(getXPos(), getYPos(), new Rotation2d()));
   }
-  
+
   // Returns the angular position of the robot in degrees. The angular position is referenced to the starting angle of the robot. CCW is positive. Will return 0 in the case of a gyro failure.
   public double getGyroAng() {
     return BaseStatusSignal.getLatencyCompensatedValueAsDouble(pigeonYaw, pigeonYawRate, 0.02);
@@ -513,7 +513,7 @@ class Drivetrain {
   public double getGyroPitch() {
     return BaseStatusSignal.getLatencyCompensatedValueAsDouble(pigeonPitch, pigeonPitchRate, 0.02);
   }
-  
+
   // Returns the pitch velocity of the robot in degrees per second.
   public double getGyroPitchVel() {
     return pigeonPitchRate.getValueAsDouble();
@@ -536,7 +536,7 @@ class Drivetrain {
     } else {
       return false;
     }
-  }
+    }
 
   // Returns true if the robot is on the blue alliance.
   public boolean isBlueAlliance() {
@@ -561,7 +561,7 @@ class Drivetrain {
   public double getAngVel() {
     return angVel;
   }
-  
+
   // Returns the odometry calculated x position of the robot in meters. This is based on vision and gyro data combined.
   public double getXPos() {
     return odometry.getEstimatedPosition().getX();
@@ -576,7 +576,7 @@ class Drivetrain {
   public double getFusedAng() {
     return odometry.getEstimatedPosition().getRotation().getDegrees();
   }
-  
+
   // The distance between the robot's current position and the current trajectory position. Units: meters
   public double getPathPosError() {
     return Math.sqrt(Math.pow(pathYPos - getYPos(), 2) + Math.pow(pathXPos - getXPos(), 2));
@@ -586,7 +586,7 @@ class Drivetrain {
   public double getPathAngleError() {
     return getAngleDistance(getFusedAng(), pathAngPos);
   }
-  
+
   // Publishes information to the dashboard. Should be called each period.
   public void updateDash() {
     //SmartDashboard.putNumber("Vision Calibration Timer", getCalibrationTimer());

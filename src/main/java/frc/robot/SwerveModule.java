@@ -47,8 +47,8 @@ class SwerveModule {
   private double turnMotorSimAngle;
   private final double simulationDriveFactor = 1;
   private int driveDirectionSim;  // -1 for inverted, 1 for not inverted
-  
 
+  // Constructor for the SwerveModule class. Initializes the CANcoder, drive motor, and turn motor with the given IDs and configurations. Also sets up the status signals for the drive motor and wheel encoder, and optimizes bus utilization for the motors and encoder. The wheelEncoderZero parameter is used to set the zero position of the wheel encoder, which corresponds to the angle at which the swerve wheel is facing straight forward.
   public SwerveModule(int turnID, int driveID, int encoderID, boolean invertDrive, double wheelEncoderZero, String canbus) {
     bus = new CANBus(canbus);
     wheelEncoder = new CANcoder(encoderID, bus);
@@ -83,7 +83,7 @@ class SwerveModule {
     setAngle(desiredState.angle.getDegrees());
     setVel(desiredState.speedMetersPerSecond);
   }
-  
+
   // Returns the postion and angle of the module.
   public SwerveModulePosition getSMP() {
     SMP.angle = Rotation2d.fromDegrees(getWheelAngle());
@@ -95,18 +95,18 @@ class SwerveModule {
   public double getDriveMotorPos() {
     return BaseStatusSignal.getLatencyCompensatedValueAsDouble(driveMotorPosition, driveMotorVelocity, 0.02)*wheelCirc*correctionFactor/driveGearRatio;
   }
-  
+
   // Returns the raw value of the wheel encoder. Range: -180 to 180 degrees. 0 degrees corresponds to facing to the front (+x). 90 degrees in facing left (+y). CCW positive coordinate system.
   public double getWheelAngle() {
     return BaseStatusSignal.getLatencyCompensatedValueAsDouble(wheelEncoderPosition, wheelEncoderVelocity, 0.02)*360.0;
   }
-  
+
   // Sets the velocity of the module. Units: meters per second
   private void setVel(double vel) {
     driveMotorSimVel = vel*simulationDriveFactor*driveGearRatio/(wheelCirc*correctionFactor);
     driveMotor.setControl(driveMotorVelocityRequest.withVelocity(vel*driveGearRatio/(wheelCirc*correctionFactor)));
   }
-  
+
   // Sets the angle of the module. Units: degrees Can accept values outside of -180 to 180, corresponding to multiple rotations of the swerve wheel.
   private void setAngle(double angle) {
     turnMotorSimAngle = angle/360.0;
@@ -123,10 +123,10 @@ class SwerveModule {
 
   // Configures the swerve module's drive motor.
   private void configDriveMotor(TalonFX motor, boolean invert) {
-    TalonFXConfiguration motorConfigs = new TalonFXConfiguration();
+    TalonFXConfiguration motorConfigs = new TalonFXConfiguration(); // Creates a new configuration object for the motor. This object will hold all the settings that we want to apply to the motor.
 
-    motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-    motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
+    motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake; // Sets the motor to brake mode, which means it will resist being moved when no power is applied.
+    motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive; // Sets the motor direction. If invert is true, then positive voltage will make the motor spin clockwise. If false, then positive voltage will make the motor spin counterclockwise.
 
     // VelocityVoltage closed-loop control configuration.
     motorConfigs.Slot0.kP = 0.25; // Units: volts per 1 motor rotation per second of error.
@@ -135,20 +135,21 @@ class SwerveModule {
     motorConfigs.Slot0.kV = 0.12; // The amount of voltage required to create 1 motor rotation per second.
     motorConfigs.Slot0.kS = 0.16; // The amount of voltage required to barely overcome static friction in the swerve wheel.
 
+    // Current limit configuration. 
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.SupplyCurrentLimit = 70.0;
     motorConfigs.CurrentLimits.StatorCurrentLimit = 120.0;
 
-    motor.getConfigurator().apply(motorConfigs, 0.03);
+    motor.getConfigurator().apply(motorConfigs, 0.03); // Applies the configuration to the motor. 
   }
 
   // Configures the swerve module's turn motor.
   private void configTurnMotor(TalonFX motor, boolean invert) {
-    TalonFXConfiguration motorConfigs = new TalonFXConfiguration();
+    TalonFXConfiguration motorConfigs = new TalonFXConfiguration(); // Creates a new configuration object for the motor. This object will hold all the settings that we want to apply to the motor.
 
-    motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-    motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
+    motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake; // Sets the motor to brake mode, which means it will resist being moved when no power is applied.
+    motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive; // Sets the motor direction. If invert is true, then positive voltage will make the motor spin clockwise. If false, then positive voltage will make the motor spin counterclockwise.
 
     // MotionMagicTorqueFOC closed-loop control configuration.
     motorConfigs.Slot0.kP = 800.0; // Units: amperes per 1 swerve wheel rotation of error.
@@ -164,22 +165,23 @@ class SwerveModule {
     motorConfigs.Feedback.RotorToSensorRatio = turnGearRatio;
     motorConfigs.ClosedLoopGeneral.ContinuousWrap = true;
 
+    // Current limit configuration.
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.SupplyCurrentLimit = 20.0;
     motorConfigs.CurrentLimits.StatorCurrentLimit = 40.0;
 
-    motor.getConfigurator().apply(motorConfigs, 0.03);
+    motor.getConfigurator().apply(motorConfigs, 0.03); // Applies the configuration to the motor.
   }
 
   // Configures the swerve module's wheel encoder.
   private void configEncoder(CANcoder encoder, double wheelEncoderZero) {
-    CANcoderConfiguration encoderConfigs = new CANcoderConfiguration();
+    CANcoderConfiguration encoderConfigs = new CANcoderConfiguration(); // Creates a new configuration object for the encoder. This object will hold all the settings that we want to apply to the encoder.
 
-    encoderConfigs.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 0.5;
-    encoderConfigs.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
-    encoderConfigs.MagnetSensor.MagnetOffset = wheelEncoderZero;
+    encoderConfigs.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 0.5; // Sets the point at which the absolute position sensor value wraps around from 360 back to 0 degrees. 
+    encoderConfigs.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive; // Sets the direction of the sensor. If CounterClockwise_Positive, then the sensor value will increase as the wheel turns counterclockwise. If Clockwise_Positive, then the sensor value will increase as the wheel turns clockwise.
+    encoderConfigs.MagnetSensor.MagnetOffset = wheelEncoderZero; // Sets the zero position of the encoder. This should be set to the angle at which the swerve wheel is facing straight forward. Adjust this value as needed based on your specific robot's swerve module design and how it is mounted on the robot.
 
-    encoder.getConfigurator().apply(encoderConfigs, 0.03);
+    encoder.getConfigurator().apply(encoderConfigs, 0.03); // Applies the configuration to the encoder.
   }
 }

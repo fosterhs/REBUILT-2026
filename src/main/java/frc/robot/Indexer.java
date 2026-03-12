@@ -11,39 +11,38 @@ import edu.wpi.first.wpilibj.Timer;
 import com.ctre.phoenix6.CANBus;
 
 public class Indexer {
-  public enum Mode {INDEX, IDLE}
-  private final CANBus canivore = new CANBus("canivore");
-  private final TalonFX hopperIndexMotor = new TalonFX(19, canivore);
-  private final TalonFX shooterIndexMotor = new TalonFX(10, canivore);
-  private final VoltageOut hopperIndexMotorVoltageRequest = new VoltageOut(0.0).withEnableFOC(true);
-  private final VoltageOut shooterIndexMotorVoltageRequest = new VoltageOut(0.0).withEnableFOC(true);
-  private final Timer indexTimer = new Timer();
-  private Mode currMode = Mode.IDLE;
-  private double indexVoltage = 12.0;
+  public enum Mode {INDEX, IDLE} // INDEX mode runs the indexer motors to feed fuel into the shooter. IDLE mode stops the motors.
+  private final CANBus canivore = new CANBus("canivore"); // Creates a new CAN bus called "canivore". This is the name of the CAN bus that the indexer motors are connected to. Make sure to set this correctly based on your robot's wiring.
+  private final TalonFX hopperIndexMotor = new TalonFX(19, canivore); // Creates a new TalonFX motor controller for the hopper indexer motor. The motor is assigned an ID of 19 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
+  private final TalonFX shooterIndexMotor = new TalonFX(10, canivore); // Creates a new TalonFX motor controller for the shooter indexer motor. The motor is assigned an ID of 10 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
+  private final VoltageOut hopperIndexMotorVoltageRequest = new VoltageOut(0.0).withEnableFOC(true); // Creates a new VoltageOut control mode for the hopper indexer motor. This will allow us to set the voltage that we want to apply to the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
+  private final VoltageOut shooterIndexMotorVoltageRequest = new VoltageOut(0.0).withEnableFOC(true); // Creates a new VoltageOut control mode for the shooter indexer motor. This will allow us to set the voltage that we want to apply to the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
+  private final Timer indexTimer = new Timer(); // Creates a new timer that we will use to time how long the indexer has been running. This will allow us to run the motors for a specific amount of time before stopping or reversing them.
+  private Mode currMode = Mode.IDLE; // Initializes the current mode of the indexer to IDLE. This means that when the robot is first turned on, the indexer will be in the IDLE state and will not be running.
+  private double indexVoltage = 12.0; // Initializes the voltage that the indexer motors will run at when the indexer is running. This can be adjusted.
 
   // Simulation
   private final TalonFXSimState hopperIndexMotorSim = hopperIndexMotor.getSimState();
   private final TalonFXSimState shooterIndexMotorSim = shooterIndexMotor.getSimState();
   private boolean hopperSimHasFuel = false;
   
-  // Initialize indexer: configure motor, start timer, configure sensor, and obtain fuelDetected data
+  // Constructor for the Indexer class. This is where we will configure the indexer motors with the appropriate settings for our robot. We will set the neutral mode to brake, set the motor direction based on the invert parameter, and configure current limits for the motor. We will also optimize bus utilization for the motors to improve performance.
   public Indexer() {
     configIndexMotor(hopperIndexMotor, false);
     configIndexMotor(shooterIndexMotor,true);
-	  ParentDevice.optimizeBusUtilizationForAll(hopperIndexMotor, shooterIndexMotor);
-    indexTimer.restart();
+    ParentDevice.optimizeBusUtilizationForAll(hopperIndexMotor, shooterIndexMotor);
   }
 
-  // Runs code once at start: set current state to IDLE, stop shooting, stops motor, and reset the index timer
+  // Resets the indexer to the default state: sets the current mode to IDLE and restarts the timer. Should be called when the robot is enabled to ensure that the indexer starts in a known state.
   public void init() {
     currMode = Mode.IDLE;
     indexTimer.restart();
   }
 
-  // Runs code periodically: refresh the fuel sensor, run the shooting/jam state machine, and set motor outputs for each state
+  // Runs code every 20ms: if the current state is INDEX, then run the indexer motors at the specified voltage for 2.5 seconds, then reverse the motors for 0.5 seconds to help unjam any stuck fuel. If the current state is IDLE, then stop the motors and reset the timer.
   public void periodic() {
     switch (currMode) {
-      case INDEX://just going forward
+      case INDEX: // Runs the indexer motors at the specified voltage for 2.5 seconds, then reverses the motors for 0.5 seconds to help unjam any stuck fuel.
         if (indexTimer.get() < 2.5) {
           hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(indexVoltage).withEnableFOC(true));
           shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(indexVoltage).withEnableFOC(true));
@@ -51,11 +50,11 @@ public class Indexer {
           hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(-indexVoltage).withEnableFOC(true));
           shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(-indexVoltage).withEnableFOC(true));
         } else {
-          indexTimer.restart();
+          indexTimer.restart(); // Restarts the timer to repeat the cycle of running forward for 2.5 seconds and then reversing for 0.5 seconds. This will continue until the mode is changed to IDLE.
         }
       break;
 
-      case IDLE://just stops
+      case IDLE: // Stops the motors.
         indexTimer.restart();
         hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
         shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
@@ -63,16 +62,17 @@ public class Indexer {
     }
   }
 
-  // Marks the Indexer as running forward (not shooting) and resets the jam timer.
+  // Sets the current state to INDEX, which will cause the indexer to run in the periodic method.
   public void start() {
     currMode = Mode.INDEX;
   }
 
-  //Marks the indexer as idle, stops shooting, and reset the jam timer.
+  // Sets the current state to IDLE, which will cause the indexer to stop in the periodic method.
   public void stop() {
     currMode = Mode.IDLE;
   }
 
+  // Sets the voltage that the indexer motors will run at when the indexer is running.
   public void setIndexVoltage(double voltage) {
     indexVoltage = voltage;
   }
@@ -82,22 +82,24 @@ public class Indexer {
     return currMode;
   }
 
-  // Publish indexer information (state, sensor, shooting flag, and timer) to SmartDashboard
+  // Updates the SmartDashboard with the current mode and voltage of the indexer. Useful for debugging and tuning.
   public void updateDash() {
     //SmartDashboard.putString("Indexer getMode", getMode().toString());
+    //SmartDashboard.putNumber("Indexer voltage", indexVoltage);
   }
 
   public void simulationPeriodic() {
     
   }
-  
-  // Configs the motor settings and PID
+
+  // Configures the indexer motors with the appropriate settings for our robot. Sets the neutral mode to brake, sets the motor direction based on the invert parameter, and configures current limits for the motor.
   private void configIndexMotor(TalonFX motor, boolean invert) {
-    TalonFXConfiguration motorConfigs = new TalonFXConfiguration();
+    TalonFXConfiguration motorConfigs = new TalonFXConfiguration(); // Creates a new configuration object for the motor. This object will hold all the settings that we want to apply to the motor.
 
-    motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-    motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
+    motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake; // Sets the motor to brake mode, which means it will resist being moved when no power is applied.
+    motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive; // Sets the motor direction. If invert is true, then positive voltage will make the motor spin clockwise. If false, then positive voltage will make the motor spin counterclockwise.
 
+    // Configures the current limits for the motor. Supply current limit is the maximum current that can be drawn from the battery. Stator current limit is the maximum current that can be drawn by the motor windings. 
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.SupplyCurrentLimit = 30.0;
