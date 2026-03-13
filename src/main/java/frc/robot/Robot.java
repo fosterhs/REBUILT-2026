@@ -1,6 +1,10 @@
 package frc.robot;
 
+import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.SignalLogger;
+import com.ctre.phoenix6.controls.SolidColor;
+import com.ctre.phoenix6.hardware.CANdle;
+import com.ctre.phoenix6.signals.RGBWColor;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -42,10 +46,17 @@ public class Robot extends TimedRobot {
 
   // Initializes the different subsystems of the robot.
   private final Drivetrain swerve = new Drivetrain(); // Contains the Swerve Modules, Gyro, Path Follower, Target Tracking, Odometry, and Vision Calibration.
-  private final Climber climber = new Climber(); // Initializes the Climber subsystem.
+  //private final Climber climber = new Climber(); // Initializes the Climber subsystem.
   private final Shooter shooter = new Shooter(); // Initializes the Shooter subsystem.
   private final Indexer indexer = new Indexer(); // Initializes the Indexer subsystem.
-  private final Intake intake = new Intake(); // Initializes the Intake subsystem. 
+  private final Intake intake = new Intake(); // Initializes the Intake subsystem.
+
+  // LED Variables
+  private final CANBus canivore = new CANBus("canivore"); // Initializes the CANivore CAN Bus for controlling the CANdle.
+  private final CANdle topLED = new CANdle(0, canivore); // Initializes the CANdle for controlling the LEDs on the robot. 
+  private final SolidColor solidColorRequest = new SolidColor(8, 41); // A SolidColor control request that is used to set the color of the LEDs on the robot. 
+  private final RGBWColor purpleColor = new RGBWColor(255, 0, 255, 0); // A purple color for the LEDs to indicate when the robot is not shooting.
+  private final RGBWColor greenColor = new RGBWColor(0, 255, 0, 0); // A green color for the LEDs to indicate when the robot is shooting.
 
   // Auto Variables
   private final SendableChooser<String> autoChooser = new SendableChooser<>();
@@ -104,16 +115,22 @@ public class Robot extends TimedRobot {
   public void robotPeriodic() {
     // Publishes information about the robot and robot subsystems to the Dashboard.
     swerve.updateDash();
-    climber.updateDash();
+    //climber.updateDash();
     shooter.updateDash();
     indexer.updateDash();
     intake.updateDash();
     updateDash();
+
+    if (isShooting) {
+      topLED.setControl(solidColorRequest.withColor(greenColor));
+    } else {
+      topLED.setControl(solidColorRequest.withColor(purpleColor));
+    }
   }
 
   public void autonomousInit() {
     // Runs the init method for each subsystem to reset them to their default states at the start of autonomous. This is important to ensure that there are no unexpected behaviors caused by leftover states.
-    climber.init(); 
+    //climber.init(); 
     indexer.init();
     intake.init();
     shooter.init();
@@ -457,7 +474,7 @@ public class Robot extends TimedRobot {
               shooter.spinDown(); // Turns the shooter off.
               shooter.lowerHood(); // Lowers the hood of the shooter.
               indexer.stop(); // Turns the indexer off.
-              climber.moveUp(); // Moves the climber up.
+              //climber.moveUp(); // Moves the climber up.
               swerve.resetPathController(6);
               autoStage = 9; // Moves onto the next stage once the robot has finished shooting.
             }
@@ -467,7 +484,7 @@ public class Robot extends TimedRobot {
             // Auto 3, Stage 9 code goes here.
             swerve.followPath(6); // Brings the robot to the tower to climb.
             if (swerve.atPathEndpoint(6)) {
-              climber.moveDown(); // Moves the climber down so the robot is actually climbing the rung.
+              //climber.moveDown(); // Moves the climber down so the robot is actually climbing the rung.
             }
           break;
         }
@@ -545,7 +562,7 @@ public class Robot extends TimedRobot {
     }
 
     // Runs the periodic methods for the subsystems that need to be updated.
-    climber.periodic();
+    //climber.periodic();
     indexer.periodic();
     intake.periodic();
     shooter.periodic();
@@ -555,7 +572,7 @@ public class Robot extends TimedRobot {
     swerve.pushCalibration(true, swerve.getFusedAng()); // Updates the robot's position on the field.
 
     // Initializes the subsystems that need to be initialized for teleop. This is important to reset any variables and states in the subsystems that may have been changed during autonomous.
-    climber.init(); 
+    //climber.init(); 
     indexer.init();
     intake.init();
     shooter.init();
@@ -626,11 +643,11 @@ public class Robot extends TimedRobot {
 
     // The following code allows the driver to control the climber with the trigger buttons. If the right trigger is pressed, the climber will move up. If the left trigger is pressed, the climber will move down. If the robot is past a certain point on the field, the climber will stow automatically.
     if (swerve.getXPos() > 2.0) {
-      climber.stow();
+      //climber.stow();
     } else if (driver.getRightTriggerAxis() > 0.25) {
-      climber.moveUp();
+      //climber.moveUp();
     } else if (driver.getLeftTriggerAxis() > 0.25) {
-      climber.moveDown(); 
+      //climber.moveDown(); 
     } 
 
     if (driver.getPOV() == 0) intake.home(); // D-pad up homes the intake incase the robot needs to recalibrate the position of the intake.
@@ -651,7 +668,7 @@ public class Robot extends TimedRobot {
     }
 
     // The following calls are used to update the subsystems and should be called every period.
-    climber.periodic(); 
+    //climber.periodic(); 
     indexer.periodic();
     intake.periodic();
     shooter.periodic();
@@ -716,7 +733,7 @@ public class Robot extends TimedRobot {
   public void simulationPeriodic() {
     // Runs at 50 Hz, make sure to call all of the subsystem simulationPeriodic methods
     swerve.simulationPeriodic();
-    climber.simulationPeriodic();
+    //climber.simulationPeriodic();
     indexer.simulationPeriodic();
     intake.simulationPeriodic();
     shooter.simulationPeriodic();
@@ -724,7 +741,7 @@ public class Robot extends TimedRobot {
 
   // This method calculates the amount of time the fuel will be in the air based on the distance to the hub and the velocity of the robot. It uses an iterative approach to account for the fact that the aim point changes based on the velocity of the robot and the air time, which changes the distance to the hub, which changes the air time, which changes the aim point, etc. After 10 iterations, the change in air time should be negligible.
   private double[] scoringAirTimeCalibrationDistances = {2.0, 3.0, 4.0, 5.0, 6.0}; // Represents the distance to the hub in meters for each air time calibration value.
-  private double[] scoringAirTimeCalibrationValues = {0.6, 0.7, 0.8, 0.9, 1.0}; // Represents the amount of time the fuel will be in the air in seconds for each distance to the hub in the airTimeCalibrationDistances array. The values in this array should correspond to the distances in the airTimeCalibrationDistances array (i.e. the first value in this array is the air time for the first distance in the airTimeCalibrationDistances array, etc.). These values are used to calculate the aim point of the robot based on its velocity and distance to the hub.
+  private double[] scoringAirTimeCalibrationValues = {1.1, 1.22, 1.26, 1.46, 1.66}; // Represents the amount of time the fuel will be in the air in seconds for each distance to the hub in the airTimeCalibrationDistances array. The values in this array should correspond to the distances in the airTimeCalibrationDistances array (i.e. the first value in this array is the air time for the first distance in the airTimeCalibrationDistances array, etc.). These values are used to calculate the aim point of the robot based on its velocity and distance to the hub.
   private double[] passingAirTimeCalibrationDistances = {2.0, 3.0, 4.0, 5.0, 6.0}; // Represents the distance to the hub in meters for each air time calibration value.
   private double[] passingAirTimeCalibrationValues = {0.6, 0.7, 0.8, 0.9, 1.0}; // Represents the amount of time the fuel will be in the air in seconds for each distance to the hub in the airTimeCalibrationDistances array. The values in this array should correspond to the distances in the airTimeCalibrationDistances array (i.e. the first value in this array is the air time for the first distance in the airTimeCalibrationDistances array, etc.). These values are used to calculate the aim point of the robot based on its velocity and distance to the hub.
   private void updateTrajectory() {
@@ -777,7 +794,7 @@ public class Robot extends TimedRobot {
 
   // This method calculates the position the hood needs to be at to shoot accurately based on the distance to the target. It uses a calibration array to return hood position values based on distance to the target.
   private double[] scoringHoodCalibrationDistances = {2.0, 3.0, 4.0, 5.0, 6.0}; 
-  private double[] scoringHoodCalibrationValues = {0.05, 0.0625, 0.07, 0.065, 0.06}; 
+  private double[] scoringHoodCalibrationValues = {0.0515, 0.058, 0.0625, 0.065, 0.06}; 
   private double[] passingHoodCalibrationDistances = {2.0, 3.0, 4.0, 5.0, 6.0};
   private double[] passingHoodCalibrationValues = {0.05, 0.0625, 0.07, 0.065, 0.06};
   private double calcHoodPosition() {
@@ -848,6 +865,7 @@ public class Robot extends TimedRobot {
   // Publishes information to the dashboard.
   private void updateDash() {
     SmartDashboard.putBoolean("Boost Mode", boostMode);
+    SmartDashboard.putNumber("ToHubDis", distanceToTarget);
     //SmartDashboard.putNumber("Speed Scale Factor", speedScaleFactor);
     if (Robot.isSimulation()) {
       SmartDashboard.putNumber("sim/Auto Stage", autoStage);
@@ -904,16 +922,16 @@ public class Robot extends TimedRobot {
     System.out.println("swerve getPriorityLimelightIndex: " + swerve.getPriorityLimelightIndex());
     swerve.updateDash();
 
-    climber.init();
-    climber.periodic();
-    climber.moveUp();
-    climber.moveDown();
-    climber.stow();
-    System.out.println("climber getMode: " + climber.getMode().toString());
-    System.out.println("climber atDesiredPosition: " + climber.atDesiredPosition());
-    System.out.println("climber getPosition: " + climber.getPosition());
-    System.out.println("climber getVelocity: " + climber.getVelocity());
-    climber.updateDash();
+    //climber.init();
+    //climber.periodic();
+    //climber.moveUp();
+    //climber.moveDown();
+    //climber.stow();
+    //System.out.println("climber getMode: " + climber.getMode().toString());
+    //System.out.println("climber atDesiredPosition: " + climber.atDesiredPosition());
+    //System.out.println("climber getPosition: " + climber.getPosition());
+    //System.out.println("climber getVelocity: " + climber.getVelocity());
+    //climber.updateDash();
 
     shooter.init();
     shooter.periodic();

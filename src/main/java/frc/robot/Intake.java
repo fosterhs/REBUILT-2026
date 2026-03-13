@@ -62,8 +62,8 @@ public class Intake {
   private boolean rightArmIsStowed = true; // Initializes a boolean variable to keep track of whether the right intake arm is currently in the stowed position. This will be used to determine whether we should run the intake rollers and centering motors, since we only want to run those when the arm is out of the way and ready to intake fuel.
   private double leftRollerVoltage = 6.0; // Initializes a variable to keep track of the voltage that we want to run the left intake roller motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the rollers to pull in fuel. We will also adjust this voltage dynamically in the periodic method based on the position of the arms.
   private double rightRollerVoltage = 6.0; // Initializes a variable to keep track of the voltage that we want to run the right intake roller motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the rollers to pull in fuel. We will also adjust this voltage dynamically in the periodic method based on the position of the arms.
-  private double leftCenteringVoltage = 4.0; // Initializes a variable to keep track of the voltage that we want to run the left intake centering motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the centering motors to position the intake arm.
-  private double rightCenteringVoltage = 4.0; // Initializes a variable to keep track of the voltage that we want to run the right intake centering motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the centering motors to position the intake arm.
+  private double leftCenteringVoltage = 2.0; // Initializes a variable to keep track of the voltage that we want to run the left intake centering motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the centering motors to position the intake arm.
+  private double rightCenteringVoltage = 2.0; // Initializes a variable to keep track of the voltage that we want to run the right intake centering motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the centering motors to position the intake arm.
 
   // Simulation
   private final TalonFXSimState rightArmMotorSim = rightArmMotor.getSimState();
@@ -113,8 +113,8 @@ public class Intake {
         rightArmMotor.setControl(rightArmMotorVoltageRequest.withOutput(-1.0).withEnableFOC(true));
 
         // If the arms are moving at a velocity above 0.5 rotations per second, then restart the homing timers. This means that the arms have not yet reached the zero position and are still moving, so we want to keep waiting until they stop.
-        if (Math.abs(getLeftArmVelocity()) > 0.5) leftHomingTimer.restart();
-        if (Math.abs(getRightArmVelocity()) > 0.5) rightHomingTimer.restart();
+        if (Math.abs(getLeftArmVelocity()) > 2.0) leftHomingTimer.restart();
+        if (Math.abs(getRightArmVelocity()) > 2.0) rightHomingTimer.restart();
 
         // If the arms have not been homed yet and have been stationary for more than 1 second, then we will set the position of the arm motor to 0. This will establish the zero position for the arm. 
         if (leftHomingTimer.get() > 1.0 && !leftArmIsHomed) { 
