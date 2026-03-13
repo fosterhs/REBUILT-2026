@@ -120,6 +120,12 @@ public class Robot extends TimedRobot {
     indexer.updateDash();
     intake.updateDash();
     updateDash();
+
+    if (isShooting) {
+      topLED.setControl(solidColorRequest.withColor(greenColor));
+    } else {
+      topLED.setControl(solidColorRequest.withColor(purpleColor));
+    }
   }
 
   public void autonomousInit() {
@@ -161,7 +167,6 @@ public class Robot extends TimedRobot {
         // AutoInit 4 code goes here.
         swerve.pushCalibration(true, 90.0); // Updates the robot's position on the field.
         swerve.resetDriveController(calcShootingHeading());
-    }
     }
 
     if (Robot.isSimulation()) {
@@ -400,7 +405,7 @@ public class Robot extends TimedRobot {
 
           case 5:
             // Auto 3, Stage 5 code goes here.
-            sswerve.aimDrive(0.0, 2.0, 0.0, true); // Moves the robot in the neutral zone, collecting fuel.
+            swerve.aimDrive(0.0, 2.0, 0.0, true); // Moves the robot in the neutral zone, collecting fuel.
             if (swerve.getYPos() >= 6.0) {
               swerve.drive(0.0, 0.0, 0.0, true, 0.0, 0.0); // Holds the robot still.
               intake.stow(); // Stows the intake.
@@ -513,13 +518,13 @@ public class Robot extends TimedRobot {
         }
       break;
     }
-  }
 
     // Runs the periodic methods for the subsystems that need to be updated.
     //climber.periodic();
     indexer.periodic();
     intake.periodic();
     shooter.periodic();
+
   }
 
   public void teleopInit() {
@@ -570,7 +575,11 @@ public class Robot extends TimedRobot {
     // The following code allows the driver to toggle between boost mode and default mode with the A and B buttons. In boost mode, the robot will drive at 60% of its maximum speed. In default mode, the robot will drive at 40% of its maximum speed.
     if (driver.getRawButtonPressed(2)) boostMode = true; // A button sets boost mode. (100% speed up from default of 60%).
     if (driver.getRawButtonPressed(3)) boostMode = false; // B Button sets default mode (60% of full speed).
-    speedScaleFactor = boostMode ? 1.0 : 0.6; // If boost mode is enabled, the speed scale factor is 1.0, otherwise it's 0.6.
+    if (isShooting) {
+      speedScaleFactor = 0.25; // If the robot is shooting, the speed scale factor is set to 0.3 to allow for more precise movements while shooting.
+    } else {
+      speedScaleFactor = boostMode ? 1.0 : 0.6; // If boost mode is enabled, the speed scale factor is 1.0, otherwise it's 0.6.
+    }
 
     // The following code controls the swerve lock. If the Y button is pressed, the swerve modules will lock for defense. If any of the joysticks are moved more than 5%, the swerve modules will unlock and the robot will be able to drive again.
     if (driver.getRawButton(4)) { // Y button
@@ -649,12 +658,6 @@ public class Robot extends TimedRobot {
     if (driver.getRawButtonReleased(7)) swerve.pushCalibration(false, 0.0); // Pushes the calculated position of the robot on the field to the drivetrain's odometry once calibration is complete.
 
     if (driver.getRawButtonPressed(8)) swerve.resetGyro(); // Button 8 is "Menu", the right center button. Sets the current heading of the robot as the new zero. Useful if no April Tags are available, such as driving around the shop.
-
-    if (isShooting) {
-      topLED.setControl(solidColorRequest.withColor(greenColor));
-    } else {
-      topLED.setControl(solidColorRequest.withColor(purpleColor));
-    }
     
     if (isReadyToShoot) {
       driver.setRumble(RumbleType.kBothRumble, 1.0);
@@ -689,6 +692,7 @@ public class Robot extends TimedRobot {
         case auto4:
           swerve.updateVisionHeading(true, 90.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
         break;
+      }
     } else {
       swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
     }
