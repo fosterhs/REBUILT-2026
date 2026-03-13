@@ -213,8 +213,8 @@ public class Robot extends TimedRobot {
             // Auto 1, Stage 1 code goes here.
             swerve.driveTo(3.5, 0.75, calcShootingHeading()); // Brings the robot slightly backwards.
             shooter.spinUp(); // Turns the shooter on.
-            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
             if (swerve.atDriveGoal()) {
+              shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
               shootingTimer.restart(); // Restarts the shooting timer.
               autoStage = 2; // Advances to the next stage once the robot has gotten to the shooting position.
             }
@@ -284,8 +284,8 @@ public class Robot extends TimedRobot {
             // Auto 2, Stage 1 code goes here.
             swerve.driveTo(3.5, 7.31, calcShootingHeading()); // Brings the robot slightly backwards.
             shooter.spinUp(); // Turns the shooter on.
-            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
             if (swerve.atDriveGoal()) {
+              shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
               shootingTimer.restart(); // Restarts the shooting timer.
               autoStage = 2; // Advances to the next stage once the robot has gotten to the shooting position.
             }
