@@ -12,6 +12,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -119,12 +120,6 @@ public class Robot extends TimedRobot {
     indexer.updateDash();
     intake.updateDash();
     updateDash();
-
-    if (isShooting) {
-      topLED.setControl(solidColorRequest.withColor(greenColor));
-    } else {
-      topLED.setControl(solidColorRequest.withColor(purpleColor));
-    }
   }
 
   public void autonomousInit() {
@@ -242,7 +237,7 @@ public class Robot extends TimedRobot {
             }
             if (swerve.getXPos() > 7.5  && intake.isReady()) {
               autoStage = 4; // Advances to the next stage once the robot has gotten to the neutral zone.
-              swerve.resetDriveController(90.0);
+              swerve.resetDriveController(180.0);
             }
           break;
 
@@ -275,7 +270,8 @@ public class Robot extends TimedRobot {
               shootingTimer.restart(); // Restarts the shooting timer.
               indexer.start(); // Turns on the indexer.
             }
-          break;  
+          break; 
+        } 
 
       case auto2:
         switch (autoStage) {
@@ -652,6 +648,18 @@ public class Robot extends TimedRobot {
     if (driver.getRawButtonReleased(7)) swerve.pushCalibration(false, 0.0); // Pushes the calculated position of the robot on the field to the drivetrain's odometry once calibration is complete.
 
     if (driver.getRawButtonPressed(8)) swerve.resetGyro(); // Button 8 is "Menu", the right center button. Sets the current heading of the robot as the new zero. Useful if no April Tags are available, such as driving around the shop.
+
+    if (isShooting) {
+      topLED.setControl(solidColorRequest.withColor(greenColor));
+    } else {
+      topLED.setControl(solidColorRequest.withColor(purpleColor));
+    }
+    
+    if (isReadyToShoot) {
+      driver.setRumble(RumbleType.kBothRumble, 1.0);
+    } else {
+      driver.setRumble(RumbleType.kBothRumble, 0.0);
+    }
   }
   
   public void disabledInit() { 
