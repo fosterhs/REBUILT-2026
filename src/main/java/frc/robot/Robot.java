@@ -12,6 +12,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -64,6 +65,7 @@ public class Robot extends TimedRobot {
   private static final String auto2 = "Fuel Collection Via Neutral Zone, Left Side Start."; 
   private static final String auto3 = "Climbing, Center Start."; 
   private static final String auto4 = "Right Side. Shoot, collect from neutral zone, shoot, collect fuel from the human player station."; 
+  private static final String auto5 = "Baahshire";
   private String autoSelected;
   private int autoStage = 1;
   private boolean autoCompleted = false;
@@ -95,6 +97,7 @@ public class Robot extends TimedRobot {
     autoChooser.addOption(auto2, auto2);
     autoChooser.addOption(auto3, auto3);
     autoChooser.addOption(auto4, auto4);
+    autoChooser.addOption(auto5, auto5);
     SmartDashboard.putData("Autos", autoChooser);
 
     // Auto 1 Paths : Fuel Collection from Neutral Zone, Right Starting Position. 0-1
@@ -120,12 +123,6 @@ public class Robot extends TimedRobot {
     indexer.updateDash();
     intake.updateDash();
     updateDash();
-
-    if (isShooting) {
-      topLED.setControl(solidColorRequest.withColor(greenColor));
-    } else {
-      topLED.setControl(solidColorRequest.withColor(purpleColor));
-    }
   }
 
   public void autonomousInit() {
@@ -163,6 +160,11 @@ public class Robot extends TimedRobot {
 
       case auto4:
         // AutoInit 4 code goes here.
+        swerve.pushCalibration(true, 90.0); // Updates the robot's position on the field.
+        swerve.resetDriveController(calcShootingHeading());
+
+      case auto5:
+        // AutoInit 5 code goes here.
         swerve.pushCalibration(true, 90.0); // Updates the robot's position on the field.
         swerve.resetDriveController(calcShootingHeading());
     }
@@ -558,6 +560,78 @@ public class Robot extends TimedRobot {
             }
           break; 
         }
+
+      case auto5:
+        // Auto 5 code goes here.
+        switch (autoStage) {
+          case 1:
+            // Auto 5, Stage 1 code goes here.
+            swerve.driveTo(3.5, 7.31, calcShootingHeading()); // Brings the robot slightly backwards.
+            shooter.spinUp(); // Turns the shooter on.
+            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+            if (swerve.atDriveGoal()) {
+              shootingTimer.restart(); // Restarts the shooting timer.
+              autoStage = 2; // Advances to the next stage once the robot has gotten to the shooting position.
+            }
+          break;
+
+          case 2:
+            // Auto 5, Stage 2 code goes here.
+            swerve.drive(0.0, 0.0, 0.0, false, 0.0, 0.0); // Holds the robot still.
+            indexer.start(); // Turns on the indexer.
+            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+            if (shootingTimer.get() > 3.0) {
+              shooter.spinDown(); // Turns the shooter off.
+              shooter.lowerHood(); // Lowers the hood of the shooter.
+              indexer.stop(); // Turns the indexer off.
+              swerve.resetPathController(2); 
+              autoStage = 3; // Advances to the next stage once the robot has finished shooting.
+            }
+          break;
+
+          case 3:
+            // Auto 5, Stage 3 code goes here.
+            swerve.followPath(2); // Brings the robot to the neutral zone to collect fuel.
+            if (swerve.getXPos() > 5.5) {
+              intake.leftIntake(); // When the X position is greater than 5.5, the left intake will deploy.
+            }
+            if (swerve.getXPos() > 7.5  && intake.isReady()) {
+              autoStage = 4; // Advances to the next stage once the robot has gotten to the neutral zone.
+              swerve.resetDriveController(90.0);
+            }
+          break;
+
+          case 4:
+            // Auto 5, Stage 4 code goes here.
+            swerve.aimDrive(0.0, 2.0, 90.0, true); // Moves the robot in the neutral zone, collecting fuel.
+            if (swerve.getYPos() <= 4.475) {
+              intake.stow(); // Stows the intake.
+              swerve.resetPathController(3);
+              autoStage = 5; // Advances to the next stage once the robot has finished intaking.
+            }
+          break;
+
+          case 5:
+            // Auto 5, Stage 5 code goes here.
+            swerve.followPath(3); // Brings the robot back to a shooting position from the neutral zone.
+            shooter.spinUp(); // Turns the shooter on.
+            if (swerve.getXPos() < 3.75) {
+              shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+              swerve.resetDriveController(calcShootingHeading());
+              autoStage = 6; // Advances to the next stage once the robot has reached the shooting position.
+            }
+          break;
+
+          case 6:
+            // Auto 5, Stage 6 code goes here.
+            swerve.driveTo(0.61, 0.65, calcShootingHeading()); // Brings the robot to the outpost for fuel.
+            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+            if (shooter.isReady()) {
+              shootingTimer.restart(); // Restarts the shooting timer.
+              indexer.start(); // Turns on the indexer.
+            }
+          break; 
+        }
       break;
     }
 
@@ -695,6 +769,18 @@ public class Robot extends TimedRobot {
     if (driver.getRawButtonReleased(7)) swerve.pushCalibration(false, 0.0); // Pushes the calculated position of the robot on the field to the drivetrain's odometry once calibration is complete.
 
     if (driver.getRawButtonPressed(8)) swerve.resetGyro(); // Button 8 is "Menu", the right center button. Sets the current heading of the robot as the new zero. Useful if no April Tags are available, such as driving around the shop.
+
+    if (isShooting) {
+      topLED.setControl(solidColorRequest.withColor(greenColor));
+    } else {
+      topLED.setControl(solidColorRequest.withColor(purpleColor));
+    }
+    
+    if (isReadyToShoot) {
+      driver.setRumble(RumbleType.kBothRumble, 1.0);
+    } else {
+      driver.setRumble(RumbleType.kBothRumble, 0.0);
+    }
   }
   
   public void disabledInit() { 
@@ -723,6 +809,9 @@ public class Robot extends TimedRobot {
         case auto4:
           swerve.updateVisionHeading(true, 90.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
         break;
+
+        case auto5:
+          swerve.updateVisionHeading(true, 90.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
       }
     } else {
       swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
