@@ -44,6 +44,11 @@ public class Robot extends TimedRobot {
   private final double readyOffDelay = 2.0; // The amount of time that the robot needs to not be ready to shoot before the isReadyToShoot variable is set to false and prevents the indexer from running in seconds. 
   private boolean isReadyToShoot = false; // Stores whether the robot is ready to shoot or not based on whether the shooter has been up to speed and the robot has been at the shooting position for longer than the ready on delay. This variable is used to control whether the indexer should be running or not to help improve accuracy by ensuring that fuel is not fed into the shooter until it's ready.
   private boolean isCurrentyReadyToShoot = false; // Stores whether the robot is currently ready to shoot based on whether the shooter is up to speed and the robot is at the shooting position. 
+  private boolean currPrepareToShoot = false; // Stores whether the robot is preparing to shoot based on driver inputs. This can be used to start spinning up the shooter and calculating the shooting trajectory before the robot is actually ready to shoot to help improve accuracy and reduce the amount of time it takes for the robot to start shooting once the driver wants to shoot.
+  private boolean lastPrepareToShoot = false; // Stores the value of prepareToShoot from the previous iteration of the teleop periodic loop to detect when the driver has just started preparing to shoot.
+  private boolean rightTriggerPressed = false; // Stores whether the right trigger is currently pressed. This is used to control when the robot is preparing to shoot based on driver inputs.
+  private boolean rightTriggerReleased = false; 
+  private boolean isPreparingToShoot = false;
 
   // Initializes the different subsystems of the robot.
   private final Drivetrain swerve = new Drivetrain(); // Contains the Swerve Modules, Gyro, Path Follower, Target Tracking, Odometry, and Vision Calibration.
@@ -494,6 +499,11 @@ public class Robot extends TimedRobot {
     shooter.init();
 
     // Resets all the shooting variables to their default values at the start of teleop.
+    lastPrepareToShoot = false;
+    currPrepareToShoot = false;
+    rightTriggerPressed = false;
+    rightTriggerReleased = false;
+    isPreparingToShoot = false;
     isShooting = false;
     isCurrentyReadyToShoot = false;
     isReadyToShoot = false;
@@ -521,12 +531,28 @@ public class Robot extends TimedRobot {
     if (isReadyToShootTimer.get() > readyOnDelay && !isReadyToShoot) isReadyToShoot = true; // If the robot has been ready to shoot for longer than the ready on delay, the isReadyToShoot variable is set to true, allowing the indexer to run.
     if (isNotReadyToShootTimer.get() > readyOffDelay && isReadyToShoot) isReadyToShoot = false; // If the robot has not been ready to shoot for longer than the ready off delay, the isReadyToShoot variable is set to false, preventing the indexer from running.
 
+    lastPrepareToShoot = currPrepareToShoot;
+    currPrepareToShoot = driver.getRightTriggerAxis() > 0.25;
+    rightTriggerPressed = currPrepareToShoot && !lastPrepareToShoot;
+    rightTriggerReleased = !currPrepareToShoot && lastPrepareToShoot;
+
     // Holding the A button will cause the robot to shoot if it's not in near the trench.
     if (isNearTrench || driver.getRawButtonReleased(1)) {
       isShooting = false; // Releasing the A button or being near the trench will cause the robot to stop shooting.
     } else if (!isNearTrench && driver.getRawButtonPressed(1)) {
       isShooting = true; // Pressing the A button will cause the robot to start shooting if it's not near the trench.
       swerve.resetDriveController(calcShootingHeading()); // Resets the drive controller to the current optimal shooting heading to prepare for rotation.
+    }
+
+    if (!driver.getRawButton(1)) {
+      if (isNearTrench || rightTriggerReleased) {
+        isPreparingToShoot = false; // Releasing the A button or being near the trench will cause the robot to stop shooting.
+      } else if (!isNearTrench && rightTriggerPressed) {
+        isPreparingToShoot = true; // Pressing the A button will cause the robot to start shooting if it's not near the trench.
+        swerve.resetDriveController(calcShootingHeading()); // Resets the drive controller to the current optimal shooting heading to prepare for rotation.
+      }
+    } else {
+      isPreparingToShoot = false;
     }
 
     // The following code allows the driver to toggle between boost mode and default mode with the A and B buttons. In boost mode, the robot will drive at 60% of its maximum speed. In default mode, the robot will drive at 40% of its maximum speed.
@@ -547,10 +573,10 @@ public class Robot extends TimedRobot {
     }
 
     // The following code controls the shooter and indexer. If the robot is in shooting mode, the shooter will spin up and the hood will move to the calculated position. If the shooter is up to speed and the robot is at the shooting position, the indexer will start. If the robot is not in shooting mode, the shooter will spin down, the hood will lower, and the indexer will stop.
-    if (isShooting) {
+    if (isShooting || isPreparingToShoot) {
       shooter.spinUp(); 
       shooter.setHoodPosition(calcHoodPosition());
-      if (isReadyToShoot) {
+      if (isReadyToShoot && !isPreparingToShoot) {
         indexer.start();
       } else {
         indexer.stop();
@@ -561,14 +587,16 @@ public class Robot extends TimedRobot {
       indexer.stop();
     }
 
+    /*
     // The following code allows the driver to control the climber with the trigger buttons. If the right trigger is pressed, the climber will move up. If the left trigger is pressed, the climber will move down. If the robot is past a certain point on the field, the climber will stow automatically.
     if (swerve.getXPos() > 2.0) {
-      //climber.stow();
+      climber.stow();
     } else if (driver.getRightTriggerAxis() > 0.25) {
-      //climber.moveUp();
+      climber.moveUp();
     } else if (driver.getLeftTriggerAxis() > 0.25) {
-      //climber.moveDown(); 
+      climber.moveDown(); 
     } 
+    */
 
     if (driver.getPOV() == 0) intake.home(); // D-pad up homes the intake incase the robot needs to recalibrate the position of the intake.
 
@@ -600,7 +628,7 @@ public class Robot extends TimedRobot {
 
     if (swerveLock) {
       swerve.xLock(); // Locks the swerve modules (for defense).
-    } else if (isShooting) {
+    } else if (isShooting || isPreparingToShoot) {
       swerve.aimDrive(xVelTeleop, yVelTeleop, calcShootingHeading(), true); // Allows the driver to adjust the position of the robot while aiming at the hub. The robot will automatically rotate to a rotation where it'll have the least misses.
     } else {
       swerve.drive(xVelTeleop, yVelTeleop, angVelTeleop, true, 0.0, 0.0); // Drive at the velocity demanded by the controller.
