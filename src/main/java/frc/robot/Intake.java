@@ -5,6 +5,7 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.TalonFXSConfiguration;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC;
+import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.hardware.TalonFXS;
@@ -33,10 +34,10 @@ public class Intake {
   // Control Requests
   private final MotionMagicTorqueCurrentFOC rightArmMotorPositionRequest = new MotionMagicTorqueCurrentFOC(0.0); // Creates a new MotionMagicTorqueCurrentFOC control request for the right intake arm motor. This will allow us to set a desired position for the motor. 
   private final MotionMagicTorqueCurrentFOC leftArmMotorPositionRequest = new MotionMagicTorqueCurrentFOC(0.0); // Creates a new MotionMagicTorqueCurrentFOC control request for the left intake arm motor. This will allow us to set a desired position for the motor.
+  private final VelocityVoltage rightRollerVelocityRequest = new VelocityVoltage(0.0).withEnableFOC(true);
+  private final VelocityVoltage leftRollerVelocityRequest = new VelocityVoltage(0.0).withEnableFOC(true);
   private final VoltageOut rightArmMotorVoltageRequest = new VoltageOut(0.0).withEnableFOC(true); // Creates a new VoltageOut control mode for the right intake arm motor. This will allow us to set the voltage that we want to apply to the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
   private final VoltageOut leftArmMotorVoltageRequest = new VoltageOut(0.0).withEnableFOC(true); // Creates a new VoltageOut control mode for the left intake arm motor. This will allow us to set the voltage that we want to apply to the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
-  private final VoltageOut rightRollerMotorVoltageRequest = new VoltageOut(0.0).withEnableFOC(true); // Creates a new VoltageOut control mode for the right intake roller motor. This will allow us to set the voltage that we want to apply to the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
-  private final VoltageOut leftRollerMotorVoltageRequest = new VoltageOut(0.0).withEnableFOC(true); // Creates a new VoltageOut control mode for the left intake roller motor. This will allow us to set the voltage that we want to apply to the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
   private final VoltageOut rightCenteringMotorVoltageRequest = new VoltageOut(0.0).withEnableFOC(true); // Creates a new VoltageOut control mode for the right intake centering motor. This will allow us to set the voltage that we want to apply to the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
   private final VoltageOut leftCenteringMotorVoltageRequest = new VoltageOut(0.0).withEnableFOC(true); // Creates a new VoltageOut control mode for the left intake centering motor. This will allow us to set the voltage that we want to apply to the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
 
@@ -60,10 +61,10 @@ public class Intake {
   private double desiredRightArmPosition = 0.0; // Initializes a variable to keep track of the desired position for the right intake arm. This will be updated based on the current mode of the intake (LEFT, RIGHT, or STOW) to determine where we want the right arm to move to.
   private boolean leftArmIsStowed = true; // Initializes a boolean variable to keep track of whether the left intake arm is currently in the stowed position. This will be used to determine whether we should run the intake rollers and centering motors, since we only want to run those when the arm is out of the way and ready to intake fuel.
   private boolean rightArmIsStowed = true; // Initializes a boolean variable to keep track of whether the right intake arm is currently in the stowed position. This will be used to determine whether we should run the intake rollers and centering motors, since we only want to run those when the arm is out of the way and ready to intake fuel.
-  private double leftRollerVoltage = 6.0; // Initializes a variable to keep track of the voltage that we want to run the left intake roller motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the rollers to pull in fuel. We will also adjust this voltage dynamically in the periodic method based on the position of the arms.
-  private double rightRollerVoltage = 6.0; // Initializes a variable to keep track of the voltage that we want to run the right intake roller motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the rollers to pull in fuel. We will also adjust this voltage dynamically in the periodic method based on the position of the arms.
   private double leftCenteringVoltage = 2.0; // Initializes a variable to keep track of the voltage that we want to run the left intake centering motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the centering motors to position the intake arm.
   private double rightCenteringVoltage = 2.0; // Initializes a variable to keep track of the voltage that we want to run the right intake centering motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the centering motors to position the intake arm.
+  private double leftIntakeRPM = 3000.0;
+  private double rightIntakeRPM = 3000.0;
 
   // Simulation
   private final TalonFXSimState rightArmMotorSim = rightArmMotor.getSimState();
@@ -99,8 +100,8 @@ public class Intake {
   // This method will be called periodically (about every 20 milliseconds) while the robot is on. In this method, we will implement the logic for controlling the intake arms based on the current mode of the intake system. We will also dynamically adjust the voltage for the rollers and centering motors based on the position of the arms to ensure that we are running them at appropriate speeds for intaking fuel without putting too much strain on the motors or causing excessive wear.
   public void periodic() {
     // Dynamically adjust the roller voltage based on the position of the arms. If the arm is close to the stow position (less than 3 rotations away), we can run the rollers at a lower voltage. If the arm is further out (more than 3 rotations away), we can run the rollers at a higher voltage to more aggressively pull in fuel. Adjust these thresholds and voltage values as needed based on your specific robot's intake mechanism and how it performs during testing.
-    leftRollerVoltage = getLeftArmPosition() < 3.0 ? 4.0 : 6.0; 
-    rightRollerVoltage = getRightArmPosition() < 3.0 ? 4.0 : 6.0;
+    leftIntakeRPM = getLeftArmPosition() < 3.0 ? 1500.0 : 4000.0; 
+    rightIntakeRPM = getRightArmPosition() < 3.0 ? 1500.0 : 4000.0;
 
     switch (currMode) {
       case HOME: // In HOME mode, we want to run the homing procedure to find the zero position of the intake arms. We will run the arm motors at a low voltage to move them towards the zero position, and if they are moving, we will restart the homing timers. If they have been stationary for more than 1 second, we will set their positions to 0 and consider them homed. Once both arms are homed, we will switch to STOW mode and set the desired positions for both arms to the stow position.
@@ -172,17 +173,17 @@ public class Intake {
 
     // If the arm is stowed, we want to make sure that the rollers and centering motors are not running, since we don't want to run those when the arm is out of the way and not ready to intake fuel. If the arm is not stowed, then we will run the rollers and centering motors at the appropriate voltages that we set earlier in the periodic method. This will ensure that we are only running the rollers and centering motors when the arms are in position and ready to intake fuel, which can help improve the performance of the intake mechanism and reduce wear on the motors.
     if (leftArmIsStowed) {
-      leftRollerMotor.setControl(leftRollerMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
+      leftRollerMotor.setControl(leftRollerVelocityRequest.withVelocity(0.0).withEnableFOC(true));
       leftCenteringMotor.setControl(leftCenteringMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
     } else {
-      leftRollerMotor.setControl(leftRollerMotorVoltageRequest.withOutput(leftRollerVoltage).withEnableFOC(true));
+      leftRollerMotor.setControl(leftRollerVelocityRequest.withVelocity(leftIntakeRPM/60.0).withEnableFOC(true));
       leftCenteringMotor.setControl(leftCenteringMotorVoltageRequest.withOutput(leftCenteringVoltage).withEnableFOC(true));
     }
     if (rightArmIsStowed) {
-      rightRollerMotor.setControl(rightRollerMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
+      rightRollerMotor.setControl(rightRollerVelocityRequest.withVelocity(0.0).withEnableFOC(true));
       rightCenteringMotor.setControl(rightCenteringMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
     } else {
-      rightRollerMotor.setControl(rightRollerMotorVoltageRequest.withOutput(rightRollerVoltage).withEnableFOC(true));
+      rightRollerMotor.setControl(rightRollerVelocityRequest.withVelocity(rightIntakeRPM/60.0).withEnableFOC(true));
       rightCenteringMotor.setControl(rightCenteringMotorVoltageRequest.withOutput(rightCenteringVoltage).withEnableFOC(true));
     }
   }
@@ -324,6 +325,13 @@ public class Intake {
 
     motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake; // Set the neutral mode to brake so that the motors will resist movement when no power is applied. This can help hold the rollers in position when we want them to stay still.
     motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive; // Set the motor direction based on the invert parameter. This allows us to easily configure one roller to be inverted and the other to be non-inverted, which can help ensure that they move in the correct directions when we apply positive or negative voltages to them.
+
+    // VelocityVoltage closed-loop control configuration.
+    motorConfigs.Slot0.kP = 0.25; // Units: volts per 1 motor rotation per second of error.
+    motorConfigs.Slot0.kI = 0.5; // Units: volts per 1 motor rotation per second * 1 second of error.
+    motorConfigs.Slot0.kD = 0.0; // Units: volts per 1 motor rotation per second / 1 second of error.
+    motorConfigs.Slot0.kV = 0.12; // The amount of voltage required to create 1 motor rotation per second.
+    motorConfigs.Slot0.kS = 0.16; // The amount of voltage required to barely overcome static friction in the swerve wheel.
 
     // Current limits configuration. These limits can help protect the motors and the mechanical components of the intake from drawing too much current and potentially causing damage. Adjust these values as needed based on the performance of your specific robot's intake mechanism and the capabilities of your motors.
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
