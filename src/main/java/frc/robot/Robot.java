@@ -66,9 +66,9 @@ public class Robot extends TimedRobot {
 
   // Auto Variables
   private final SendableChooser<String> autoChooser = new SendableChooser<>();
-  private static final String auto1 = "Fuel Collection Via Neutral Zone, Right Side Start."; 
-  private static final String auto2 = "Fuel Collection Via Neutral Zone, Left Side Start."; 
-  private static final String auto3 = "Climbing, Center Start."; 
+  private static final String auto1 = "Right Side Start, Fuel Collection Via Neutral Zone."; 
+  private static final String auto2 = "Left Side Start, Fuel Collection Via Neutral Zone."; 
+  private static final String auto3 = "Center Start, fuel shoot, collect from depot, shoot "; 
   private static final String auto4 = "Right Side. Shoot, collect from neutral zone, shoot, collect fuel from the human player station."; 
   private String autoSelected;
   private int autoStage = 1;
