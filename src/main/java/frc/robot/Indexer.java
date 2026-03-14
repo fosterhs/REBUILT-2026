@@ -1,6 +1,7 @@
 package frc.robot;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -16,10 +17,11 @@ public class Indexer {
   private final TalonFX hopperIndexMotor = new TalonFX(19, canivore); // Creates a new TalonFX motor controller for the hopper indexer motor. The motor is assigned an ID of 19 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
   private final TalonFX shooterIndexMotor = new TalonFX(10, canivore); // Creates a new TalonFX motor controller for the shooter indexer motor. The motor is assigned an ID of 10 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
   private final VoltageOut hopperIndexMotorVoltageRequest = new VoltageOut(0.0).withEnableFOC(true); // Creates a new VoltageOut control mode for the hopper indexer motor. This will allow us to set the voltage that we want to apply to the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
-  private final VoltageOut shooterIndexMotorVoltageRequest = new VoltageOut(0.0).withEnableFOC(true); // Creates a new VoltageOut control mode for the shooter indexer motor. This will allow us to set the voltage that we want to apply to the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
+  private final VelocityVoltage shooterIndexMotorVelocityRequest = new VelocityVoltage(0.0).withEnableFOC(true); // Creates a new VoltageOut control mode for the shooter indexer motor. This will allow us to set the voltage that we want to apply to the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
   private final Timer indexTimer = new Timer(); // Creates a new timer that we will use to time how long the indexer has been running. This will allow us to run the motors for a specific amount of time before stopping or reversing them.
   private Mode currMode = Mode.IDLE; // Initializes the current mode of the indexer to IDLE. This means that when the robot is first turned on, the indexer will be in the IDLE state and will not be running.
-  private double indexVoltage = 12.0; // Initializes the voltage that the indexer motors will run at when the indexer is running. This can be adjusted.
+  private double indexRPM = 4000.0; // Initializes the voltage that the indexer motors will run at when the indexer is running. This can be adjusted.
+  private double indexVoltage = 12.0;
   private boolean isSpoolingUp = false; 
 
   // Simulation
@@ -47,22 +49,21 @@ public class Indexer {
       case INDEX: // Runs the indexer motors at the specified voltage for 2.5 seconds, then reverses the motors for 0.5 seconds to help unjam any stuck fuel.
         if (indexTimer.get() < 2.5) {
           hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(indexVoltage).withEnableFOC(true));
-          shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(indexVoltage).withEnableFOC(true));
         } else if (indexTimer.get() < 3.0) {
           hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(-indexVoltage).withEnableFOC(true));
-          shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(-indexVoltage).withEnableFOC(true));
         } else {
           indexTimer.restart(); // Restarts the timer to repeat the cycle of running forward for 2.5 seconds and then reversing for 0.5 seconds. This will continue until the mode is changed to IDLE.
         }
+        shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(indexRPM).withEnableFOC(true));
       break;
 
       case IDLE: // Stops the motors.
         indexTimer.restart();
-        hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
+          hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
         if (isSpoolingUp) {
-          shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(indexVoltage).withEnableFOC(true));
+          shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(indexRPM).withEnableFOC(true));
         } else {
-          shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
+          shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(0.0).withEnableFOC(true));
         }
       break;
     }
@@ -87,8 +88,9 @@ public class Indexer {
   }
 
   // Sets the voltage that the indexer motors will run at when the indexer is running.
-  public void setIndexVoltage(double voltage) {
-    indexVoltage = voltage;
+  public void setIndexRPM(double RPM) {
+    indexRPM = RPM;
+    indexVoltage = RPM/4000.0 * 12.0;
   }
 
   // Returns the current mode that the indexer is in.
@@ -112,6 +114,13 @@ public class Indexer {
 
     motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake; // Sets the motor to brake mode, which means it will resist being moved when no power is applied.
     motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive; // Sets the motor direction. If invert is true, then positive voltage will make the motor spin clockwise. If false, then positive voltage will make the motor spin counterclockwise.
+
+    // VelocityVoltage closed-loop control configuration.
+    motorConfigs.Slot0.kP = 0.25; // Units: volts per 1 motor rotation per second of error.
+    motorConfigs.Slot0.kI = 0.5; // Units: volts per 1 motor rotation per second * 1 second of error.
+    motorConfigs.Slot0.kD = 0.0; // Units: volts per 1 motor rotation per second / 1 second of error.
+    motorConfigs.Slot0.kV = 0.12; // The amount of voltage required to create 1 motor rotation per second.
+    motorConfigs.Slot0.kS = 0.16; // The amount of voltage required to barely overcome static friction in the swerve wheel.
 
     // Configures the current limits for the motor. Supply current limit is the maximum current that can be drawn from the battery. Stator current limit is the maximum current that can be drawn by the motor windings. 
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;

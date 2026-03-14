@@ -199,7 +199,7 @@ public class Robot extends TimedRobot {
     isScoring = true; // The robot is scoring during the entire autonomous period, so this variable is set to true to allow the shooting trajectory to update and be used in the shooter calculations.
     updateTrajectory(); // Updates the shooting trajectory variables based on the current position of the robot on the field. This is used to calculate the optimal shooting parameters for the shooter subsystem.
     shooter.setShootingRPM(calcFlywheelRPM()); // Sets the shooter RPM based on the shooting trajectory calculations.
-    indexer.setIndexVoltage(calcIndexerVoltage()); // Sets the indexer voltage based on the shooting trajectory calculations.
+    indexer.setIndexRPM(calcIndexerVoltage()); // Sets the indexer voltage based on the shooting trajectory calculations.
 
     // Controls the isReadyToShoot variable, which is used to determine whether the indexer should be running or not. The robot needs to be at the shooting position and the shooter needs to be up to speed for a certain amount of time.
     isCurrentyReadyToShoot = shooter.isReady() && swerve.atDriveGoal(); // The robot is currently ready to shoot if the shooter is up to speed and the robot is at the shooting position.
@@ -534,7 +534,7 @@ public class Robot extends TimedRobot {
     isNearTrench = (nearTrenchX - trenchTolerance < swerve.getXPos() && swerve.getXPos() < nearTrenchX + trenchTolerance) || (farTrenchX - trenchTolerance < swerve.getXPos() && swerve.getXPos() < farTrenchX + trenchTolerance); // The robot is considered to be near the trench if it's within a certain distance of either edge of the trench. 
     updateTrajectory(); // Updates the optimal shooting trajectory based on the position and velocity of the robot, which is used to calculate the flywheel RPM, hood position, and indexer voltage.
     shooter.setShootingRPM(calcFlywheelRPM()); // Sets the flywheel RPM based on the optimal shooting trajectory.
-    indexer.setIndexVoltage(calcIndexerVoltage()); // Sets the indexer voltage based on the optimal shooting trajectory.
+    indexer.setIndexRPM(calcIndexerVoltage()); // Sets the indexer voltage based on the optimal shooting trajectory.
 
     // Controls the isReadyToShoot variable, which is used to determine whether the indexer should be running or not. The robot needs to be at the shooting position and the shooter needs to be up to speed for a certain amount of time.
     isCurrentyReadyToShoot = shooter.isReady() && swerve.atDriveGoal(); // The robot is currently ready to shoot if the shooter is up to speed and the robot is at the shooting position.
@@ -776,9 +776,9 @@ public class Robot extends TimedRobot {
 
   // This method calculates the voltage the indexer needs to be at to shoot accurately based on the distance to the target. It uses a calibration array to return indexer voltage values based on distance to the target.
   private double[] scoringIndexerCalibrationDistances = {2.0, 6.0};
-  private double[] scoringIndexerCalibrationValues = {8.0, 12.0};
+  private double[] scoringIndexerCalibrationValues = {2666.6, 4000.0};
   private double[] passingIndexerCalibrationDistances = {2.0, 6.0};
-  private double[] passingIndexerCalibrationValues = {8.0, 12.0};
+  private double[] passingIndexerCalibrationValues = {2666.6, 4000.0};
   private double calcIndexerVoltage() {
     if (isScoring) {
       return interpolate(distanceToTarget, scoringIndexerCalibrationDistances, scoringIndexerCalibrationValues);
@@ -922,7 +922,7 @@ public class Robot extends TimedRobot {
     indexer.stop();
     indexer.spoolUp();
     indexer.spoolDown();
-    indexer.setIndexVoltage(12.0);
+    indexer.setIndexRPM(12.0);
     System.out.println("indexer getMode: " + indexer.getMode().toString());
     indexer.updateDash();
 
