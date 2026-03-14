@@ -20,6 +20,7 @@ public class Indexer {
   private final Timer indexTimer = new Timer(); // Creates a new timer that we will use to time how long the indexer has been running. This will allow us to run the motors for a specific amount of time before stopping or reversing them.
   private Mode currMode = Mode.IDLE; // Initializes the current mode of the indexer to IDLE. This means that when the robot is first turned on, the indexer will be in the IDLE state and will not be running.
   private double indexVoltage = 12.0; // Initializes the voltage that the indexer motors will run at when the indexer is running. This can be adjusted.
+  private boolean isSpoolingUp = false; 
 
   // Simulation
   private final TalonFXSimState hopperIndexMotorSim = hopperIndexMotor.getSimState();
@@ -36,6 +37,7 @@ public class Indexer {
   // Resets the indexer to the default state: sets the current mode to IDLE and restarts the timer. Should be called when the robot is enabled to ensure that the indexer starts in a known state.
   public void init() {
     currMode = Mode.IDLE;
+    isSpoolingUp = false;
     indexTimer.restart();
   }
 
@@ -57,7 +59,11 @@ public class Indexer {
       case IDLE: // Stops the motors.
         indexTimer.restart();
         hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
-        shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
+        if (isSpoolingUp) {
+          shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(indexVoltage).withEnableFOC(true));
+        } else {
+          shooterIndexMotor.setControl(shooterIndexMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
+        }
       break;
     }
   }
@@ -70,6 +76,14 @@ public class Indexer {
   // Sets the current state to IDLE, which will cause the indexer to stop in the periodic method.
   public void stop() {
     currMode = Mode.IDLE;
+  }
+
+  public void spoolUp() {
+    isSpoolingUp = true;
+  }
+
+  public void spoolDown() {
+    isSpoolingUp = false;
   }
 
   // Sets the voltage that the indexer motors will run at when the indexer is running.
