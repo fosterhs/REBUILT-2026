@@ -44,10 +44,10 @@ public class Robot extends TimedRobot {
   private final double readyOffDelay = 2.0; // The amount of time that the robot needs to not be ready to shoot before the isReadyToShoot variable is set to false and prevents the indexer from running in seconds. 
   private boolean isReadyToShoot = false; // Stores whether the robot is ready to shoot or not based on whether the shooter has been up to speed and the robot has been at the shooting position for longer than the ready on delay. This variable is used to control whether the indexer should be running or not to help improve accuracy by ensuring that fuel is not fed into the shooter until it's ready.
   private boolean isCurrentyReadyToShoot = false; // Stores whether the robot is currently ready to shoot based on whether the shooter is up to speed and the robot is at the shooting position. 
-  private boolean currPrepareToShoot = false; // Stores whether the robot is preparing to shoot based on driver inputs. This can be used to start spinning up the shooter and calculating the shooting trajectory before the robot is actually ready to shoot to help improve accuracy and reduce the amount of time it takes for the robot to start shooting once the driver wants to shoot.
-  private boolean lastPrepareToShoot = false; // Stores the value of prepareToShoot from the previous iteration of the teleop periodic loop to detect when the driver has just started preparing to shoot.
-  private boolean rightTriggerPressed = false; // Stores whether the right trigger is currently pressed. This is used to control when the robot is preparing to shoot based on driver inputs.
-  private boolean rightTriggerReleased = false; 
+  private boolean currRT = false; // Stores whether the robot is preparing to shoot based on driver inputs. This can be used to start spinning up the shooter and calculating the shooting trajectory before the robot is actually ready to shoot to help improve accuracy and reduce the amount of time it takes for the robot to start shooting once the driver wants to shoot.
+  private boolean lastRT = false; // Stores the value of prepareToShoot from the previous iteration of the teleop periodic loop to detect when the driver has just started preparing to shoot.
+  private boolean RTPressed = false; // Stores whether the right trigger is currently pressed. This is used to control when the robot is preparing to shoot based on driver inputs.
+  private boolean RTReleased = false; 
   private boolean isPreparingToShoot = false;
 
   // Initializes the different subsystems of the robot.
@@ -511,10 +511,10 @@ public class Robot extends TimedRobot {
     shooter.init();
 
     // Resets all the shooting variables to their default values at the start of teleop.
-    lastPrepareToShoot = false;
-    currPrepareToShoot = false;
-    rightTriggerPressed = false;
-    rightTriggerReleased = false;
+    lastRT = false;
+    currRT = false;
+    RTPressed = false;
+    RTReleased = false;
     isPreparingToShoot = false;
     isShooting = false;
     isCurrentyReadyToShoot = false;
@@ -543,10 +543,16 @@ public class Robot extends TimedRobot {
     if (isReadyToShootTimer.get() > readyOnDelay && !isReadyToShoot) isReadyToShoot = true; // If the robot has been ready to shoot for longer than the ready on delay, the isReadyToShoot variable is set to true, allowing the indexer to run.
     if (isNotReadyToShootTimer.get() > readyOffDelay && isReadyToShoot) isReadyToShoot = false; // If the robot has not been ready to shoot for longer than the ready off delay, the isReadyToShoot variable is set to false, preventing the indexer from running.
 
-    lastPrepareToShoot = currPrepareToShoot;
-    currPrepareToShoot = driver.getRightTriggerAxis() > 0.25;
-    rightTriggerPressed = currPrepareToShoot && !lastPrepareToShoot;
-    rightTriggerReleased = !currPrepareToShoot && lastPrepareToShoot;
+    lastRT = currRT;
+    if (driver.getRightTriggerAxis() > 0.30) {
+      currRT = true;
+    } else if (driver.getRightTriggerAxis() < 0.20) {
+      currRT = false;
+    } else {
+      currRT = lastRT;
+    }
+    RTPressed = currRT && !lastRT;
+    RTReleased = !currRT && lastRT;
 
     // Holding the A button will cause the robot to shoot if it's not in near the trench.
     if (isNearTrench || driver.getRawButtonReleased(1)) {
@@ -557,9 +563,9 @@ public class Robot extends TimedRobot {
     }
 
     if (!driver.getRawButton(1)) {
-      if (isNearTrench || rightTriggerReleased) {
+      if (isNearTrench || RTReleased) {
         isPreparingToShoot = false; // Releasing the A button or being near the trench will cause the robot to stop shooting.
-      } else if (!isNearTrench && rightTriggerPressed) {
+      } else if (!isNearTrench && RTPressed) {
         isPreparingToShoot = true; // Pressing the A button will cause the robot to start shooting if it's not near the trench.
         swerve.resetDriveController(calcShootingHeading()); // Resets the drive controller to the current optimal shooting heading to prepare for rotation.
       }
