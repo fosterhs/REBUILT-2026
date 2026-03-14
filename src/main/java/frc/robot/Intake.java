@@ -328,8 +328,8 @@ public class Intake {
 
     // VelocityVoltage closed-loop control configuration.
     motorConfigs.Slot0.kP = 0.10; // Units: volts per 1 motor rotation per second of error.
-    motorConfigs.Slot0.kI = 0.2; // Units: volts per 1 motor rotation per second * 1 second of error.
-    motorConfigs.Slot0.kD = 0.0; // Units: volts per 1 motor rotation per second / 1 second of error.
+    motorConfigs.Slot0.kI = 0.0; // Units: volts per 1 motor rotation per second * 1 second of error.
+    motorConfigs.Slot0.kD = 0.001; // Units: volts per 1 motor rotation per second / 1 second of error.
     motorConfigs.Slot0.kV = 0.12; // The amount of voltage required to create 1 motor rotation per second.
     motorConfigs.Slot0.kS = 0.16; // The amount of voltage required to barely overcome static friction in the swerve wheel.
 

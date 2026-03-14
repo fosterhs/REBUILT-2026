@@ -61,7 +61,7 @@ public class Indexer {
         indexTimer.restart();
           hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
         if (isSpoolingUp) {
-          shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(indexRPM/60.0).withEnableFOC(true));
+          shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(0.0).withEnableFOC(true));
         } else {
           shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(0.0).withEnableFOC(true));
         }

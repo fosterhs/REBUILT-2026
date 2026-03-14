@@ -66,10 +66,10 @@ public class Robot extends TimedRobot {
 
   // Auto Variables
   private final SendableChooser<String> autoChooser = new SendableChooser<>();
-  private static final String auto1 = "Right Side Start, Fuel Collection Via Neutral Zone."; 
-  private static final String auto2 = "Left Side Start, Fuel Collection Via Neutral Zone."; 
+  private static final String auto1 = "Right Side Start, Fuel Collection Via Neutral Zone, outpost collect, shoot."; 
+  private static final String auto2 = "Left Side Start, Fuel Collection Via Neutral Zone, outpost collect, shoot."; 
   private static final String auto3 = "Center Start, fuel shoot, collect from depot, shoot "; 
-  private static final String auto4 = "Right Side. Shoot, collect from neutral zone, shoot, collect fuel from the human player station."; 
+  private static final String auto4 = "Right Side start, Shoot, collect from neutral zone, shoot, collect fuel from the human player station."; 
   private String autoSelected;
   private int autoStage = 1;
   private boolean autoCompleted = false;
@@ -241,7 +241,7 @@ public class Robot extends TimedRobot {
           case 3:
             // Auto 1, Stage 3 code goes here.
             swerve.followPath(0); // Brings the robot to the neutral zone to collect fuel.
-            if (swerve.getXPos() > 5.5) {
+            if (swerve.getXPos() > 4.5) {
               intake.rightIntake(); // When the X position is greater than 5.5, the right intake will deploy.
             }
             if (swerve.getXPos() > 7.5) {
@@ -266,19 +266,36 @@ public class Robot extends TimedRobot {
             shooter.spinUp(); // Turns the shooter on.
             indexer.spoolUp();
             if (swerve.getXPos() < 3.75) {
-              swerve.resetDriveController(calcShootingHeading());
+              swerve.resetDriveController(0.0);
               autoStage = 6; // Advances to the next stage once the robot has reached the shooting position.
             }
           break;
 
           case 6:
             // Auto 1, Stage 6 code goes here.
-            swerve.driveTo(0.61, 0.65, calcShootingHeading()); // Brings the robot to the outpost for fuel.
-            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
-            if (isReadyToShoot) {
-              indexer.start(); // Turns on the indexer.
+            swerve.driveTo(0.61, 0.65, 0.0); // Brings the robot to the outpost for fuel.
+            shooter.setHoodPosition(calcHoodPosition());
+            if (swerve.atDriveGoal()) {
+              autoStage = 7;
+              shootingTimer.restart(); // Restarts the shooting timer.
             }
           break; 
+
+          case 7:
+            shooter.setHoodPosition(calcHoodPosition());
+            swerve.driveTo(0.61, 0.65, 0.0); // Brings the robot to the outpost for fuel.
+            if (shootingTimer.get() > 2.0) {
+              swerve.resetDriveController(calcShootingHeading());
+              autoStage = 8;
+            } 
+          break;
+
+          case 8:
+            swerve.driveTo(0.61, 0.65, calcShootingHeading());
+            if (isReadyToShoot) {
+              indexer.start();
+            }
+          break;
         } 
       break;
 
@@ -314,7 +331,7 @@ public class Robot extends TimedRobot {
           case 3:
             // Auto 2, Stage 3 code goes here.
             swerve.followPath(2); // Brings the robot to the neutral zone to collect fuel.
-            if (swerve.getXPos() > 5.5) {
+            if (swerve.getXPos() > 4.5) {
               intake.leftIntake(); // When the X position is greater than 5.5, the left intake will deploy.
             }
             if (swerve.getXPos() > 7.5) {
@@ -451,7 +468,7 @@ public class Robot extends TimedRobot {
           case 3:
             // Auto 4, Stage 3 code goes here.
             swerve.followPath(0); // Brings the robot to the neutral zone to collect fuel.
-            if (swerve.getXPos() > 5.5) {
+            if (swerve.getXPos() > 4.5) {
               intake.rightIntake(); // When the X position is greater than 5.5, the right intake will deploy.
             }
             if (swerve.getXPos() > 7.3) {
@@ -766,7 +783,7 @@ public class Robot extends TimedRobot {
 
   // This method calculates the position the hood needs to be at to shoot accurately based on the distance to the target. It uses a calibration array to return hood position values based on distance to the target.
   private double[] scoringHoodCalibrationDistances = {2.0, 3.0, 4.0, 5.0, 6.0}; 
-  private double[] scoringHoodCalibrationValues = {0.0515, 0.058, 0.0625, 0.065, 0.06}; 
+  private double[] scoringHoodCalibrationValues = {0.0545, 0.0595, 0.0625, 0.06895, 0.06}; 
   private double[] passingHoodCalibrationDistances = {2.0, 3.0, 4.0, 5.0, 6.0};
   private double[] passingHoodCalibrationValues = {0.05, 0.0625, 0.07, 0.065, 0.06};
   private double calcHoodPosition() {
