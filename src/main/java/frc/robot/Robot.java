@@ -228,7 +228,7 @@ public class Robot extends TimedRobot {
             // Auto 1, Stage 2 code goes here.
             swerve.driveTo(3.5, 0.75, calcShootingHeading()); // Brings the robot slightly backwards.
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
-            if (shootingTimer.get() > 3.0) {
+            if (shootingTimer.get() > 2.0) {
               shooter.spinDown(); // Turns the shooter off.
               shooter.lowerHood(); // Lowers the hood of the shooter.
               indexer.spoolDown();
@@ -266,37 +266,49 @@ public class Robot extends TimedRobot {
             shooter.spinUp(); // Turns the shooter on.
             indexer.spoolUp();
             if (swerve.getXPos() < 3.75) {
-              swerve.resetDriveController(0.0);
+              swerve.resetDriveController(calcShootingHeading());
               autoStage = 6; // Advances to the next stage once the robot has reached the shooting position.
             }
           break;
 
           case 6:
-            // Auto 1, Stage 6 code goes here.
-            swerve.driveTo(0.61, 0.65, 0.0); // Brings the robot to the outpost for fuel.
+            swerve.driveTo(3.500, 0.750, calcShootingHeading());
             shooter.setHoodPosition(calcHoodPosition());
-            if (swerve.atDriveGoal()) {
+            if (isReadyToShoot) {
+              indexer.start();
+              shootingTimer.restart();
               autoStage = 7;
-              shootingTimer.restart(); // Restarts the shooting timer.
+            }
+          break;
+
+          case 7:
+            // Auto 1, Stage 6 code goes here.
+            swerve.driveTo(3.500, 0.750, calcShootingHeading());
+            shooter.setHoodPosition(calcHoodPosition());
+            if (shootingTimer.get() > 3.0) {
+              autoStage = 8;
+              swerve.resetDriveController(0.0);
+              shootingTimer.restart();
             }
           break; 
 
-          case 7:
-            shooter.setHoodPosition(calcHoodPosition());
+          case 8:
             swerve.driveTo(0.61, 0.65, 0.0); // Brings the robot to the outpost for fuel.
+            shooter.setHoodPosition(calcHoodPosition());
             if (shootingTimer.get() > 2.0) {
               swerve.resetDriveController(calcShootingHeading());
-              autoStage = 8;
+              autoStage = 9;
             } 
           break;
 
-          case 8:
+          case 9:
             swerve.driveTo(0.61, 0.65, calcShootingHeading());
+            shooter.setHoodPosition(calcHoodPosition());
             if (isReadyToShoot) {
               indexer.start();
             }
           break;
-        } 
+        }
       break;
 
       case auto2:
@@ -782,8 +794,8 @@ public class Robot extends TimedRobot {
   }
 
   // This method calculates the position the hood needs to be at to shoot accurately based on the distance to the target. It uses a calibration array to return hood position values based on distance to the target.
-  private double[] scoringHoodCalibrationDistances = {2.0, 3.0, 4.0, 5.0, 6.0}; 
-  private double[] scoringHoodCalibrationValues = {0.0545, 0.0595, 0.0625, 0.06895, 0.06}; 
+  private double[] scoringHoodCalibrationDistances = {2.0, 3.0,3.5, 4.0, 5.0, 6.0}; 
+  private double[] scoringHoodCalibrationValues = {0.0545, 0.062,0.065, 0.068, 0.06895, 0.06}; 
   private double[] passingHoodCalibrationDistances = {2.0, 3.0, 4.0, 5.0, 6.0};
   private double[] passingHoodCalibrationValues = {0.05, 0.0625, 0.07, 0.065, 0.06};
   private double calcHoodPosition() {
@@ -854,6 +866,7 @@ public class Robot extends TimedRobot {
   // Publishes information to the dashboard.
   private void updateDash() {
     SmartDashboard.putBoolean("Boost Mode", boostMode);
+    SmartDashboard.putNumber("distance to hub", distanceToTarget);
     if (Robot.isSimulation()) {
       SmartDashboard.putNumber("sim/Auto Stage", autoStage);
       SmartDashboard.putBoolean("sim/At Drive Goal", swerve.atDriveGoal());
