@@ -54,14 +54,14 @@ public class Indexer {
         } else {
           indexTimer.restart(); // Restarts the timer to repeat the cycle of running forward for 2.5 seconds and then reversing for 0.5 seconds. This will continue until the mode is changed to IDLE.
         }
-        shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(indexRPM).withEnableFOC(true));
+        shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(indexRPM/60.0).withEnableFOC(true));
       break;
 
       case IDLE: // Stops the motors.
         indexTimer.restart();
           hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
         if (isSpoolingUp) {
-          shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(indexRPM).withEnableFOC(true));
+          shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(indexRPM/60.0).withEnableFOC(true));
         } else {
           shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(0.0).withEnableFOC(true));
         }

@@ -100,8 +100,8 @@ public class Intake {
   // This method will be called periodically (about every 20 milliseconds) while the robot is on. In this method, we will implement the logic for controlling the intake arms based on the current mode of the intake system. We will also dynamically adjust the voltage for the rollers and centering motors based on the position of the arms to ensure that we are running them at appropriate speeds for intaking fuel without putting too much strain on the motors or causing excessive wear.
   public void periodic() {
     // Dynamically adjust the roller voltage based on the position of the arms. If the arm is close to the stow position (less than 3 rotations away), we can run the rollers at a lower voltage. If the arm is further out (more than 3 rotations away), we can run the rollers at a higher voltage to more aggressively pull in fuel. Adjust these thresholds and voltage values as needed based on your specific robot's intake mechanism and how it performs during testing.
-    leftIntakeRPM = getLeftArmPosition() < 3.0 ? 1500.0 : 4000.0; 
-    rightIntakeRPM = getRightArmPosition() < 3.0 ? 1500.0 : 4000.0;
+    leftIntakeRPM = getLeftArmPosition() < 3.0 ? 1500.0 : 3500.0; 
+    rightIntakeRPM = getRightArmPosition() < 3.0 ? 1500.0 : 3500.0;
 
     switch (currMode) {
       case HOME: // In HOME mode, we want to run the homing procedure to find the zero position of the intake arms. We will run the arm motors at a low voltage to move them towards the zero position, and if they are moving, we will restart the homing timers. If they have been stationary for more than 1 second, we will set their positions to 0 and consider them homed. Once both arms are homed, we will switch to STOW mode and set the desired positions for both arms to the stow position.
@@ -327,8 +327,8 @@ public class Intake {
     motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive; // Set the motor direction based on the invert parameter. This allows us to easily configure one roller to be inverted and the other to be non-inverted, which can help ensure that they move in the correct directions when we apply positive or negative voltages to them.
 
     // VelocityVoltage closed-loop control configuration.
-    motorConfigs.Slot0.kP = 0.25; // Units: volts per 1 motor rotation per second of error.
-    motorConfigs.Slot0.kI = 0.5; // Units: volts per 1 motor rotation per second * 1 second of error.
+    motorConfigs.Slot0.kP = 0.10; // Units: volts per 1 motor rotation per second of error.
+    motorConfigs.Slot0.kI = 0.2; // Units: volts per 1 motor rotation per second * 1 second of error.
     motorConfigs.Slot0.kD = 0.0; // Units: volts per 1 motor rotation per second / 1 second of error.
     motorConfigs.Slot0.kV = 0.12; // The amount of voltage required to create 1 motor rotation per second.
     motorConfigs.Slot0.kS = 0.16; // The amount of voltage required to barely overcome static friction in the swerve wheel.

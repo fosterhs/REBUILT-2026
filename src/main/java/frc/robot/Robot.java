@@ -562,16 +562,13 @@ public class Robot extends TimedRobot {
       swerve.resetDriveController(calcShootingHeading()); // Resets the drive controller to the current optimal shooting heading to prepare for rotation.
     }
 
-    if (!driver.getRawButton(1)) {
-      if (isNearTrench || RTReleased) {
-        isPreparingToShoot = false; // Releasing the A button or being near the trench will cause the robot to stop shooting.
-      } else if (!isNearTrench && RTPressed) {
-        isPreparingToShoot = true; // Pressing the A button will cause the robot to start shooting if it's not near the trench.
-        swerve.resetDriveController(calcShootingHeading()); // Resets the drive controller to the current optimal shooting heading to prepare for rotation.
-      }
-    } else {
-      isPreparingToShoot = false;
+    if (isNearTrench || RTReleased) {
+      isPreparingToShoot = false; // Releasing the A button or being near the trench will cause the robot to stop shooting.
+    } else if (!isNearTrench && RTPressed) {
+      isPreparingToShoot = true; // Pressing the A button will cause the robot to start shooting if it's not near the trench.
+      swerve.resetDriveController(calcShootingHeading()); // Resets the drive controller to the current optimal shooting heading to prepare for rotation.
     }
+    
 
     // The following code allows the driver to toggle between boost mode and default mode with the A and B buttons. In boost mode, the robot will drive at 60% of its maximum speed. In default mode, the robot will drive at 40% of its maximum speed.
     if (driver.getRawButtonPressed(2)) boostMode = true; // A button sets boost mode. (100% speed up from default of 60%).
@@ -595,7 +592,7 @@ public class Robot extends TimedRobot {
       shooter.spinUp(); 
       indexer.spoolUp();
       shooter.setHoodPosition(calcHoodPosition());
-      if (isReadyToShoot && !isPreparingToShoot) {
+      if (isReadyToShoot && driver.getRawButton(1)) {
         indexer.start();
       } else {
         indexer.stop();
