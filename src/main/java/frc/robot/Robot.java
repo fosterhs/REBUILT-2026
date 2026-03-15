@@ -62,7 +62,7 @@ public class Robot extends TimedRobot {
   private final CANdle topLED = new CANdle(0, canivore); // Initializes the CANdle for controlling the LEDs on the robot. 
   private final SolidColor solidColorRequest = new SolidColor(8, 41); // A SolidColor control request that is used to set the color of the LEDs on the robot. 
   private final RGBWColor purpleColor = new RGBWColor(255, 0, 255, 0); // A purple color for the LEDs to indicate when the robot is not shooting.
-  private final RGBWColor greenColor = new RGBWColor(0, 255, 0, 0); // A green color for the LEDs to indicate when the robot is shooting.
+  private final RGBWColor greenColor = new RGBWColor(0, 0, 255, 0); // A green color for the LEDs to indicate when the robot is shooting.
 
   // Auto Variables
   private final SendableChooser<String> autoChooser = new SendableChooser<>();
@@ -253,8 +253,8 @@ public class Robot extends TimedRobot {
           case 4:
             // Auto 1, Stage 4 code goes here.
             swerve.aimDrive(0.0, 0.8, 180.0, true); // Moves the robot in the neutral zone, collecting fuel.
-            if (swerve.getYPos() >= 3.5) {
-              intake.stow(); // Stows the intake.
+            if (swerve.getYPos() >= 2.5) {
+              intake.leftIntake(); // Stows the intake.
               swerve.resetPathController(1);
               autoStage = 5; // Advances to the next stage once the robot has finished intaking.
             }
@@ -287,22 +287,26 @@ public class Robot extends TimedRobot {
             shooter.setHoodPosition(calcHoodPosition());
             if (shootingTimer.get() > 3.0) {
               autoStage = 8;
-              swerve.resetDriveController(0.0);
+              indexer.stop();
+              swerve.resetDriveController(90.0);
               shootingTimer.restart();
             }
           break; 
 
           case 8:
-            swerve.driveTo(0.61, 0.65, 0.0); // Brings the robot to the outpost for fuel.
+            swerve.driveTo(0.4, 0.6, 90.0); // Brings the robot to the outpost for fuel.
             shooter.setHoodPosition(calcHoodPosition());
-            if (shootingTimer.get() > 2.0) {
+            if (swerve.getXPos() < 2.0) {
+              intake.stow();
+            }
+            if (shootingTimer.get() > 3.0) {
               swerve.resetDriveController(calcShootingHeading());
               autoStage = 9;
             } 
           break;
 
           case 9:
-            swerve.driveTo(0.61, 0.65, calcShootingHeading());
+            swerve.driveTo(3.5, 3.0, calcShootingHeading());
             shooter.setHoodPosition(calcHoodPosition());
             if (isReadyToShoot) {
               indexer.start();
@@ -866,7 +870,6 @@ public class Robot extends TimedRobot {
   // Publishes information to the dashboard.
   private void updateDash() {
     SmartDashboard.putBoolean("Boost Mode", boostMode);
-    SmartDashboard.putNumber("distance to hub", distanceToTarget);
     if (Robot.isSimulation()) {
       SmartDashboard.putNumber("sim/Auto Stage", autoStage);
       SmartDashboard.putBoolean("sim/At Drive Goal", swerve.atDriveGoal());
