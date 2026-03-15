@@ -60,7 +60,7 @@ public class Robot extends TimedRobot {
   // LED Variables
   private final CANBus canivore = new CANBus("canivore"); // Initializes the CANivore CAN Bus for controlling the CANdle.
   private final CANdle topLED = new CANdle(0, canivore); // Initializes the CANdle for controlling the LEDs on the robot. 
-  private final SolidColor solidColorRequest = new SolidColor(8, 41); // A SolidColor control request that is used to set the color of the LEDs on the robot. 
+  private final SolidColor solidColorRequest = new SolidColor(0, 41); // A SolidColor control request that is used to set the color of the LEDs on the robot. 
   private final RGBWColor purpleColor = new RGBWColor(255, 0, 255, 0); // A purple color for the LEDs to indicate when the robot is not shooting.
   private final RGBWColor greenColor = new RGBWColor(0, 0, 255, 0); // A green color for the LEDs to indicate when the robot is shooting.
 
@@ -70,6 +70,7 @@ public class Robot extends TimedRobot {
   private static final String auto2 = "Left Side Start, Fuel Collection Via Neutral Zone, outpost collect, shoot."; 
   private static final String auto3 = "Center Start, fuel shoot, collect from depot, shoot "; 
   private static final String auto4 = "Right Side start, Shoot, collect from neutral zone, shoot, collect fuel from the human player station."; 
+  private static final String auto5 = "Troll Auto";
   private String autoSelected;
   private int autoStage = 1;
   private boolean autoCompleted = false;
@@ -101,6 +102,7 @@ public class Robot extends TimedRobot {
     autoChooser.addOption(auto2, auto2);
     autoChooser.addOption(auto3, auto3);
     autoChooser.addOption(auto4, auto4);
+    autoChooser.addOption(auto5, auto5);
     SmartDashboard.putData("Autos", autoChooser);
 
     // Auto 1 Paths : Fuel Collection from Neutral Zone, Right Starting Position. 0-1
@@ -109,6 +111,8 @@ public class Robot extends TimedRobot {
     // Auto 2 Paths : Fuel Collection from Neutral Zone, Left Starting Position. 2-3
     swerve.loadPath("neutral zone left travelling to zone", 0.0, 0.0, 0.0, -70.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     swerve.loadPath("neutral zone left travelling to shooting position 2", 0.0, 0.0, 0.0, 180.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+    // Troll Auto Path #4
+    swerve.loadPath("Troll Auto", 0.0, 0.0, 0.0, 90.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     runAll(); // Helps prevent loop overruns on startup by running every command before the match starts.
     SignalLogger.enableAutoLogging(false);
     SignalLogger.stop();
@@ -169,6 +173,13 @@ public class Robot extends TimedRobot {
         // AutoInit 4 code goes here.
         swerve.pushCalibration(true, 90.0); // Updates the robot's position on the field.
         swerve.resetDriveController(calcShootingHeading());
+      break;
+
+      case auto5:
+        // AutoInit 4 code goes here.
+        swerve.pushCalibration(true, 90.0); // Updates the robot's position on the field.
+        swerve.resetPathController(4); 
+      break;
     }
 
     if (Robot.isSimulation()) {
@@ -253,9 +264,9 @@ public class Robot extends TimedRobot {
           case 4:
             // Auto 1, Stage 4 code goes here.
             swerve.aimDrive(0.0, 0.8, 180.0, true); // Moves the robot in the neutral zone, collecting fuel.
-            if (swerve.getYPos() >= 2.5) {
-              intake.leftIntake(); // Stows the intake.
+            if (swerve.getYPos() > 2.35) {
               swerve.resetPathController(1);
+              intake.leftIntake();
               autoStage = 5; // Advances to the next stage once the robot has finished intaking.
             }
           break;
@@ -288,28 +299,38 @@ public class Robot extends TimedRobot {
             if (shootingTimer.get() > 3.0) {
               autoStage = 8;
               indexer.stop();
-              swerve.resetDriveController(90.0);
               shootingTimer.restart();
             }
           break; 
 
           case 8:
-            swerve.driveTo(0.4, 0.6, 90.0); // Brings the robot to the outpost for fuel.
+            swerve.driveTo(0.35, 0.6, 90.0); // Brings the robot to the outpost for fuel.
             shooter.setHoodPosition(calcHoodPosition());
-            if (swerve.getXPos() < 2.0) {
-              intake.stow();
-            }
             if (shootingTimer.get() > 3.0) {
-              swerve.resetDriveController(calcShootingHeading());
               autoStage = 9;
             } 
           break;
 
           case 9:
-            swerve.driveTo(3.5, 3.0, calcShootingHeading());
+            swerve.aimDrive(0.5, 0.5, calcShootingHeading(), true);
             shooter.setHoodPosition(calcHoodPosition());
             if (isReadyToShoot) {
               indexer.start();
+            } else {
+              indexer.stop();
+            }
+            if (swerve.getXPos() > 2.8 || swerve.getYPos() > 2.8) {
+              autoStage = 10;
+            }
+          break;
+
+          case 10:
+            swerve.aimDrive(0.0, 0.0, calcShootingHeading(), true);
+            shooter.setHoodPosition(calcHoodPosition());
+            if (isReadyToShoot) {
+              indexer.start();
+            } else {
+              indexer.stop();
             }
           break;
         }
@@ -523,6 +544,13 @@ public class Robot extends TimedRobot {
             }
           break; 
         }
+
+      case auto5:
+        switch (autoStage) {
+          case 1:
+            swerve.followPath(4); 
+          break;
+        }
       break;
     }
 
@@ -728,6 +756,10 @@ public class Robot extends TimedRobot {
         case auto4:
           swerve.updateVisionHeading(true, 90.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
         break;
+
+        case auto5:
+          swerve.updateVisionHeading(true, 90.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
+        break;
       }
     } else {
       swerve.updateVisionHeading(false, 0.0); // Updates the Limelights with the robot heading (for MegaTag2).
@@ -798,8 +830,8 @@ public class Robot extends TimedRobot {
   }
 
   // This method calculates the position the hood needs to be at to shoot accurately based on the distance to the target. It uses a calibration array to return hood position values based on distance to the target.
-  private double[] scoringHoodCalibrationDistances = {2.0, 3.0,3.5, 4.0, 5.0, 6.0}; 
-  private double[] scoringHoodCalibrationValues = {0.0545, 0.062,0.065, 0.068, 0.06895, 0.06}; 
+  private double[] scoringHoodCalibrationDistances = {1.0, 1.5, 2.0, 2.5,3.0,3.5, 4.0, 5.0, 6.0}; 
+  private double[] scoringHoodCalibrationValues = {0.02,0.035, 0.0545,0.0575, 0.062,0.065, 0.068, 0.06895, 0.06}; 
   private double[] passingHoodCalibrationDistances = {2.0, 3.0, 4.0, 5.0, 6.0};
   private double[] passingHoodCalibrationValues = {0.05, 0.0625, 0.07, 0.065, 0.06};
   private double calcHoodPosition() {
