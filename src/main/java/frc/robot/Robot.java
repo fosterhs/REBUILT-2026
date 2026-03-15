@@ -314,7 +314,7 @@ public class Robot extends TimedRobot {
           case 9:
             swerve.aimDrive(0.5, 0.5, calcShootingHeading(), true);
             shooter.setHoodPosition(calcHoodPosition());
-            if (isReadyToShoot) {
+            if (isReadyToShoot && swerve.getXPos() > 1.2) {
               indexer.start();
             } else {
               indexer.stop();
