@@ -627,7 +627,9 @@ public class Robot extends TimedRobot {
       isPreparingToShoot = false; // Releasing the A button or being near the trench will cause the robot to stop shooting.
     } else if (!isNearTrench && RTPressed) {
       isPreparingToShoot = true; // Pressing the A button will cause the robot to start shooting if it's not near the trench.
-      swerve.resetDriveController(calcShootingHeading()); // Resets the drive controller to the current optimal shooting heading to prepare for rotation.
+      if (!isShooting) {
+        swerve.resetDriveController(calcShootingHeading()); // Resets the drive controller to the current optimal shooting heading to prepare for rotation.
+      }
     }
     
 
