@@ -39,6 +39,7 @@ class SwerveModule {
   private final VelocityVoltage driveMotorVelocityRequest = new VelocityVoltage(0.0).withEnableFOC(true); // Communicates velocity voltage velocity requests to the drive motor.
   private final MotionMagicTorqueCurrentFOC turnMotorPositionRequest = new MotionMagicTorqueCurrentFOC(0.0); // Communicates motion magic torque current FOC position requests to the turn motor.
   private SwerveModulePosition SMP = new SwerveModulePosition(); // Stores the current wheel position and drive motor position of the swerve module.
+  private SwerveModuleState SMS = new SwerveModuleState(); // Stores the current velocity and angle of the swerve module.
 
   public final CANcoderSimState wheelEncoderSim;
   public final TalonFXSimState driveMotorSim;
@@ -89,6 +90,18 @@ class SwerveModule {
     SMP.angle = Rotation2d.fromDegrees(getWheelAngle());
     SMP.distanceMeters = getDriveMotorPos();
     return SMP;
+  }
+
+  // Returns the velocity and angle of the module.
+  public SwerveModuleState getSMS() {
+    SMS.angle = Rotation2d.fromDegrees(getWheelAngle());
+    SMS.speedMetersPerSecond = getDriveMotorVel();
+    return SMS;
+  }
+
+  // Returns the current velocity of the wheel. Unit: meters per second
+  public double getDriveMotorVel() {
+    return driveMotorVelocity.getValueAsDouble()*wheelCirc*correctionFactor/driveGearRatio;
   }
 
   // Returns total distance the wheel has rotated. Unit: meters

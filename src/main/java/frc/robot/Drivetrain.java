@@ -64,7 +64,7 @@ class Drivetrain {
   private final SwerveModule backRightModule = new SwerveModule(5, 6, 27, true, -0.326172, "canivore");
   private final SwerveModule backLeftModule = new SwerveModule(7, 8, 26, false, -0.163574, "canivore");
   private final SwerveModule[] modules = {frontLeftModule, frontRightModule, backRightModule, backLeftModule};
-  private SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(0.0, 0.0, 0.0, new Rotation2d()));
+  private SwerveModuleState[] demandedModuleStates = kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(0.0, 0.0, 0.0, new Rotation2d()));
   private SwerveModulePosition[] modulePositions = new SwerveModulePosition[4];
 
   // Gyro Variables
@@ -106,6 +106,7 @@ class Drivetrain {
   private double minAngVel = 0.01; // The minimum velocity that the robot will be commanded to rotate at when it is not at the target in radians per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
 
   // These variables are updated each period so they can be passed along to the user or the dashboard.
+  private ChassisSpeeds currModuleStates = new ChassisSpeeds(); // Stores the velocity and angular velocity of the drivetrain.
   private double xVel = 0.0; // Unit: meters per second
   private double yVel = 0.0; // Unit: meters per second
   private double angVel = 0.0; // Unit: degrees per second
@@ -161,28 +162,30 @@ class Drivetrain {
   // fieldRelative determines field-oriented control vs. robot-oriented control. field-relative control is automatically disabled in the case of a gyro failure.
   // Center of Rotation variables define where the robot will rotate from. 0,0 corresponds to rotations about the center of the robot. +x is towards the front. +y is to the left side.
   public void drive(double _xVel, double _yVel, double _angVel, boolean fieldRelative, double centerOfRotationX, double centerOfRotationY) {
-    xVel = _xVel;
-    yVel = _yVel;
-    angVel = _angVel*180.0/Math.PI;
-    moduleStates = fieldRelative
+    demandedModuleStates = fieldRelative
       ? kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(_xVel, _yVel, _angVel, Rotation2d.fromDegrees(getFusedAng())), new Translation2d(centerOfRotationX, centerOfRotationY))
       : kinematics.toSwerveModuleStates(new ChassisSpeeds(_xVel, _yVel, _angVel), new Translation2d(centerOfRotationX, centerOfRotationY));
-    SwerveDriveKinematics.desaturateWheelSpeeds(moduleStates, maxVelTeleop); // Makes sure the calculated velocities are attainable. If they are not, all modules velocities are scaled back.
+    SwerveDriveKinematics.desaturateWheelSpeeds(demandedModuleStates, maxVelTeleop); // Makes sure the calculated velocities are attainable. If they are not, all modules velocities are scaled back.
     for (int moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {
-      modules[moduleIndex].setSMS(moduleStates[moduleIndex]); // Sets the module angles and velocities.
+      modules[moduleIndex].setSMS(demandedModuleStates[moduleIndex]); // Sets the module angles and velocities.
     }
+    currModuleStates = kinematics.toChassisSpeeds(frontLeftModule.getSMS(), frontRightModule.getSMS(), backRightModule.getSMS(), backLeftModule.getSMS());
+    xVel = currModuleStates.vxMetersPerSecond;
+    yVel = currModuleStates.vyMetersPerSecond;
+    angVel = currModuleStates.omegaRadiansPerSecond*180.0/Math.PI;
   }
 
   // Forces the swerve modules into an x-lock pattern to resist movement. Useful for defense or if the robot must remain stationary. 
   public void xLock() {
-    xVel = 0.0;
-    yVel = 0.0;
-    angVel = 0.0;
     for (int moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {
-      moduleStates[moduleIndex].speedMetersPerSecond = 0.0;
-      moduleStates[moduleIndex].angle = (moduleIndex == 0 || moduleIndex == 2) ? Rotation2d.fromDegrees(45.0) : Rotation2d.fromDegrees(-45.0);
-      modules[moduleIndex].setSMS(moduleStates[moduleIndex]);
+      demandedModuleStates[moduleIndex].speedMetersPerSecond = 0.0;
+      demandedModuleStates[moduleIndex].angle = (moduleIndex == 0 || moduleIndex == 2) ? Rotation2d.fromDegrees(45.0) : Rotation2d.fromDegrees(-45.0);
+      modules[moduleIndex].setSMS(demandedModuleStates[moduleIndex]);
     }
+    currModuleStates = kinematics.toChassisSpeeds(frontLeftModule.getSMS(), frontRightModule.getSMS(), backRightModule.getSMS(), backLeftModule.getSMS());
+    xVel = currModuleStates.vxMetersPerSecond;
+    yVel = currModuleStates.vyMetersPerSecond;
+    angVel = currModuleStates.omegaRadiansPerSecond*180.0/Math.PI;
   }
 
   // Should be called immediately prior to aimDrive() or driveTo(). Resets the PID controllers. Target angle specifies the first angle that will be demanded.
