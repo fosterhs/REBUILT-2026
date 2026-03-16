@@ -711,7 +711,7 @@ public class Robot extends TimedRobot {
     } else if (isShooting || isPreparingToShoot) {
       swerve.aimDrive(xVelTeleop, yVelTeleop, calcShootingHeading(), true); // Allows the driver to adjust the position of the robot while aiming at the hub. The robot will automatically rotate to a rotation where it'll have the least misses.
     } else {
-      swerve.drive(xVelTeleop, yVelTeleop, angVelTeleop, true, 0.0, 0.0); // Drive at the velocity demanded by the controller.
+      swerve.drive(xVelTeleop, yVelTeleop, angVelTeleop); // Drive at the velocity demanded by the controller.
     }
 
     // The following calls allow the user to calibrate the position of the robot based on April Tag information. Should be called when the robot is stationary. Button 7 is "View", the left center button.
@@ -933,6 +933,8 @@ public class Robot extends TimedRobot {
     swerve.addVisionEstimate(0, true);
     swerve.updateOdometry();
     swerve.drive(0.01, 0.0, 0.0, true, 0.0, 0.0);
+    swerve.drive(0.01, 0.0, 0.0, true);
+    swerve.drive(0.01, 0.0, 0.0);
     System.out.println("swerve atDriveGoal: " + swerve.atDriveGoal());
     System.out.println("swerve atPathEndpoint: " + swerve.atPathEndpoint(0));
     System.out.println("swerve getAngVel: " + swerve.getAngVel());

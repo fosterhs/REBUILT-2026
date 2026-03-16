@@ -106,7 +106,7 @@ class Drivetrain {
   private double minAngVel = 0.01; // The minimum velocity that the robot will be commanded to rotate at when it is not at the target in radians per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
 
   // These variables are updated each period so they can be passed along to the user or the dashboard.
-  private ChassisSpeeds currModuleStates = new ChassisSpeeds(); // Stores the velocity and angular velocity of the drivetrain.
+  private ChassisSpeeds currSpeeds = new ChassisSpeeds(); // Stores the velocity and angular velocity of the drivetrain.
   private double xVel = 0.0; // Unit: meters per second
   private double yVel = 0.0; // Unit: meters per second
   private double angVel = 0.0; // Unit: degrees per second
@@ -159,7 +159,7 @@ class Drivetrain {
   }
 
   // Drives the robot at a certain speed and rotation rate. Units: meters per second for xVel and yVel, radians per second for angVel. 
-  // fieldRelative determines field-oriented control vs. robot-oriented control. field-relative control is automatically disabled in the case of a gyro failure.
+  // fieldRelative determines field-oriented control vs. robot-oriented control. 
   // Center of Rotation variables define where the robot will rotate from. 0,0 corresponds to rotations about the center of the robot. +x is towards the front. +y is to the left side.
   public void drive(double _xVel, double _yVel, double _angVel, boolean fieldRelative, double centerOfRotationX, double centerOfRotationY) {
     demandedModuleStates = fieldRelative
@@ -169,10 +169,18 @@ class Drivetrain {
     for (int moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {
       modules[moduleIndex].setSMS(demandedModuleStates[moduleIndex]); // Sets the module angles and velocities.
     }
-    currModuleStates = kinematics.toChassisSpeeds(frontLeftModule.getSMS(), frontRightModule.getSMS(), backRightModule.getSMS(), backLeftModule.getSMS());
-    xVel = currModuleStates.vxMetersPerSecond;
-    yVel = currModuleStates.vyMetersPerSecond;
-    angVel = currModuleStates.omegaRadiansPerSecond*180.0/Math.PI;
+    updateSpeeds();
+  }
+
+  // Drives the robot at a certain speed and rotation rate. Units: meters per second for xVel and yVel, radians per second for angVel. 
+  // fieldRelative determines field-oriented control vs. robot-oriented control
+  public void drive(double _xVel, double _yVel, double _angVel, boolean fieldRelative) {
+    drive(_xVel, _yVel, _angVel, fieldRelative, 0.0, 0.0);
+  }
+
+  // Drives the robot at a certain speed and rotation rate. Units: meters per second for xVel and yVel, radians per second for angVel. 
+  public void drive(double _xVel, double _yVel, double _angVel) {
+    drive(_xVel, _yVel, _angVel, true, 0.0, 0.0);
   }
 
   // Forces the swerve modules into an x-lock pattern to resist movement. Useful for defense or if the robot must remain stationary. 
@@ -182,14 +190,20 @@ class Drivetrain {
       demandedModuleStates[moduleIndex].angle = (moduleIndex == 0 || moduleIndex == 2) ? Rotation2d.fromDegrees(45.0) : Rotation2d.fromDegrees(-45.0);
       modules[moduleIndex].setSMS(demandedModuleStates[moduleIndex]);
     }
-    currModuleStates = kinematics.toChassisSpeeds(frontLeftModule.getSMS(), frontRightModule.getSMS(), backRightModule.getSMS(), backLeftModule.getSMS());
-    xVel = currModuleStates.vxMetersPerSecond;
-    yVel = currModuleStates.vyMetersPerSecond;
-    angVel = currModuleStates.omegaRadiansPerSecond*180.0/Math.PI;
+    updateSpeeds();
+  }
+
+  // Updates the xVel, yVel, and angVel variables based on the current state of the swerve modules.
+  private void updateSpeeds() {
+    currSpeeds = kinematics.toChassisSpeeds(frontLeftModule.getSMS(), frontRightModule.getSMS(), backRightModule.getSMS(), backLeftModule.getSMS());
+    xVel = currSpeeds.vxMetersPerSecond*Math.cos(getFusedAng());
+    yVel = currSpeeds.vyMetersPerSecond*Math.cos(getFusedAng());
+    angVel = currSpeeds.omegaRadiansPerSecond*180.0/Math.PI;
   }
 
   // Should be called immediately prior to aimDrive() or driveTo(). Resets the PID controllers. Target angle specifies the first angle that will be demanded.
   public void resetDriveController(double targetAngle) {
+    updateSpeeds();
     xDriveController.reset(getXPos(), xVel);
     yDriveController.reset(getYPos(), yVel);
     angleDriveController.reset(getAngleDistance(getFusedAng(), targetAngle)*Math.PI/180.0, angVel*Math.PI/180.0);
