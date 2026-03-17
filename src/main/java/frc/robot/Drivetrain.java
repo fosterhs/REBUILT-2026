@@ -36,7 +36,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.LimelightHelpers.PoseEstimate;
 
 class Drivetrain {
-  public static final double maxAcc = 1.0*9.80665/Math.sqrt(2.0); // The maximum acceleration of the robot, typically limited by the coefficient of friction between the swerve wheels and the field.
+  public static final double maxAcc = 1.0*9.80665; // The maximum acceleration of the robot, typically limited by the coefficient of friction between the swerve wheels and the field.
   public static final double wheelbaseX = (24.0-2*2.625)*0.0254; // The length of the robot from front to back in units of meters. Measured from the centers of each swerve wheel.
   public static final double wheelbaseY = (31.0-2*2.625)*0.0254; // The length of the robot from left to right in units of meters. Measured from the centers of each swerve wheel.
   public static final double wheelbaseR = Math.sqrt(Math.pow(wheelbaseX/2.0, 2) + Math.pow(wheelbaseY/2.0, 2)); // The "radius" of the robot from robot center to the center of the swerve wheel in units of meters.
@@ -46,10 +46,10 @@ class Drivetrain {
   public static final double maxAngVelTeleop = SwerveModule.maxVel/wheelbaseR; // User defined maximum rotational speed of the robot. Enforced during teleop. Unit: raidans per second Robot maximum is 4pi rad/s.
   public static final double maxAccTeleop = maxAcc; // User defined maximum acceleration of the robot. Enforced during teleop. Unit: meters per second^2 Robot maximum is 5 m/s2.
   public static final double maxAngAccTeleop = maxAccTeleop/wheelbaseR; // User defined maximum rotational acceleration of the robot. Enforced during teleop. Unit: raidans per second^2 Robot maximum is 5pi rad/s2.
-  public static final double maxVelAuto = 0.9*SwerveModule.maxVel; // User defined maximum speed of the robot. Enforced during auto. Unit: meters per second
-  public static final double maxAngVelAuto = 0.9*SwerveModule.maxVel/wheelbaseR; // User defined maximum rotational speed of the robot. Enforced during auto. Unit: raidans per second
-  public static final double maxAccAuto = 0.75*maxAcc; // User defined maximum acceleration of the robot. Enforced during auto. Unit: meters per second^2
-  public static final double maxAngAccAuto = 0.75*maxAccAuto/wheelbaseR; // User defined maximum rotational acceleration of the robot. Enforced during auto. Unit: raidans per second^2
+  public static final double maxVelAuto = SwerveModule.maxVel; // User defined maximum speed of the robot. Enforced during auto. Unit: meters per second
+  public static final double maxAngVelAuto = SwerveModule.maxVel/wheelbaseR; // User defined maximum rotational speed of the robot. Enforced during auto. Unit: raidans per second
+  public static final double maxAccAuto = 0.8*maxAcc; // User defined maximum acceleration of the robot. Enforced during auto. Unit: meters per second^2
+  public static final double maxAngAccAuto = 0.8*maxAccAuto/wheelbaseR; // User defined maximum rotational acceleration of the robot. Enforced during auto. Unit: raidans per second^2
 
   // Positions of the swerve modules relative to the center of the roboot. +x points towards the robot's front. +y points to the robot's left. Units: meters.
   private static final Translation2d frontLeftModulePos = new Translation2d(wheelbaseX/2.0, wheelbaseY/2.0);
@@ -107,9 +107,12 @@ class Drivetrain {
 
   // These variables are updated each period so they can be passed along to the user or the dashboard.
   private ChassisSpeeds currSpeeds = new ChassisSpeeds(); // Stores the velocity and angular velocity of the drivetrain.
-  private double xVel = 0.0; // Unit: meters per second
-  private double yVel = 0.0; // Unit: meters per second
-  private double angVel = 0.0; // Unit: degrees per second
+  private double xVelMeasured = 0.0; // Unit: meters per second
+  private double yVelMeasured = 0.0; // Unit: meters per second
+  private double angVelMeasured = 0.0; // Unit: degrees per second
+  private double xVelDemanded = 0.0; // Unit: meters per second
+  private double yVelDemanded = 0.0; // Unit: meters per second
+  private double angVelDemanded = 0.0; // Unit: degrees per second
   private double pathXPos = 0.0; // Unit: meters
   private double pathYPos = 0.0; // Unit: meters
   private double pathAngPos = 0.0; // Unit degrees
@@ -168,9 +171,26 @@ class Drivetrain {
   // fieldRelative determines field-oriented control vs. robot-oriented control. 
   // Center of Rotation variables define where the robot will rotate from. 0,0 corresponds to rotations about the center of the robot. +x is towards the front. +y is to the left side.
   public void drive(double _xVel, double _yVel, double _angVel, boolean fieldRelative, double centerOfRotationX, double centerOfRotationY) {
-    _xVel = limit(_xVel, minVel, maxVelTeleop, maxAccTeleop, xVel, currTime-lastTime);
-    _yVel = limit(_yVel, minVel, maxVelTeleop, maxAccTeleop, yVel, currTime-lastTime);
-    _angVel = limit(_angVel, minAngVel, maxAngVelTeleop, maxAngAccTeleop, angVel*Math.PI/180.0, currTime-lastTime);
+    double accDemanded = Math.sqrt(Math.pow(_xVel - xVelMeasured, 2) + Math.pow(_yVel - yVelMeasured, 2))/(currTime - lastTime);
+    if (accDemanded > maxAccTeleop) {
+      _xVel = xVelMeasured + maxAccTeleop/accDemanded*(_xVel - xVelMeasured);
+      _yVel = yVelMeasured + maxAccTeleop/accDemanded*(_yVel - yVelMeasured);
+    }
+    if (Math.abs(_angVel-angVelMeasured*Math.PI/180.0) > Math.abs(maxAngAccTeleop*(currTime-lastTime))) {
+      _angVel = _angVel > angVelMeasured*Math.PI/180.0 ? _angVel + maxAngAccTeleop*(currTime-lastTime) : _angVel - maxAngAccTeleop*(currTime-lastTime);
+    }
+
+    if (Math.abs(_xVel) < minVel) _xVel = 0.0;
+    if (Math.abs(_yVel) < minVel) _yVel = 0.0;
+    if (Math.abs(_angVel) < minAngVel) _angVel = 0.0;
+    if (Math.abs(_xVel) > maxVelTeleop) _xVel = _xVel > 0.0 ? maxAccTeleop : -maxAccTeleop;
+    if (Math.abs(_yVel) > maxVelTeleop) _yVel = _yVel > 0.0 ? maxAccTeleop : -maxAccTeleop;
+    if (Math.abs(_angVel) > maxAngVelTeleop) _angVel = _angVel > 0.0 ? maxAngAccTeleop : -maxAngAccTeleop;
+
+    xVelDemanded = _xVel;
+    yVelDemanded = _yVel;
+    angVelDemanded = _angVel;
+    
     demandedModuleStates = fieldRelative
       ? kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(_xVel, _yVel, _angVel, Rotation2d.fromDegrees(getFusedAng())), new Translation2d(centerOfRotationX, centerOfRotationY))
       : kinematics.toSwerveModuleStates(new ChassisSpeeds(_xVel, _yVel, _angVel), new Translation2d(centerOfRotationX, centerOfRotationY));
@@ -195,6 +215,10 @@ class Drivetrain {
 
   // Forces the swerve modules into an x-lock pattern to resist movement. Useful for defense or if the robot must remain stationary. 
   public void xLock() {
+    xVelDemanded = 0.0;
+    yVelDemanded = 0.0;
+    angVelDemanded = 0.0;
+
     for (int moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {
       demandedModuleStates[moduleIndex].speedMetersPerSecond = 0.0;
       demandedModuleStates[moduleIndex].angle = (moduleIndex == 0 || moduleIndex == 2) ? Rotation2d.fromDegrees(45.0) : Rotation2d.fromDegrees(-45.0);
@@ -204,9 +228,9 @@ class Drivetrain {
 
   // Should be called immediately prior to aimDrive() or driveTo(). Resets the PID controllers. Target angle specifies the first angle that will be demanded.
   public void resetDriveController(double targetAngle) {
-    xDriveController.reset(getXPos(), xVel);
-    yDriveController.reset(getYPos(), yVel);
-    angleDriveController.reset(getAngleDistance(getFusedAng(), targetAngle)*Math.PI/180.0, angVel*Math.PI/180.0);
+    xDriveController.reset(getXPos(), xVelMeasured);
+    yDriveController.reset(getYPos(), yVelMeasured);
+    angleDriveController.reset(getAngleDistance(getFusedAng(), targetAngle)*Math.PI/180.0, angVelMeasured*Math.PI/180.0);
     atDriveGoal = false;
   }
 
@@ -308,9 +332,9 @@ class Drivetrain {
     odometry.update(Rotation2d.fromDegrees(getGyroAng()), getModulePositions());
 
     currSpeeds = kinematics.toChassisSpeeds(frontLeftModule.getSMS(), frontRightModule.getSMS(), backRightModule.getSMS(), backLeftModule.getSMS());
-    xVel = currSpeeds.vxMetersPerSecond*Math.cos(getFusedAng());
-    yVel = currSpeeds.vyMetersPerSecond*Math.cos(getFusedAng());
-    angVel = currSpeeds.omegaRadiansPerSecond*180.0/Math.PI;
+    xVelMeasured = currSpeeds.vxMetersPerSecond*Math.cos(getFusedAng());
+    yVelMeasured = currSpeeds.vyMetersPerSecond*Math.cos(getFusedAng());
+    angVelMeasured = currSpeeds.omegaRadiansPerSecond*180.0/Math.PI;
 
     lastTime = currTime;
     currTime = accTimer.get();
@@ -376,10 +400,10 @@ class Drivetrain {
       if (botpose != null) {
         double SD = 0.5; // How much variance there is in the LL vision information. Lower numbers indicate more trustworthy data.
         if (botpose.tagCount >= 1) { // At least 1 AprilTag is detected.
-          if (botpose.avgTagArea*botpose.tagCount > 2.0 && Math.sqrt(Math.pow(getXVel(), 2) + Math.pow(getYVel(), 2)) < 0.5 && Math.abs(getAngVel()) < 45.0) { // The robot is relatively stationary and 1 AprilTag is visible very close to the robot.
+          if (botpose.avgTagArea*botpose.tagCount > 2.0 && Math.sqrt(Math.pow(getXVelMeasured(), 2) + Math.pow(getYVelMeasured(), 2)) < 0.5 && Math.abs(getAngVelMeasured()) < 45.0) { // The robot is relatively stationary and 1 AprilTag is visible very close to the robot.
             SD = 0.3; // Reduces the standard deviation of the vision estimate.
           }
-          if (botpose.tagCount >= 2 && botpose.avgTagArea*botpose.tagCount > 1.0 && Math.sqrt(Math.pow(getXVel(), 2) + Math.pow(getYVel(), 2)) < 0.5 && Math.abs(getAngVel()) < 45.0) { // The robot is relatively stationary and 2 AprilTags are visible close to the robot.
+          if (botpose.tagCount >= 2 && botpose.avgTagArea*botpose.tagCount > 1.0 && Math.sqrt(Math.pow(getXVelMeasured(), 2) + Math.pow(getYVelMeasured(), 2)) < 0.5 && Math.abs(getAngVelMeasured()) < 45.0) { // The robot is relatively stationary and 2 AprilTags are visible close to the robot.
             SD = 0.1; // Reduces the standard deviation of the vision estimate.
             accurateVisionTimer.restart();
           }
@@ -520,19 +544,34 @@ class Drivetrain {
     }
   }
 
+  // Returns the last measured x-velocity of the robot in meters per second.
+  public double getXVelMeasured() {
+    return xVelMeasured;
+  }
+
+  // Returns the last measured y-velocity of the robot in meters per second.
+  public double getYVelMeasured() {
+    return yVelMeasured;
+  }
+
+  // Returns the last measured angular-velocity of the robot in degrees per second.
+  public double getAngVelMeasured() {
+    return angVelMeasured;
+  }
+
   // Returns the last commanded x-velocity of the robot in meters per second.
-  public double getXVel() {
-    return xVel;
+  public double getXVelDemanded() {
+    return xVelDemanded;
   }
 
   // Returns the last commanded y-velocity of the robot in meters per second.
-  public double getYVel() {
-    return yVel;
+  public double getYVelDemanded() {
+    return yVelDemanded;
   }
 
   // Returns the last commanded angular-velocity of the robot in degrees per second.
-  public double getAngVel() {
-    return angVel;
+  public double getAngVelDemanded() {
+    return angVelDemanded;
   }
 
   // Returns the odometry calculated x position of the robot in meters. This is based on vision and gyro data combined.
@@ -581,9 +620,12 @@ class Drivetrain {
     //SmartDashboard.putNumber("Robot Angular Rate", getGyroAngVel());
     //SmartDashboard.putNumber("Robot Pitch Rate", getGyroPitchVel());
     //SmartDashboard.putNumber("Robot Roll Rate", getGyroRollVel());
-    //SmartDashboard.putNumber("Robot X Velocity", getXVel());
-    //SmartDashboard.putNumber("Robot Y Velocity", getYVel());
-    //SmartDashboard.putNumber("Robot Angular Velocity", getAngVel());
+    //SmartDashboard.putNumber("Robot X Velocity Demanded", getXVelDemanded());
+    //SmartDashboard.putNumber("Robot Y Velocity Demanded", getYVelDemadned());
+    //SmartDashboard.putNumber("Robot Angular Velocity Demanded", getAngVelDemanded());
+    //SmartDashboard.putNumber("Robot X Velocity Measured", getXVelMeasured());
+    //SmartDashboard.putNumber("Robot Y Velocity Measured", getYVelMeasured());
+    //SmartDashboard.putNumber("Robot Angular Velocity Measured", getAngVelMeasured());
     //SmartDashboard.putNumber("Path X Position", pathXPos);
     //SmartDashboard.putNumber("Path Y Position", pathYPos);
     //SmartDashboard.putNumber("Path Angular Position", pathAngPos);
@@ -620,21 +662,9 @@ class Drivetrain {
     return modulePositions;
   }
 
-  // Limits a value by imposing a minimum and maxiumum absolute limit. Also limits the rate at which the value can change. Used to enforce velocity and acceleration limits.
-  private double limit(double currValue, double minLimit, double maxLimit, double rateLimit, double lastValue, double deltaTime) {
-    if (Math.abs(currValue-lastValue) > Math.abs(rateLimit*deltaTime)) {
-      currValue = currValue > lastValue ? currValue + rateLimit*deltaTime : currValue - rateLimit*deltaTime;
-    }
-    if (Math.abs(currValue) < minLimit) currValue = 0.0;
-    if (Math.abs(currValue) > maxLimit) {
-      currValue = currValue > 0.0 ? maxLimit : -maxLimit;
-    }
-    return currValue;
-  }
-
   public void simulationPeriodic() {
     // Update gyro (pigeon) simulation via pigeonSim
-    pigeonSim.addYaw(getAngVel() * Robot.dTime);
+    pigeonSim.addYaw(getAngVelMeasured() * Robot.dTime);
     pigeonSim.setRoll(0);
     pigeonSim.setPitch(0);
 

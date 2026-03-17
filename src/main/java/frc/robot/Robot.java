@@ -780,8 +780,8 @@ public class Robot extends TimedRobot {
   private void updateTrajectory() {
     robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
     robotY = swerve.getYPos(); // The current y-position of the robot on the field in meters.
-    robotXVel = swerve.getXVel(); // The current x-velocity of the robot on the field in meters per second.
-    robotYVel = swerve.getYVel(); // The current y-velocity of the robot on the field in meters per second.
+    robotXVel = swerve.getXVelMeasured(); // The current x-velocity of the robot on the field in meters per second.
+    robotYVel = swerve.getYVelMeasured(); // The current y-velocity of the robot on the field in meters per second.
 
     if (isScoring) {
       distanceToTarget = Math.sqrt(Math.pow(hubX - robotX, 2) + Math.pow(hubY - robotY, 2)); // The distance from the robot to the hub in meters, calculated using the Pythagorean theorem.
@@ -933,7 +933,8 @@ public class Robot extends TimedRobot {
     swerve.drive(0.01, 0.0, 0.0);
     System.out.println("swerve atDriveGoal: " + swerve.atDriveGoal());
     System.out.println("swerve atPathEndpoint: " + swerve.atPathEndpoint(0));
-    System.out.println("swerve getAngVel: " + swerve.getAngVel());
+    System.out.println("swerve getAngVelMeasured: " + swerve.getAngVelMeasured());
+    System.out.println("swerve getXVelDemanded: " + swerve.getXVelDemanded());
     System.out.println("swerve getCalibrationTimer: " + swerve.getVisionTimer());
     System.out.println("swerve getAccurateCalibrationTimer: " + swerve.getAccurateVisionTimer());
     System.out.println("swerve getFusedAng: " + swerve.getFusedAng());
@@ -946,9 +947,11 @@ public class Robot extends TimedRobot {
     System.out.println("swerve getPathAngleError: " + swerve.getPathAngleError());
     System.out.println("swerve getPathPosError: " + swerve.getPathPosError());
     System.out.println("swerve getXPos: " + swerve.getXPos());
-    System.out.println("swerve getXVel: " + swerve.getXVel());
+    System.out.println("swerve getXVelMeasured: " + swerve.getXVelMeasured());
+    System.out.println("swerve getXVelDemanded: " + swerve.getXVelDemanded());
     System.out.println("swerve getYPos: " + swerve.getYPos());
-    System.out.println("swerve getYVel: " + swerve.getYVel());
+    System.out.println("swerve getYVelMeasured: " + swerve.getYVelMeasured());
+    System.out.println("swerve getXVelDemadned: " + swerve.getXVelDemanded());
     System.out.println("swerve isBlueAlliance: " + swerve.isBlueAlliance());
     System.out.println("swerve isRedAlliance: " + swerve.isRedAlliance());
     System.out.println("swerve getGyroPitch: " + swerve.getGyroPitch());
