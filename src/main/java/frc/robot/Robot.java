@@ -61,10 +61,11 @@ public class Robot extends TimedRobot {
   // Auto Variables
   private final SendableChooser<String> autoChooser = new SendableChooser<>();
   private static final String auto1 = "Right Side Start, Fuel Collection Via Neutral Zone, outpost collect, shoot."; 
-  private static final String auto2 = "Left Side Start, Fuel Collection Via Neutral Zone, outpost collect, shoot."; 
+  private static final String auto2 = "Left Side Start, Fuel Collection Via Neutral Zone, depot collect, shoot."; 
   private static final String auto3 = "Center Start, fuel shoot, collect from depot, shoot "; 
   private static final String auto4 = "Right Side start, Shoot, collect from neutral zone, shoot, collect fuel from the human player station."; 
   private static final String auto5 = "Troll Auto";
+  private static final String auto6 = "Left Side Start, Double Swipe.";
   private String autoSelected;
   private int autoStage = 1;
   private boolean autoCompleted = false;
@@ -97,12 +98,13 @@ public class Robot extends TimedRobot {
     autoChooser.addOption(auto3, auto3);
     autoChooser.addOption(auto4, auto4);
     autoChooser.addOption(auto5, auto5);
+    autoChooser.addOption(auto6, auto6);
     SmartDashboard.putData("Autos", autoChooser);
 
     // Auto 1 Paths : Fuel Collection from Neutral Zone, Right Starting Position. 0-1
     swerve.loadPath("neutral zone right travelling to zone", 0.0, 0.0, 0.0, 70.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     swerve.loadPath("neutral zone right travelling to shooting position 2", 0.0, 0.0, 0.0, 180.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
-    // Auto 2 Paths : Fuel Collection from Neutral Zone, Left Starting Position. 2-3
+    // Auto 2/6 Paths : Fuel Collection from Neutral Zone, Left Starting Position. 2-3
     swerve.loadPath("neutral zone left travelling to zone", 0.0, 0.0, 0.0, -70.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     swerve.loadPath("neutral zone left travelling to shooting position 2", 0.0, 0.0, 0.0, 180.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     // Troll Auto Path #4
@@ -170,9 +172,15 @@ public class Robot extends TimedRobot {
       break;
 
       case auto5:
-        // AutoInit 4 code goes here.
+        // AutoInit 5 code goes here.
         swerve.pushCalibration(true, 90.0); // Updates the robot's position on the field.
         swerve.resetPathController(4); 
+      break;
+
+      case auto6:
+        // AutoInit 6 code goes here.
+        swerve.pushCalibration(true, -90.0); // Updates the robot's position on the field.
+        swerve.resetDriveController(calcShootingHeading());
       break;
     }
 
@@ -395,6 +403,54 @@ public class Robot extends TimedRobot {
           case 6:
             // Auto 2, Stage 6 code goes here.
             swerve.aimDrive(0.0, 0.0, calcShootingHeading()); // Rotates the robot to a rotation where it'll have the least misses.
+            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+            if (isReadyToShoot) {
+              indexer.start();
+              autoStage = 7; // Moves onto the next stage once the robot has started shooting.
+            }
+          break;
+
+          case 7:
+            // Auto 2, Stage 7 code goes here.
+            swerve.aimDrive(0.0, 0.0, calcShootingHeading()); // Rotates the robot to a rotation where it'll have the least misses.
+            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+            if (shootingTimer.get() > 3.0) {
+              shooter.spinDown(); // Turns the shooter off.
+              shooter.lowerHood(); // Lowers the hood of the shooter.
+              indexer.spoolDown();
+              indexer.stop(); // Turns the indexer off.
+              swerve.resetDriveController(0.0);
+              autoStage = 8; // Advances to the next stage once the robot has finished shooting.
+            }
+          break;
+
+          case 8:
+            // Auto 2, Stage 8 code goes here.
+            swerve.driveTo(0.5, 7, 0.0); // Brings the robot very backwards.
+            if (swerve.getXPos() < 2.0) {
+              intake.rightIntake();
+            }
+            if (swerve.getXPos() < 0.6) {
+              swerve.resetDriveController(0.0);
+              autoStage = 9; // Advances to the next stage once the robot is ready to intake from the depot.
+            }
+          break;
+
+          case 9:
+            // Auto 2, Stage 9 code goes here.
+            swerve.aimDrive(0.0, -2.0, 0.0); // Moves the robot in the depot, collecting fuel.
+            if (swerve.getYPos() <= 5.1) {
+              intake.stow(); // Stows the intake.
+              shooter.spinUp();
+              indexer.spoolUp();
+              swerve.resetDriveController(calcShootingHeading());
+              autoStage = 10; // Advances to the next stage once the robot has finished intaking.
+            }
+          break;
+
+          case 10:
+            // Auto 2, Stage 10 code goes here.
+            swerve.driveTo(2.0, 5.1, calcShootingHeading()); // Goes to a shooting position.
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
             if (isReadyToShoot) {
               indexer.start();
