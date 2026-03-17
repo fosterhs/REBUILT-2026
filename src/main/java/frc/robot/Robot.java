@@ -6,7 +6,6 @@ import com.ctre.phoenix6.controls.SolidColor;
 import com.ctre.phoenix6.hardware.CANdle;
 import com.ctre.phoenix6.signals.RGBWColor;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -18,11 +17,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Robot extends TimedRobot {
   private final XboxController driver = new XboxController(0); // Initializes the driver controller.
-
-  // Limits the acceleration of the drivetrain by smoothing controller inputs.
-  private final SlewRateLimiter xAccLimiter = new SlewRateLimiter(Drivetrain.maxAccTeleop / Drivetrain.maxVelTeleop);
-  private final SlewRateLimiter yAccLimiter = new SlewRateLimiter(Drivetrain.maxAccTeleop / Drivetrain.maxVelTeleop);
-  private final SlewRateLimiter angAccLimiter = new SlewRateLimiter(Drivetrain.maxAngAccTeleop / Drivetrain.maxAngVelTeleop);
 
   // Teleop Driving Variables
   private double xVelTeleop = 0.0; // The x-velocity of the robot that results from controller inputs after being processed by the slew rate limiters. This is used to control the drivetrain during teleop.
@@ -263,7 +257,7 @@ public class Robot extends TimedRobot {
 
           case 4:
             // Auto 1, Stage 4 code goes here.
-            swerve.aimDrive(0.0, 0.8, 180.0, true); // Moves the robot in the neutral zone, collecting fuel.
+            swerve.aimDrive(0.0, 0.8, 180.0); // Moves the robot in the neutral zone, collecting fuel.
             if (swerve.getYPos() > 2.35) {
               swerve.resetPathController(1);
               intake.leftIntake();
@@ -312,7 +306,7 @@ public class Robot extends TimedRobot {
           break;
 
           case 9:
-            swerve.aimDrive(0.5, 0.5, calcShootingHeading(), true);
+            swerve.aimDrive(0.5, 0.5, calcShootingHeading());
             shooter.setHoodPosition(calcHoodPosition());
             if (isReadyToShoot && swerve.getXPos() > 1.2) {
               indexer.start();
@@ -325,7 +319,7 @@ public class Robot extends TimedRobot {
           break;
 
           case 10:
-            swerve.aimDrive(0.0, 0.0, calcShootingHeading(), true);
+            swerve.aimDrive(0.0, 0.0, calcShootingHeading());
             shooter.setHoodPosition(calcHoodPosition());
             if (isReadyToShoot) {
               indexer.start();
@@ -379,7 +373,7 @@ public class Robot extends TimedRobot {
 
           case 4:
             // Auto 2, Stage 4 code goes here.
-            swerve.aimDrive(0.0, -2.0, 180.0, true); // Moves the robot in the neutral zone, collecting fuel.
+            swerve.aimDrive(0.0, -2.0, 180.0); // Moves the robot in the neutral zone, collecting fuel.
             if (swerve.getYPos() <= 4.4) {
               intake.stow(); // Stows the intake.
               swerve.resetPathController(3);
@@ -400,7 +394,7 @@ public class Robot extends TimedRobot {
 
           case 6:
             // Auto 2, Stage 6 code goes here.
-            swerve.aimDrive(0.0, 0.0, calcShootingHeading(), true); // Rotates the robot to a rotation where it'll have the least misses.
+            swerve.aimDrive(0.0, 0.0, calcShootingHeading()); // Rotates the robot to a rotation where it'll have the least misses.
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
             if (isReadyToShoot) {
               indexer.start();
@@ -452,7 +446,7 @@ public class Robot extends TimedRobot {
 
           case 4:
             // Auto 3, Stage 4 code goes here.
-            swerve.aimDrive(0.0, 2.0, 0.0, true); // Moves the robot in the depot, collecting fuel.
+            swerve.aimDrive(0.0, 2.0, 0.0); // Moves the robot in the depot, collecting fuel.
             if (swerve.getYPos() >= 6.0) {
               intake.stow(); // Stows the intake.
               swerve.resetDriveController(calcShootingHeading());
@@ -464,7 +458,7 @@ public class Robot extends TimedRobot {
 
           case 5:
             // Auto 3, Stage 6 code goes here.
-            swerve.aimDrive(0.0, 0.0, calcShootingHeading(), true); // Rotates the robot to a rotation where it'll have the least misses.
+            swerve.aimDrive(0.0, 0.0, calcShootingHeading()); // Rotates the robot to a rotation where it'll have the least misses.
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
             if (isReadyToShoot) {
               indexer.start(); // Turns on the indexer.
@@ -516,7 +510,7 @@ public class Robot extends TimedRobot {
 
           case 4:
             // Auto 4, Stage 4 code goes here.
-            swerve.aimDrive(0.0, 2.0, 180.0, true); // Moves the robot in the neutral zone, collecting fuel.
+            swerve.aimDrive(0.0, 2.0, 180.0); // Moves the robot in the neutral zone, collecting fuel.
             if (swerve.getYPos() > 3.2) {
               intake.stow(); // Stows the intake.
               swerve.resetPathController(1);
@@ -702,14 +696,14 @@ public class Robot extends TimedRobot {
     shooter.periodic();
 
     // Applies a deadband to controller inputs. Also limits the acceleration of controller inputs.
-    xVelTeleop = xAccLimiter.calculate(MathUtil.applyDeadband(-driver.getLeftY(), 0.05)*speedScaleFactor)*Drivetrain.maxVelTeleop;
-    yVelTeleop = yAccLimiter.calculate(MathUtil.applyDeadband(-driver.getLeftX(), 0.05)*speedScaleFactor)*Drivetrain.maxVelTeleop;
-    angVelTeleop = angAccLimiter.calculate(MathUtil.applyDeadband(-driver.getRightX(), 0.05)*rotationScaleFactor)*Drivetrain.maxAngVelTeleop;
+    xVelTeleop = MathUtil.applyDeadband(-driver.getLeftY(), 0.05)*speedScaleFactor*Drivetrain.maxVelTeleop;
+    yVelTeleop = MathUtil.applyDeadband(-driver.getLeftX(), 0.05)*speedScaleFactor*Drivetrain.maxVelTeleop;
+    angVelTeleop = MathUtil.applyDeadband(-driver.getRightX(), 0.05)*rotationScaleFactor*Drivetrain.maxAngVelTeleop;
 
     if (swerveLock) {
       swerve.xLock(); // Locks the swerve modules (for defense).
     } else if (isShooting || isPreparingToShoot) {
-      swerve.aimDrive(xVelTeleop, yVelTeleop, calcShootingHeading(), true); // Allows the driver to adjust the position of the robot while aiming at the hub. The robot will automatically rotate to a rotation where it'll have the least misses.
+      swerve.aimDrive(xVelTeleop, yVelTeleop, calcShootingHeading()); // Allows the driver to adjust the position of the robot while aiming at the hub. The robot will automatically rotate to a rotation where it'll have the least misses.
     } else {
       swerve.drive(xVelTeleop, yVelTeleop, angVelTeleop); // Drive at the velocity demanded by the controller.
     }
@@ -781,8 +775,8 @@ public class Robot extends TimedRobot {
   // This method calculates the amount of time the fuel will be in the air based on the distance to the hub and the velocity of the robot. It uses an iterative approach to account for the fact that the aim point changes based on the velocity of the robot and the air time, which changes the distance to the hub, which changes the air time, which changes the aim point, etc. After 10 iterations, the change in air time should be negligible.
   private double[] scoringAirTimeCalibrationDistances = {2.0, 3.0, 4.0, 5.0, 6.0}; // Represents the distance to the hub in meters for each air time calibration value.
   private double[] scoringAirTimeCalibrationValues = {1.1, 1.22, 1.26, 1.46, 1.66}; // Represents the amount of time the fuel will be in the air in seconds for each distance to the hub in the airTimeCalibrationDistances array. The values in this array should correspond to the distances in the airTimeCalibrationDistances array (i.e. the first value in this array is the air time for the first distance in the airTimeCalibrationDistances array, etc.). These values are used to calculate the aim point of the robot based on its velocity and distance to the hub.
-  private double[] passingAirTimeCalibrationDistances = {2.0, 3.0, 4.0, 5.0, 6.0}; // Represents the distance to the hub in meters for each air time calibration value.
-  private double[] passingAirTimeCalibrationValues = {0.6, 0.7, 0.8, 0.9, 1.0}; // Represents the amount of time the fuel will be in the air in seconds for each distance to the hub in the airTimeCalibrationDistances array. The values in this array should correspond to the distances in the airTimeCalibrationDistances array (i.e. the first value in this array is the air time for the first distance in the airTimeCalibrationDistances array, etc.). These values are used to calculate the aim point of the robot based on its velocity and distance to the hub.
+  private double[] passingAirTimeCalibrationDistances = {4.0, 6.0, 8.0, 10.0, 12.0}; // Represents the distance to the hub in meters for each air time calibration value.
+  private double[] passingAirTimeCalibrationValues = {1.3, 1.6, 1.9, 2.2, 2.5}; // Represents the amount of time the fuel will be in the air in seconds for each distance to the hub in the airTimeCalibrationDistances array. The values in this array should correspond to the distances in the airTimeCalibrationDistances array (i.e. the first value in this array is the air time for the first distance in the airTimeCalibrationDistances array, etc.). These values are used to calculate the aim point of the robot based on its velocity and distance to the hub.
   private void updateTrajectory() {
     robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
     robotY = swerve.getYPos(); // The current y-position of the robot on the field in meters.
@@ -832,10 +826,10 @@ public class Robot extends TimedRobot {
   }
 
   // This method calculates the position the hood needs to be at to shoot accurately based on the distance to the target. It uses a calibration array to return hood position values based on distance to the target.
-  private double[] scoringHoodCalibrationDistances = {1.0, 1.5, 2.0, 2.5,3.0,3.5, 4.0, 5.0, 6.0}; 
-  private double[] scoringHoodCalibrationValues = {0.02,0.035, 0.0545,0.0575, 0.062,0.065, 0.068, 0.06895, 0.06}; 
-  private double[] passingHoodCalibrationDistances = {2.0, 3.0, 4.0, 5.0, 6.0};
-  private double[] passingHoodCalibrationValues = {0.05, 0.0625, 0.07, 0.065, 0.06};
+  private double[] scoringHoodCalibrationDistances = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0}; 
+  private double[] scoringHoodCalibrationValues = {0.02, 0.035, 0.0545, 0.0575, 0.062, 0.065, 0.068, 0.06895, 0.06}; 
+  private double[] passingHoodCalibrationDistances = {4.0, 6.0, 8.0, 10.0, 12.0};
+  private double[] passingHoodCalibrationValues = {0.06, 0.06, 0.06, 0.06, 0.06};
   private double calcHoodPosition() {
     if (isScoring) {
       return interpolate(distanceToTarget, scoringHoodCalibrationDistances, scoringHoodCalibrationValues);
@@ -921,7 +915,7 @@ public class Robot extends TimedRobot {
 
     swerve.resetDriveController(0.0);
     swerve.xLock();
-    swerve.aimDrive(-3.0, 2.0, 105.0, false);
+    swerve.aimDrive(-3.0, 2.0, 105.0);
     swerve.driveTo(1.0, -2.0, -75.0);
     swerve.resetPathController(0);
     swerve.followPath(0);
@@ -932,14 +926,16 @@ public class Robot extends TimedRobot {
     swerve.updateVisionHeading(true, 180.0);
     swerve.addVisionEstimate(0, true);
     swerve.updateOdometry();
+    swerve.setPosTol(0.20);
+    swerve.setAngTol(5.0);
     swerve.drive(0.01, 0.0, 0.0, true, 0.0, 0.0);
     swerve.drive(0.01, 0.0, 0.0, true);
     swerve.drive(0.01, 0.0, 0.0);
     System.out.println("swerve atDriveGoal: " + swerve.atDriveGoal());
     System.out.println("swerve atPathEndpoint: " + swerve.atPathEndpoint(0));
     System.out.println("swerve getAngVel: " + swerve.getAngVel());
-    System.out.println("swerve getCalibrationTimer: " + swerve.getCalibrationTimer());
-    System.out.println("swerve getAccurateCalibrationTimer: " + swerve.getAccurateCalibrationTimer());
+    System.out.println("swerve getCalibrationTimer: " + swerve.getVisionTimer());
+    System.out.println("swerve getAccurateCalibrationTimer: " + swerve.getAccurateVisionTimer());
     System.out.println("swerve getFusedAng: " + swerve.getFusedAng());
     System.out.println("swerve getGyroAng: " + swerve.getGyroAng());
     System.out.println("swerve getGyroPitch: " + swerve.getGyroPitch());
