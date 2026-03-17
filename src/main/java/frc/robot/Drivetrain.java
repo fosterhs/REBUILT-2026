@@ -177,19 +177,22 @@ class Drivetrain {
       _yVel = yVelMeasured + maxAccTeleop/accDemanded*(_yVel - yVelMeasured);
     }
     if (Math.abs(_angVel-angVelMeasured*Math.PI/180.0) > Math.abs(maxAngAccTeleop*(currTime-lastTime))) {
-      _angVel = _angVel > angVelMeasured*Math.PI/180.0 ? _angVel + maxAngAccTeleop*(currTime-lastTime) : _angVel - maxAngAccTeleop*(currTime-lastTime);
+      _angVel = _angVel > angVelMeasured*Math.PI/180.0 ? angVelMeasured*Math.PI/180.0 + maxAngAccTeleop*(currTime-lastTime) : angVelMeasured*Math.PI/180.0 - maxAngAccTeleop*(currTime-lastTime);
     }
+    double velDemanded = Math.sqrt(Math.pow(_xVel, 2) + Math.pow(_yVel, 2));
+    if (velDemanded > maxVelTeleop) {
+      _xVel = _xVel/velDemanded*maxVelTeleop;
+      _yVel = _yVel/velDemanded*maxVelTeleop;
+    }
+    if (Math.abs(_angVel) > maxAngVelTeleop) _angVel = _angVel > 0.0 ? maxAngVelTeleop : -maxAngVelTeleop;
 
     if (Math.abs(_xVel) < minVel) _xVel = 0.0;
     if (Math.abs(_yVel) < minVel) _yVel = 0.0;
     if (Math.abs(_angVel) < minAngVel) _angVel = 0.0;
-    if (Math.abs(_xVel) > maxVelTeleop) _xVel = _xVel > 0.0 ? maxAccTeleop : -maxAccTeleop;
-    if (Math.abs(_yVel) > maxVelTeleop) _yVel = _yVel > 0.0 ? maxAccTeleop : -maxAccTeleop;
-    if (Math.abs(_angVel) > maxAngVelTeleop) _angVel = _angVel > 0.0 ? maxAngAccTeleop : -maxAngAccTeleop;
 
     xVelDemanded = _xVel;
     yVelDemanded = _yVel;
-    angVelDemanded = _angVel;
+    angVelDemanded = _angVel*180.0/Math.PI;
     
     demandedModuleStates = fieldRelative
       ? kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(_xVel, _yVel, _angVel, Rotation2d.fromDegrees(getFusedAng())), new Translation2d(centerOfRotationX, centerOfRotationY))
@@ -620,12 +623,12 @@ class Drivetrain {
     //SmartDashboard.putNumber("Robot Angular Rate", getGyroAngVel());
     //SmartDashboard.putNumber("Robot Pitch Rate", getGyroPitchVel());
     //SmartDashboard.putNumber("Robot Roll Rate", getGyroRollVel());
-    //SmartDashboard.putNumber("Robot X Velocity Demanded", getXVelDemanded());
-    //SmartDashboard.putNumber("Robot Y Velocity Demanded", getYVelDemadned());
-    //SmartDashboard.putNumber("Robot Angular Velocity Demanded", getAngVelDemanded());
-    //SmartDashboard.putNumber("Robot X Velocity Measured", getXVelMeasured());
-    //SmartDashboard.putNumber("Robot Y Velocity Measured", getYVelMeasured());
-    //SmartDashboard.putNumber("Robot Angular Velocity Measured", getAngVelMeasured());
+    SmartDashboard.putNumber("Robot X Velocity Demanded", getXVelDemanded());
+    SmartDashboard.putNumber("Robot Y Velocity Demanded", getYVelDemanded());
+    SmartDashboard.putNumber("Robot Angular Velocity Demanded", getAngVelDemanded());
+    SmartDashboard.putNumber("Robot X Velocity Measured", getXVelMeasured());
+    SmartDashboard.putNumber("Robot Y Velocity Measured", getYVelMeasured());
+    SmartDashboard.putNumber("Robot Angular Velocity Measured", getAngVelMeasured());
     //SmartDashboard.putNumber("Path X Position", pathXPos);
     //SmartDashboard.putNumber("Path Y Position", pathYPos);
     //SmartDashboard.putNumber("Path Angular Position", pathAngPos);
