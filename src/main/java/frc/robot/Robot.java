@@ -397,6 +397,7 @@ public class Robot extends TimedRobot {
             swerve.aimDrive(0.0, 0.0, calcShootingHeading()); // Rotates the robot to a rotation where it'll have the least misses.
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
             if (isReadyToShoot) {
+              shootingTimer.restart();
               indexer.start();
               autoStage = 7; // Moves onto the next stage once the robot has started shooting.
             }
