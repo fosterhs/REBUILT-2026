@@ -99,6 +99,7 @@ public class Robot extends TimedRobot {
     autoChooser.addOption(auto3, auto3);
     autoChooser.addOption(auto4, auto4);
     autoChooser.addOption(auto5, auto5);
+    autoChooser.addOption(auto6, auto6);
     SmartDashboard.putData("Autos", autoChooser);
 
     // Auto 1 Paths : Fuel Collection from Neutral Zone, Right Starting Position. 0-1
@@ -556,7 +557,6 @@ public class Robot extends TimedRobot {
           break;
         }
       break;
-    }
       case auto6:
         switch(autoStage){
           case 1:
@@ -616,11 +616,40 @@ public class Robot extends TimedRobot {
                 intake.stow();
                 if(swerve.getXPos()<5.8){
                   intake.home();
-                  //autoStage = 5;
+                  if(swerve.getXPos()< 3.0){
+                   swerve.resetDriveController(calcShootingHeading());
+                    autoStage =5 ;
+                  }
                 }
               }
             }
           break;
+          case 5:
+            // Auto 4, Stage 1 code goes here.
+            swerve.driveTo(3.5, 0.75, calcShootingHeading()); // Brings the robot slightly backwards.
+            shooter.spinUp(); // Turns the shooter on.
+            indexer.spoolUp();
+            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+            if (isReadyToShoot) {
+              shootingTimer.restart(); // Restarts the shooting timer.
+              indexer.start(); // Turns on the indexer.
+              autoStage = 6; // Advances to the next stage once the robot has gotten to the shooting position.
+            }
+          break;
+
+          case 6:
+            // Auto 4, Stage 2 code goes here.
+            swerve.driveTo(3.5, 0.75, calcShootingHeading()); // Brings the robot slightly backwards.
+            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+            if (shootingTimer.get() > 4.0) {
+              shooter.spinDown(); // Turns the shooter off.
+              indexer.spoolDown();
+              shooter.lowerHood(); // Lowers the hood of the shooter.
+              indexer.stop(); // Turns the indexer off.
+            }
+          break;
+            
+
         }
     }
 
@@ -830,6 +859,9 @@ public class Robot extends TimedRobot {
         break;
 
         case auto5:
+          swerve.updateVisionHeading(true, 90.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
+        break;
+        case auto6:
           swerve.updateVisionHeading(true, 90.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
         break;
       }
