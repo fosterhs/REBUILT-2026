@@ -65,6 +65,7 @@ public class Robot extends TimedRobot {
   private static final String auto3 = "Center Start, fuel shoot, collect from depot, shoot "; 
   private static final String auto4 = "Right Side start, Shoot, collect from neutral zone, shoot, collect fuel from the human player station."; 
   private static final String auto5 = "Troll Auto";
+  private static final String auto6 = "Pass Auto";
   private String autoSelected;
   private int autoStage = 1;
   private boolean autoCompleted = false;
@@ -97,6 +98,7 @@ public class Robot extends TimedRobot {
     autoChooser.addOption(auto3, auto3);
     autoChooser.addOption(auto4, auto4);
     autoChooser.addOption(auto5, auto5);
+    autoChooser.addOption(auto6, auto6);
     SmartDashboard.putData("Autos", autoChooser);
 
     // Auto 1 Paths : Fuel Collection from Neutral Zone, Right Starting Position. 0-1
@@ -173,6 +175,11 @@ public class Robot extends TimedRobot {
         // AutoInit 4 code goes here.
         swerve.pushCalibration(true, 90.0); // Updates the robot's position on the field.
         swerve.resetPathController(4); 
+      break;
+      case auto6:
+        // AutoInit 4 code goes here.
+        swerve.pushCalibration(true, 90.0); // 🦎🦎🦎🦎🦎🦎🦎🦎🦎🦎🦎🦎 pls change
+        swerve.resetPathController(4); //yes change
       break;
     }
 
@@ -546,6 +553,79 @@ public class Robot extends TimedRobot {
           break;
         }
       break;
+      case auto6:
+        switch(autoStage){
+          case 1:
+            // Auto 1, Stage 1 code goes here.
+            swerve.driveTo(3.5, 0.75, calcShootingHeading()); // Brings the robot slightly backwards.
+            shooter.spinUp(); // Turns the shooter on.
+            indexer.spoolUp();
+            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+            if (isReadyToShoot) {
+              shootingTimer.restart(); // Restarts the shooting timer.
+              indexer.start(); // Turns on the indexer.
+              autoStage = 2; // Advances to the next stage once the robot has gotten to the shooting position.
+            }
+          break;
+
+          case 2:
+            // Auto 1, Stage 2 code goes here.
+            swerve.driveTo(3.5, 0.75, calcShootingHeading()); // Brings the robot slightly backwards.
+            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+            if (shootingTimer.get() > 2.0) {
+              shooter.spinDown(); // Turns the shooter off.
+              shooter.lowerHood(); // Lowers the hood of the shooter.
+              indexer.spoolDown();
+              indexer.stop(); // Turns the indexer off.
+              swerve.resetPathController(5); 
+              autoStage = 3; // Advances to the next stage once the robot has finished shooting.
+            }
+          break;
+
+          case 3:
+            // Auto 1, Stage 3 code goes here.
+            swerve.driveTo(3.519, 0.716,0.0); // Brings the robot slightly backwards.
+            if (swerve.atDriveGoal()){
+              swerve.followPath(5);
+              if(swerve.getXPos()> 5.5){
+                intake.rightIntake();
+                shooter.maxHood();
+                shooter.spinUp();
+                indexer.spoolUp();
+                indexer.start();
+                if (swerve.getYPos() >3.0){
+                  indexer.stop();
+                  shooter.spinDown();
+                  indexer.spoolDown();
+                  intake.leftIntake();
+                  swerve.resetPathController(6); 
+                  autoStage = 4;
+                }
+              }
+            }
+          break;
+          case 4:
+            swerve.driveTo(6.817, 3.386, 180);
+            if (swerve.atDriveGoal()){
+              swerve.followPath(6);
+              if(swerve.getYPos() <0.8){
+                intake.stow();
+                if(swerve.getXPos()<5.8){
+                  intake.home();
+                  //autoStage = 5;
+                }
+              }
+            }
+          break;
+          case 5:
+
+
+          break;
+          case 6:
+
+          break;
+
+        }
     }
 
     // Runs the periodic methods for the subsystems that need to be updated.
