@@ -65,7 +65,8 @@ public class Robot extends TimedRobot {
   private static final String auto3 = "Center Start, fuel shoot, collect from depot, shoot "; 
   private static final String auto4 = "Right Side start, Shoot, collect from neutral zone, shoot, collect fuel from the human player station."; 
   private static final String auto5 = "Troll Auto";
-  private static final String auto6 = "Pass Auto";
+  private static final String auto6 = "pass auto";
+
   private String autoSelected;
   private int autoStage = 1;
   private boolean autoCompleted = false;
@@ -178,8 +179,8 @@ public class Robot extends TimedRobot {
       break;
       case auto6:
         // AutoInit 4 code goes here.
-        swerve.pushCalibration(true, 90.0); // 🦎🦎🦎🦎🦎🦎🦎🦎🦎🦎🦎🦎 pls change
-        swerve.resetPathController(4); //yes change
+        swerve.pushCalibration(true, 0.0); // Updates the robot's position on the field.
+        swerve.resetDriveController(calcShootingHeading()); 
       break;
     }
 
@@ -414,7 +415,7 @@ public class Robot extends TimedRobot {
         switch (autoStage) {
           case 1:
             // Auto 3, Stage 1 code goes here.
-            swerve.driveTo(2.0, 4.7, calcShootingHeading()); // Brings the robot to a shooting position.
+            swerve.driveTo(2.8, 5.0, calcShootingHeading()); // Brings the robot to a shooting position.
             shooter.spinUp(); // Turns the shooter on.
             indexer.spoolUp();
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
@@ -427,9 +428,9 @@ public class Robot extends TimedRobot {
 
           case 2:
             // Auto 3, Stage 2 code goes here.
-            swerve.driveTo(2.0, 4.7, calcShootingHeading()); // Brings the robot to a shooting position.
+            swerve.driveTo(2.8, 5.0, calcShootingHeading()); // Brings the robot to a shooting position.
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
-            if (shootingTimer.get() > 3.0) {
+            if (shootingTimer.get() > 4.0) {
               shooter.spinDown(); // Turns the shooter off.
               shooter.lowerHood(); // Lowers the hood of the shooter.
               indexer.spoolDown();
@@ -598,7 +599,7 @@ public class Robot extends TimedRobot {
                   shooter.spinDown();
                   indexer.spoolDown();
                   intake.leftIntake();
-                  swerve.resetPathController(6); 
+                  swerve.resetPathController(4); 
                   autoStage = 4;
                 }
               }
@@ -607,7 +608,7 @@ public class Robot extends TimedRobot {
           case 4:
             swerve.driveTo(6.817, 3.386, 180);
             if (swerve.atDriveGoal()){
-              swerve.followPath(6);
+              swerve.followPath(4);
               if(swerve.getYPos() <0.8){
                 intake.stow();
                 if(swerve.getXPos()<5.8){
@@ -617,14 +618,6 @@ public class Robot extends TimedRobot {
               }
             }
           break;
-          case 5:
-
-
-          break;
-          case 6:
-
-          break;
-
         }
     }
 
@@ -835,6 +828,9 @@ public class Robot extends TimedRobot {
 
         case auto5:
           swerve.updateVisionHeading(true, 90.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
+        break;
+        case auto6:
+          swerve.updateVisionHeading(true, 0.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
         break;
       }
     } else {
