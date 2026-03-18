@@ -205,7 +205,7 @@ public class Robot extends TimedRobot {
     isScoring = true; // The robot is scoring during the entire autonomous period, so this variable is set to true to allow the shooting trajectory to update and be used in the shooter calculations.
     updateTrajectory(); // Updates the shooting trajectory variables based on the current position of the robot on the field. This is used to calculate the optimal shooting parameters for the shooter subsystem.
     shooter.setShootingRPM(calcFlywheelRPM()); // Sets the shooter RPM based on the shooting trajectory calculations.
-    indexer.setIndexRPM(calcIndexerVoltage()); // Sets the indexer voltage based on the shooting trajectory calculations.
+    indexer.setIndexSpeeds(calcIndexerVoltage()); // Sets the indexer voltage based on the shooting trajectory calculations.
 
     // Controls the isReadyToShoot variable, which is used to determine whether the indexer should be running or not. The robot needs to be at the shooting position and the shooter needs to be up to speed for a certain amount of time.
     isCurrentyReadyToShoot = shooter.isReady() && swerve.atDriveGoal(); // The robot is currently ready to shoot if the shooter is up to speed and the robot is at the shooting position.
@@ -590,7 +590,7 @@ public class Robot extends TimedRobot {
     isNearTrench = (nearTrenchX - trenchTolerance < swerve.getXPos() && swerve.getXPos() < nearTrenchX + trenchTolerance) || (farTrenchX - trenchTolerance < swerve.getXPos() && swerve.getXPos() < farTrenchX + trenchTolerance); // The robot is considered to be near the trench if it's within a certain distance of either edge of the trench. 
     updateTrajectory(); // Updates the optimal shooting trajectory based on the position and velocity of the robot, which is used to calculate the flywheel RPM, hood position, and indexer voltage.
     shooter.setShootingRPM(calcFlywheelRPM()); // Sets the flywheel RPM based on the optimal shooting trajectory.
-    indexer.setIndexRPM(calcIndexerVoltage()); // Sets the indexer voltage based on the optimal shooting trajectory.
+    indexer.setIndexSpeeds(calcIndexerVoltage()); // Sets the indexer voltage based on the optimal shooting trajectory.
 
     // Controls the isReadyToShoot variable, which is used to determine whether the indexer should be running or not. The robot needs to be at the shooting position and the shooter needs to be up to speed for a certain amount of time.
     isCurrentyReadyToShoot = shooter.isReady() && swerve.atDriveGoal(); // The robot is currently ready to shoot if the shooter is up to speed and the robot is at the shooting position.
@@ -631,8 +631,8 @@ public class Robot extends TimedRobot {
     // The following code allows the driver to toggle between boost mode and default mode with the A and B buttons. In boost mode, the robot will drive at 60% of its maximum speed. In default mode, the robot will drive at 40% of its maximum speed.
     if (driver.getRawButtonPressed(2)) boostMode = true; // A button sets boost mode. (100% speed up from default of 60%).
     if (driver.getRawButtonPressed(3)) boostMode = false; // B Button sets default mode (60% of full speed).
-    if (isShooting) {
-      speedScaleFactor = 0.25; // If the robot is shooting, the speed scale factor is set to 0.3 to allow for more precise movements while shooting.
+    if (isShooting || isPreparingToShoot) {
+      speedScaleFactor = 0.4; // If the robot is shooting, the speed scale factor is set to 0.4 to allow for more precise movements while shooting.
     } else {
       speedScaleFactor = boostMode ? 1.0 : 0.6; // If boost mode is enabled, the speed scale factor is 1.0, otherwise it's 0.6.
     }
@@ -697,8 +697,15 @@ public class Robot extends TimedRobot {
     shooter.periodic();
 
     // Applies a deadband to controller inputs. Also limits the acceleration of controller inputs.
-    xVelTeleop = MathUtil.applyDeadband(-driver.getLeftY(), 0.05)*speedScaleFactor*Drivetrain.maxVelTeleop;
-    yVelTeleop = MathUtil.applyDeadband(-driver.getLeftX(), 0.05)*speedScaleFactor*Drivetrain.maxVelTeleop;
+    double xDemand = MathUtil.applyDeadband(-driver.getLeftY(), 0.05);
+    double yDemand = MathUtil.applyDeadband(-driver.getLeftX(), 0.05);
+    double totalDemand = Math.sqrt(Math.pow(xDemand, 2) + Math.pow(yDemand, 2));
+    xVelTeleop = xDemand*speedScaleFactor*Drivetrain.maxVelTeleop;
+    yVelTeleop = yDemand*speedScaleFactor*Drivetrain.maxVelTeleop;
+    if (totalDemand > 1.0) {
+      xVelTeleop = xVelTeleop/totalDemand;
+      yVelTeleop = yVelTeleop/totalDemand;
+    }
     angVelTeleop = MathUtil.applyDeadband(-driver.getRightX(), 0.05)*rotationScaleFactor*Drivetrain.maxAngVelTeleop;
 
     if (swerveLock) {
@@ -994,7 +1001,7 @@ public class Robot extends TimedRobot {
     indexer.stop();
     indexer.spoolUp();
     indexer.spoolDown();
-    indexer.setIndexRPM(12.0);
+    indexer.setIndexSpeeds(12.0);
     System.out.println("indexer getMode: " + indexer.getMode().toString());
     indexer.updateDash();
 

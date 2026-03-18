@@ -36,7 +36,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.LimelightHelpers.PoseEstimate;
 
 class Drivetrain {
-  public static final double maxAcc = 1.0*9.80665; // The maximum acceleration of the robot, typically limited by the coefficient of friction between the swerve wheels and the field.
+  public static final double maxAcc = 0.8*9.80665; // The maximum acceleration of the robot, typically limited by the coefficient of friction between the swerve wheels and the field.
   public static final double wheelbaseX = (24.0-2*2.625)*0.0254; // The length of the robot from front to back in units of meters. Measured from the centers of each swerve wheel.
   public static final double wheelbaseY = (31.0-2*2.625)*0.0254; // The length of the robot from left to right in units of meters. Measured from the centers of each swerve wheel.
   public static final double wheelbaseR = Math.sqrt(Math.pow(wheelbaseX/2.0, 2) + Math.pow(wheelbaseY/2.0, 2)); // The "radius" of the robot from robot center to the center of the swerve wheel in units of meters.
@@ -46,8 +46,8 @@ class Drivetrain {
   public static final double maxAngVelTeleop = SwerveModule.maxVel/wheelbaseR; // User defined maximum rotational speed of the robot. Enforced during teleop. Unit: raidans per second Robot maximum is 4pi rad/s.
   public static final double maxAccTeleop = maxAcc; // User defined maximum acceleration of the robot. Enforced during teleop. Unit: meters per second^2 Robot maximum is 5 m/s2.
   public static final double maxAngAccTeleop = maxAccTeleop/wheelbaseR; // User defined maximum rotational acceleration of the robot. Enforced during teleop. Unit: raidans per second^2 Robot maximum is 5pi rad/s2.
-  public static final double maxVelAuto = SwerveModule.maxVel; // User defined maximum speed of the robot. Enforced during auto. Unit: meters per second
-  public static final double maxAngVelAuto = SwerveModule.maxVel/wheelbaseR; // User defined maximum rotational speed of the robot. Enforced during auto. Unit: raidans per second
+  public static final double maxVelAuto = 0.9*SwerveModule.maxVel; // User defined maximum speed of the robot. Enforced during auto. Unit: meters per second
+  public static final double maxAngVelAuto = 0.9*SwerveModule.maxVel/wheelbaseR; // User defined maximum rotational speed of the robot. Enforced during auto. Unit: raidans per second
   public static final double maxAccAuto = 0.8*maxAcc; // User defined maximum acceleration of the robot. Enforced during auto. Unit: meters per second^2
   public static final double maxAngAccAuto = 0.8*maxAccAuto/wheelbaseR; // User defined maximum rotational acceleration of the robot. Enforced during auto. Unit: raidans per second^2
 
@@ -102,8 +102,8 @@ class Drivetrain {
   private boolean atDriveGoal = false; // Whether the robot is at the target within the tolerance specified by posTol and angTol when controlled by aimDrive() or moveToTarget()
   private double posTol = 0.10; // The allowable error in the x and y position of the robot in meters.
   private double angTol = 3.0; // The allowable error in the angle of the robot in degrees.
-  private double minVel = 0.02; // The minimum velocity that the robot will be commanded to move at when it is not at the target in meters per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
-  private double minAngVel = 0.01; // The minimum velocity that the robot will be commanded to rotate at when it is not at the target in radians per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
+  private double minVel = 0.05; // The minimum velocity that the robot will be commanded to move at when it is not at the target in meters per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
+  private double minAngVel = 0.05; // The minimum velocity that the robot will be commanded to rotate at when it is not at the target in radians per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
 
   // These variables are updated each period so they can be passed along to the user or the dashboard.
   private ChassisSpeeds currSpeeds = new ChassisSpeeds(); // Stores the velocity and angular velocity of the drivetrain.
@@ -183,18 +183,20 @@ class Drivetrain {
       _xVel = lastXVelDemanded + maxAccTeleop/accDemanded*(_xVel - lastXVelDemanded);
       _yVel = lastYVelDemanded + maxAccTeleop/accDemanded*(_yVel - lastYVelDemanded);
     }
-    if (Math.abs(_angVel-lastAngVelDemanded*Math.PI/180.0) > Math.abs(maxAngAccTeleop*(currTime-lastTime))) {
-      _angVel = _angVel > lastAngVelDemanded*Math.PI/180.0 ? lastAngVelDemanded*Math.PI/180.0 + maxAngAccTeleop*(currTime-lastTime) : lastAngVelDemanded*Math.PI/180.0 - maxAngAccTeleop*(currTime-lastTime);
-    }
     double velDemanded = Math.sqrt(Math.pow(_xVel, 2) + Math.pow(_yVel, 2));
     if (velDemanded > maxVelTeleop) {
       _xVel = _xVel/velDemanded*maxVelTeleop;
       _yVel = _yVel/velDemanded*maxVelTeleop;
     }
-    if (Math.abs(_angVel) > maxAngVelTeleop) _angVel = _angVel > 0.0 ? maxAngVelTeleop : -maxAngVelTeleop;
+    if (velDemanded < minVel) {
+      _xVel = 0.0;
+      _yVel = 0.0;
+    }
 
-    if (Math.abs(_xVel) < minVel) _xVel = 0.0;
-    if (Math.abs(_yVel) < minVel) _yVel = 0.0;
+    if (Math.abs(_angVel-lastAngVelDemanded*Math.PI/180.0) > Math.abs(maxAngAccTeleop*(currTime-lastTime))) {
+      _angVel = _angVel > lastAngVelDemanded*Math.PI/180.0 ? lastAngVelDemanded*Math.PI/180.0 + maxAngAccTeleop*(currTime-lastTime) : lastAngVelDemanded*Math.PI/180.0 - maxAngAccTeleop*(currTime-lastTime);
+    }
+    if (Math.abs(_angVel) > maxAngVelTeleop) _angVel = _angVel > 0.0 ? maxAngVelTeleop : -maxAngVelTeleop;
     if (Math.abs(_angVel) < minAngVel) _angVel = 0.0;
 
     xVelDemanded = _xVel;
@@ -225,6 +227,9 @@ class Drivetrain {
 
   // Forces the swerve modules into an x-lock pattern to resist movement. Useful for defense or if the robot must remain stationary. 
   public void xLock() {
+    lastXVelDemanded = 0.0;
+    lastYVelDemanded = 0.0;
+    lastAngVelDemanded = 0.0;
     xVelDemanded = 0.0;
     yVelDemanded = 0.0;
     angVelDemanded = 0.0;
@@ -238,9 +243,9 @@ class Drivetrain {
 
   // Should be called immediately prior to aimDrive() or driveTo(). Resets the PID controllers. Target angle specifies the first angle that will be demanded.
   public void resetDriveController(double targetAngle) {
-    xDriveController.reset(getXPos(), xVelMeasured);
-    yDriveController.reset(getYPos(), yVelMeasured);
-    angleDriveController.reset(getAngleDistance(getFusedAng(), targetAngle)*Math.PI/180.0, angVelMeasured*Math.PI/180.0);
+    xDriveController.reset(getXPos(), xVelDemanded);
+    yDriveController.reset(getYPos(), yVelDemanded);
+    angleDriveController.reset(getAngleDistance(getFusedAng(), targetAngle)*Math.PI/180.0, angVelDemanded*Math.PI/180.0);
     atDriveGoal = false;
   }
 
@@ -623,19 +628,19 @@ class Drivetrain {
     //SmartDashboard.putNumber("Back Left Swerve Module Wheel Encoder Angle", backLeftModule.getWheelAngle());
     //SmartDashboard.putNumber("Robot X Position", getXPos());
     //SmartDashboard.putNumber("Robot Y Position", getYPos());
-    SmartDashboard.putNumber("Robot Angular Position (Fused)", getFusedAng());
+    //SmartDashboard.putNumber("Robot Angular Position (Fused)", getFusedAng());
     //SmartDashboard.putNumber("Robot Angular Position (Gyro)", getGyroAng());
     //SmartDashboard.putNumber("Robot Pitch", getGyroPitch());
     //SmartDashboard.putNumber("Robot Roll", getGyroRoll());
     //SmartDashboard.putNumber("Robot Angular Rate", getGyroAngVel());
     //SmartDashboard.putNumber("Robot Pitch Rate", getGyroPitchVel());
     //SmartDashboard.putNumber("Robot Roll Rate", getGyroRollVel());
-    SmartDashboard.putNumber("Robot X Velocity Demanded", getXVelDemanded());
-    SmartDashboard.putNumber("Robot Y Velocity Demanded", getYVelDemanded());
-    SmartDashboard.putNumber("Robot Angular Velocity Demanded", getAngVelDemanded());
-    SmartDashboard.putNumber("Robot X Velocity Measured", getXVelMeasured());
-    SmartDashboard.putNumber("Robot Y Velocity Measured", getYVelMeasured());
-    SmartDashboard.putNumber("Robot Angular Velocity Measured", getAngVelMeasured());
+    //SmartDashboard.putNumber("Robot X Velocity Demanded", getXVelDemanded());
+    //SmartDashboard.putNumber("Robot Y Velocity Demanded", getYVelDemanded());
+    //SmartDashboard.putNumber("Robot Angular Velocity Demanded", getAngVelDemanded());
+    //SmartDashboard.putNumber("Robot X Velocity Measured", getXVelMeasured());
+    //SmartDashboard.putNumber("Robot Y Velocity Measured", getYVelMeasured());
+    //SmartDashboard.putNumber("Robot Angular Velocity Measured", getAngVelMeasured());
     //SmartDashboard.putNumber("Path X Position", pathXPos);
     //SmartDashboard.putNumber("Path Y Position", pathYPos);
     //SmartDashboard.putNumber("Path Angular Position", pathAngPos);
