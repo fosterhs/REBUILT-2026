@@ -601,8 +601,10 @@ public class Robot extends TimedRobot {
     double currentY = 0;
     double nextY = 0;
     
-    // TODO: convert to v0 using shooting gear ratio
-    double shooterRatio = 0.75;  // meters / rotation
+    // flywheel diameter is 4.0 inches (0.1016 meters)
+    // p_init = p_final
+    double shooterRatio = Math.PI*0.1016;  // meters / rotation
+
     double v0 = Math.abs(shooterRatio * shooter.getRightShooterRPM() / 60);  // m/s
     double theta = shooter.getHoodPosition(); // radians
     double prevAngle = 0;
