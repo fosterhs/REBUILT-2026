@@ -605,6 +605,7 @@ public class Robot extends TimedRobot {
                   indexer.stop();
                   shooter.spinDown();
                   indexer.spoolDown();
+                  shooter.lowerHood();
                   intake.leftIntake();
                   autoStage = 5;
                 }
