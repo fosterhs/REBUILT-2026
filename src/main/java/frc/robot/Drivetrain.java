@@ -121,6 +121,9 @@ class Drivetrain {
   private final Timer accTimer = new Timer();
   private double currTime = 0.0;
   private double lastTime = 0.0;
+  private double lastXVelDemanded = 0.0;
+  private double lastYVelDemanded = 0.0;
+  private double lastAngVelDemanded = 0.0;
 
   // Simulation
   private final Field2d robotField = new Field2d();
@@ -171,13 +174,17 @@ class Drivetrain {
   // fieldRelative determines field-oriented control vs. robot-oriented control. 
   // Center of Rotation variables define where the robot will rotate from. 0,0 corresponds to rotations about the center of the robot. +x is towards the front. +y is to the left side.
   public void drive(double _xVel, double _yVel, double _angVel, boolean fieldRelative, double centerOfRotationX, double centerOfRotationY) {
-    double accDemanded = Math.sqrt(Math.pow(_xVel - xVelMeasured, 2) + Math.pow(_yVel - yVelMeasured, 2))/(currTime - lastTime);
+    lastXVelDemanded = xVelDemanded;
+    lastYVelDemanded = yVelDemanded;
+    lastAngVelDemanded = angVelDemanded;
+
+    double accDemanded = Math.sqrt(Math.pow(_xVel - lastXVelDemanded, 2) + Math.pow(_yVel - lastYVelDemanded, 2))/(currTime - lastTime);
     if (accDemanded > maxAccTeleop) {
-      _xVel = xVelMeasured + maxAccTeleop/accDemanded*(_xVel - xVelMeasured);
-      _yVel = yVelMeasured + maxAccTeleop/accDemanded*(_yVel - yVelMeasured);
+      _xVel = lastXVelDemanded + maxAccTeleop/accDemanded*(_xVel - lastXVelDemanded);
+      _yVel = lastYVelDemanded + maxAccTeleop/accDemanded*(_yVel - lastYVelDemanded);
     }
-    if (Math.abs(_angVel-angVelMeasured*Math.PI/180.0) > Math.abs(maxAngAccTeleop*(currTime-lastTime))) {
-      _angVel = _angVel > angVelMeasured*Math.PI/180.0 ? angVelMeasured*Math.PI/180.0 + maxAngAccTeleop*(currTime-lastTime) : angVelMeasured*Math.PI/180.0 - maxAngAccTeleop*(currTime-lastTime);
+    if (Math.abs(_angVel-lastAngVelDemanded*Math.PI/180.0) > Math.abs(maxAngAccTeleop*(currTime-lastTime))) {
+      _angVel = _angVel > lastAngVelDemanded*Math.PI/180.0 ? lastAngVelDemanded*Math.PI/180.0 + maxAngAccTeleop*(currTime-lastTime) : lastAngVelDemanded*Math.PI/180.0 - maxAngAccTeleop*(currTime-lastTime);
     }
     double velDemanded = Math.sqrt(Math.pow(_xVel, 2) + Math.pow(_yVel, 2));
     if (velDemanded > maxVelTeleop) {
@@ -335,8 +342,8 @@ class Drivetrain {
     odometry.update(Rotation2d.fromDegrees(getGyroAng()), getModulePositions());
 
     currSpeeds = kinematics.toChassisSpeeds(frontLeftModule.getSMS(), frontRightModule.getSMS(), backRightModule.getSMS(), backLeftModule.getSMS());
-    xVelMeasured = currSpeeds.vxMetersPerSecond*Math.cos(getFusedAng());
-    yVelMeasured = currSpeeds.vyMetersPerSecond*Math.cos(getFusedAng());
+    xVelMeasured = currSpeeds.vxMetersPerSecond*Math.cos(getFusedAng()*Math.PI/180.0) - currSpeeds.vyMetersPerSecond*Math.sin(getFusedAng()*Math.PI/180.0);
+    yVelMeasured = currSpeeds.vyMetersPerSecond*Math.cos(getFusedAng()*Math.PI/180.0) + currSpeeds.vxMetersPerSecond*Math.sin(getFusedAng()*Math.PI/180.0);
     angVelMeasured = currSpeeds.omegaRadiansPerSecond*180.0/Math.PI;
 
     lastTime = currTime;
@@ -616,7 +623,7 @@ class Drivetrain {
     //SmartDashboard.putNumber("Back Left Swerve Module Wheel Encoder Angle", backLeftModule.getWheelAngle());
     //SmartDashboard.putNumber("Robot X Position", getXPos());
     //SmartDashboard.putNumber("Robot Y Position", getYPos());
-    //SmartDashboard.putNumber("Robot Angular Position (Fused)", getFusedAng());
+    SmartDashboard.putNumber("Robot Angular Position (Fused)", getFusedAng());
     //SmartDashboard.putNumber("Robot Angular Position (Gyro)", getGyroAng());
     //SmartDashboard.putNumber("Robot Pitch", getGyroPitch());
     //SmartDashboard.putNumber("Robot Roll", getGyroRoll());

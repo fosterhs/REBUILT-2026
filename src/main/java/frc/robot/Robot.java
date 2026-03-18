@@ -65,6 +65,7 @@ public class Robot extends TimedRobot {
   private static final String auto3 = "Center Start, fuel shoot, collect from depot, shoot "; 
   private static final String auto4 = "Right Side start, Shoot, collect from neutral zone, shoot, collect fuel from the human player station."; 
   private static final String auto5 = "Troll Auto";
+
   private String autoSelected;
   private int autoStage = 1;
   private boolean autoCompleted = false;
@@ -407,7 +408,7 @@ public class Robot extends TimedRobot {
         switch (autoStage) {
           case 1:
             // Auto 3, Stage 1 code goes here.
-            swerve.driveTo(2.0, 4.7, calcShootingHeading()); // Brings the robot to a shooting position.
+            swerve.driveTo(2.8, 5.0, calcShootingHeading()); // Brings the robot to a shooting position.
             shooter.spinUp(); // Turns the shooter on.
             indexer.spoolUp();
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
@@ -420,9 +421,9 @@ public class Robot extends TimedRobot {
 
           case 2:
             // Auto 3, Stage 2 code goes here.
-            swerve.driveTo(2.0, 4.7, calcShootingHeading()); // Brings the robot to a shooting position.
+            swerve.driveTo(2.8, 5.0, calcShootingHeading()); // Brings the robot to a shooting position.
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
-            if (shootingTimer.get() > 3.0) {
+            if (shootingTimer.get() > 4.0) {
               shooter.spinDown(); // Turns the shooter off.
               shooter.lowerHood(); // Lowers the hood of the shooter.
               indexer.spoolDown();
