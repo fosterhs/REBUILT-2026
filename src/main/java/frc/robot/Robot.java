@@ -631,8 +631,8 @@ public class Robot extends TimedRobot {
     // The following code allows the driver to toggle between boost mode and default mode with the A and B buttons. In boost mode, the robot will drive at 60% of its maximum speed. In default mode, the robot will drive at 40% of its maximum speed.
     if (driver.getRawButtonPressed(2)) boostMode = true; // A button sets boost mode. (100% speed up from default of 60%).
     if (driver.getRawButtonPressed(3)) boostMode = false; // B Button sets default mode (60% of full speed).
-    if (isShooting) {
-      speedScaleFactor = 0.25; // If the robot is shooting, the speed scale factor is set to 0.3 to allow for more precise movements while shooting.
+    if (isShooting || isPreparingToShoot) {
+      speedScaleFactor = 0.6; // If the robot is shooting, the speed scale factor is set to 0.3 to allow for more precise movements while shooting.
     } else {
       speedScaleFactor = boostMode ? 1.0 : 0.6; // If boost mode is enabled, the speed scale factor is 1.0, otherwise it's 0.6.
     }
@@ -830,7 +830,7 @@ public class Robot extends TimedRobot {
   private double[] scoringHoodCalibrationDistances = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0}; 
   private double[] scoringHoodCalibrationValues = {0.02, 0.035, 0.0545, 0.0575, 0.062, 0.065, 0.068, 0.06895, 0.06}; 
   private double[] passingHoodCalibrationDistances = {4.0, 6.0, 8.0, 10.0, 12.0};
-  private double[] passingHoodCalibrationValues = {0.06, 0.06, 0.06, 0.06, 0.06};
+  private double[] passingHoodCalibrationValues = {0.06, 0.066, 0.085, 0.0105, 0.012};
   private double calcHoodPosition() {
     if (isScoring) {
       return interpolate(distanceToTarget, scoringHoodCalibrationDistances, scoringHoodCalibrationValues);
@@ -899,6 +899,7 @@ public class Robot extends TimedRobot {
   // Publishes information to the dashboard.
   private void updateDash() {
     SmartDashboard.putBoolean("Boost Mode", boostMode);
+    SmartDashboard.putNumber("distance to Target", distanceToTarget);
     if (Robot.isSimulation()) {
       SmartDashboard.putNumber("sim/Auto Stage", autoStage);
       SmartDashboard.putBoolean("sim/At Drive Goal", swerve.atDriveGoal());
