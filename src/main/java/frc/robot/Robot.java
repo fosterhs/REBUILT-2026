@@ -110,6 +110,9 @@ public class Robot extends TimedRobot {
     swerve.loadPath("neutral zone left travelling to shooting position 2", 0.0, 0.0, 0.0, 180.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     // Troll Auto Path #4
     swerve.loadPath("Troll Auto", 0.0, 0.0, 0.0, 90.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+    //pass auto 5-6
+    swerve.loadPath("Pass auto- first half", 0.0, 0.0, 0.0, 90.0);
+    swerve.loadPath("Pass auto - second half", 0.0, 0.0, 0.0, 180.0);
     runAll(); // Helps prevent loop overruns on startup by running every command before the match starts.
     SignalLogger.enableAutoLogging(false);
     SignalLogger.stop();
@@ -179,7 +182,7 @@ public class Robot extends TimedRobot {
       break;
       case auto6:
         // AutoInit 4 code goes here.
-        swerve.pushCalibration(true, 0.0); // Updates the robot's position on the field.
+        swerve.pushCalibration(true, 90.0); // Updates the robot's position on the field.
         swerve.resetDriveController(calcShootingHeading()); 
       break;
     }
@@ -578,7 +581,7 @@ public class Robot extends TimedRobot {
               shooter.lowerHood(); // Lowers the hood of the shooter.
               indexer.spoolDown();
               indexer.stop(); // Turns the indexer off.
-              swerve.resetPathController(5); 
+              swerve.resetPathController(4); 
               autoStage = 3; // Advances to the next stage once the robot has finished shooting.
             }
           break;
@@ -587,7 +590,7 @@ public class Robot extends TimedRobot {
             // Auto 1, Stage 3 code goes here.
             swerve.driveTo(3.519, 0.716,0.0); // Brings the robot slightly backwards.
             if (swerve.atDriveGoal()){
-              swerve.followPath(5);
+              swerve.followPath(4);
               if(swerve.getXPos()> 5.5){
                 intake.rightIntake();
                 shooter.maxHood();
@@ -599,7 +602,7 @@ public class Robot extends TimedRobot {
                   shooter.spinDown();
                   indexer.spoolDown();
                   intake.leftIntake();
-                  swerve.resetPathController(4); 
+                  swerve.resetPathController(5); 
                   autoStage = 4;
                 }
               }
@@ -608,7 +611,7 @@ public class Robot extends TimedRobot {
           case 4:
             swerve.driveTo(6.817, 3.386, 180);
             if (swerve.atDriveGoal()){
-              swerve.followPath(4);
+              swerve.followPath(5);
               if(swerve.getYPos() <0.8){
                 intake.stow();
                 if(swerve.getXPos()<5.8){
@@ -830,7 +833,7 @@ public class Robot extends TimedRobot {
           swerve.updateVisionHeading(true, 90.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
         break;
         case auto6:
-          swerve.updateVisionHeading(true, 0.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
+          swerve.updateVisionHeading(true, 90.0); // Updates the Limelight with a known heading based on the starting position of the robot on the field.
         break;
       }
     } else {
