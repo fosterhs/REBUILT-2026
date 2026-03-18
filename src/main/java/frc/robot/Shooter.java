@@ -131,6 +131,9 @@ public class Shooter {
   public void lowerHood() {
     desiredHoodPosition = hoodMinPosition;
   }
+  public void maxHood(){
+    desiredHoodPosition = hoodMaxPosition;
+  }
 
   // Gets the current mode that the shooter is in. This will return either SHOOT or IDLE, which can be used to determine if the shooter is currently running or not.
   public Mode getMode() {
