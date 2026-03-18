@@ -592,6 +592,7 @@ public class Robot extends TimedRobot {
               swerve.resetPathController(5); 
               autoStage= 4;
             }
+            break;
           case 4:
               swerve.followPath(5);
               if(swerve.getXPos()> 5.5){
@@ -615,6 +616,7 @@ public class Robot extends TimedRobot {
               swerve.resetPathController(6); 
               autoStage = 6;
             }
+            break;
           case 6:
               swerve.followPath(6);
               if(swerve.getYPos() <0.8){
