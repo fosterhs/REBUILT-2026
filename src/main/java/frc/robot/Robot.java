@@ -104,14 +104,14 @@ public class Robot extends TimedRobot {
     swerve.loadPath("neutral zone right travelling to shooting position 2", 0.0, 0.0, 0.0, 180.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     // Auto 2 Paths : Neutral Zone then Depot Collection, Left Starting Position. 2-3
     swerve.loadPath("left, go to neutral zone", 0.0, 0.0, 0.0, -70.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
-    swerve.loadPath("left, go to shooting pos", 0.0, 0.0, 0.0, 180.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+    swerve.loadPath("left, go to shooting pos", 0.0, 0.0, 0.0, -167.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     // Auto 4 Path : Troll Auto. 4
     swerve.loadPath("Troll Auto", 0.0, 0.0, 0.0, 90.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     // Auto 5 Path : Double Swipe, Left Starting Postion. 5-7
     swerve.loadPath("left, double swipe pt. 1", 0.0, 0.0, 0.0, -70.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
-    swerve.loadPath("left, double swipe pt. 2", 0.0, 0.0, 0.0, 180.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+    swerve.loadPath("left, double swipe pt. 2", 0.0, 0.0, 0.0, -167.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     swerve.loadPath("left, double swipe pt. 3", 0.0, 0.0, 0.0, -70.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
-    swerve.loadPath("left, double swipe pt. 4", 0.0, 0.0, 0.0, 180.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+    swerve.loadPath("left, double swipe pt. 4", 0.0, 0.0, 0.0, 167.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     runAll(); // Helps prevent loop overruns on startup by running every command before the match starts.
     SignalLogger.enableAutoLogging(false);
     SignalLogger.stop();
@@ -371,7 +371,7 @@ public class Robot extends TimedRobot {
               intake.leftIntake(); // When the X position is greater than 5.5, the left intake will deploy.
             }
             if (swerve.getXPos() > 7.5) {
-              swerve.resetDriveController(180.0);
+              swerve.resetDriveController(-167.0);
               autoStage = 4; // Advances to the next stage once the robot has gotten to the neutral zone.
             }
           break;
