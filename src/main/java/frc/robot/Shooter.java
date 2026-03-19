@@ -16,8 +16,6 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.MotorAlignmentValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
-import com.ctre.phoenix6.sim.CANcoderSimState;
-import com.ctre.phoenix6.sim.TalonFXSimState;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Voltage;
@@ -49,13 +47,6 @@ public class Shooter {
   private double shootingRPM = 3000.0; // Initializes the desired shooting RPM of the shooter motors. 
   private double desiredHoodPosition = hoodMinPosition; // Initializes the desired position of the hood. 
 
-  // Simulation
-  private final TalonFXSimState hoodMotorSim = hoodMotor.getSimState();
-  private final TalonFXSimState shootMotorRightSim = shootMotorRight.getSimState();
-  private final TalonFXSimState shootMotorLeftSim = shootMotorLeft.getSimState();
-  private final CANcoderSimState hoodEncoderSim = hoodEncoder.getSimState();
-  private double desiredRPMSim = 0;
-  public static final double hoodGearRatio = 1;
 
   // Constructor for the Shooter class. This is where we will configure the shooter motors and hood encoder with the appropriate settings for our robot. We will set the neutral mode to brake, set the motor direction based on the invert parameter, configure current limits for the motors, and configure the PID values for the hood motor. We will also optimize bus utilization for the motors and encoder to improve performance.
   public Shooter() {
@@ -96,13 +87,11 @@ public class Shooter {
   // Sets the current state to SHOOT, which will cause the shooter to run in the periodic method at the specified shooting RPM.
   public void spinUp() {
     currMode = Mode.SHOOT;
-    desiredRPMSim = shootingRPM;
   }
 
   // Sets the current state to IDLE, which will cause the shooter to stop in the periodic method.
   public void spinDown() {
     currMode = Mode.IDLE;
-    desiredRPMSim = 0;
   }
 
   // Sets the desired shooting RPM of the shooter motors. If the specified RPM is above the maximum RPM, it will be set to the maximum RPM. If the specified RPM is below the minimum RPM, it will be set to the minimum RPM. Otherwise, it will be set to the specified RPM.
@@ -139,8 +128,6 @@ public class Shooter {
 
   // Returns true or false based on whether the hood is near the desired position.
   public boolean hoodIsInPosition() {
-    // TODO: Fix simulationPeriodic
-    if (Robot.isSimulation()) return true;
 
     return Math.abs(desiredHoodPosition - getHoodPosition()) < hoodTol;
   }
@@ -183,18 +170,6 @@ public class Shooter {
     //SmartDashboard.putBoolean("Shooter flywheelIsReady", flywheelIsReady());
     //SmartDashboard.putBoolean("Shooter flywheelIsAtSpeed", flywheelIsAtSpeed);
     //SmartDashboard.putString("Shooter getMode", getMode().toString());
-  }
-
-  public void simulationPeriodic() {
-    // Very basic - just jump to the desired values
-    // Update the motors
-    shootMotorRightSim.setRotorVelocity(desiredRPMSim / 60.0);
-    shootMotorLeftSim.setRotorVelocity(desiredRPMSim / 60.0);
-
-    // Update the hood position.
-    // TODO:
-    hoodMotorSim.setRawRotorPosition(desiredHoodPosition/hoodGearRatio);
-    hoodEncoderSim.setRawPosition(desiredHoodPosition/hoodGearRatio);
   }
 
   // Configures the hood encoder with the appropriate settings for our robot. Sets the absolute sensor discontinuity point, magnet offset, and sensor direction based on the physical configuration of the encoder on our robot. These settings are important to ensure that the encoder readings are accurate and consistent with the actual position of the hood.

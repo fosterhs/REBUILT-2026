@@ -127,9 +127,7 @@ public class Climber {
     //SmartDashboard.putNumber("Climber Velocity", getVelocity());
   }
 
-  public void simulationPeriodic() {
-    
-  }
+
 
   // A method to configure the climber motor with the appropriate settings for our robot. We will set the neutral mode to brake, set the motor direction based on the invert parameter, and configure current limits for the motor.
   private void configClimbMotor(TalonFX motor, boolean invert) {

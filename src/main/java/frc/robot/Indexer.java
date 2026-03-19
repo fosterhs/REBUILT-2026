@@ -87,6 +87,17 @@ public class Indexer {
     indexVoltage = RPM/4000.0 * 12.0;
   }
 
+  // Returns the current mode that the indexer is in.
+  public Mode getMode() {
+    return currMode;
+  }
+
+  // Updates the SmartDashboard with the current mode and voltage of the indexer. Useful for debugging and tuning.
+  public void updateDash() {
+    //SmartDashboard.putString("Indexer getMode", getMode().toString());
+    //SmartDashboard.putNumber("Indexer voltage", indexVoltage);
+  }
+
   // Configures the indexer motors with the appropriate settings for our robot. Sets the neutral mode to brake, sets the motor direction based on the invert parameter, and configures current limits for the motor.
   private void configIndexMotor(TalonFX motor, boolean invert) {
     TalonFXConfiguration motorConfigs = new TalonFXConfiguration(); // Creates a new configuration object for the motor. This object will hold all the settings that we want to apply to the motor.

@@ -13,8 +13,6 @@ import com.ctre.phoenix6.signals.AdvancedHallSupportValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.MotorArrangementValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import com.ctre.phoenix6.sim.TalonFXSimState;
-import com.ctre.phoenix6.sim.TalonFXSSimState;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
 import edu.wpi.first.units.measure.Angle;
@@ -66,14 +64,6 @@ public class Intake {
   private double leftIntakeRPM = 3000.0;
   private double rightIntakeRPM = 3000.0;
 
-  // Simulation
-  private final TalonFXSimState rightArmMotorSim = rightArmMotor.getSimState();
-  private final TalonFXSSimState rightRollerMotorSim = rightRollerMotor.getSimState();
-  private final TalonFXSimState rightCenteringMotorSim = rightCenteringMotor.getSimState();
-  private final TalonFXSimState leftArmMotorSim = leftArmMotor.getSimState();
-  private final TalonFXSSimState leftRollerMotorSim = leftRollerMotor.getSimState();
-  private final TalonFXSimState leftCenteringMotorSim = leftCenteringMotor.getSimState();
-
   // Constructor for the Intake class. This will be called when we create a new instance of the Intake in our Robot class. In the constructor, we will configure the motors with the appropriate settings for our robot, initialize the status signals for the arm positions and velocities, set the update frequency for those signals, and optimize the CAN bus utilization for all the motors to ensure that we are getting timely updates from all of them without overloading the CAN bus.
   public Intake() {
     configArmMotor(leftArmMotor, true);
@@ -105,9 +95,6 @@ public class Intake {
 
     switch (currMode) {
       case HOME: // In HOME mode, we want to run the homing procedure to find the zero position of the intake arms. We will run the arm motors at a low voltage to move them towards the zero position, and if they are moving, we will restart the homing timers. If they have been stationary for more than 1 second, we will set their positions to 0 and consider them homed. Once both arms are homed, we will switch to STOW mode and set the desired positions for both arms to the stow position.
-        if (Robot.isSimulation()) {
-          currMode = Mode.STOW;
-        }
         
         // Runs the arm motors at a low voltage to find the zero position. The negative voltage will make the motor spin in the direction that we want to use for homing, which should be the direction that moves the arm towards its zero position. Adjust this voltage as needed based on your specific robot's intake mechanism and how it responds during testing.
         leftArmMotor.setControl(leftArmMotorVoltageRequest.withOutput(-1.0).withEnableFOC(true));
@@ -301,19 +288,6 @@ public class Intake {
     //SmartDashboard.putNumber("Intake getRightArmDesiredPosition", getRightArmDesiredPosition());
     //SmartDashboard.putBoolean("Intake rightArmInPosition", rightArmInPosition());
     //SmartDashboard.putBoolean("Intake isReady", isReady());
-  }
-
-  public void simulationPeriodic() {
-    // TODO: update this code
-    // TalonFX Motor Sims
-    // rightArmMotorSim
-    // rightRollerMotorSim
-    // rightCenteringMotorSim
-    // leftArmMotorSim
-    // leftRollerMotorSim
-    // leftCenteringMotorSim
-
-    // Simulate homing, simulate fully extended
   }
 
   // This method configures the settings for the roller motors. The configuration includes setting the commutation settings specific to the TalonFXS, setting the neutral mode to brake, configuring the motor direction based on the invert parameter, and configuring current limits to protect the motors and mechanical components of the intake mechanism. Finally, it applies the configuration to the motor controller with a specified timeout.
