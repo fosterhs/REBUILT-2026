@@ -658,7 +658,6 @@ public class Robot extends TimedRobot {
 
         }
     }
-    {
     // Runs the periodic methods for the subsystems that need to be updated.
     //climber.periodic();
     indexer.periodic();
