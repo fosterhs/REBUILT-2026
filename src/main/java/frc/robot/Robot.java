@@ -65,7 +65,7 @@ public class Robot extends TimedRobot {
   private static final String auto3 = "Center Start, fuel shoot, collect from depot, shoot "; 
   private static final String auto4 = "Right Side start, Shoot, collect from neutral zone, shoot, collect fuel from the human player station."; 
   private static final String auto5 = "Troll Auto";
-  private static final String auto6 = "pass auto";
+  private static final String auto6 = "Left pass auto";
 
   private String autoSelected;
   private int autoStage = 1;
@@ -592,7 +592,7 @@ public class Robot extends TimedRobot {
               swerve.resetPathController(5); 
               autoStage= 4;
             }
-            break;
+          break;
           case 4:
               swerve.followPath(5);
               if(swerve.getXPos()> 5.5){
@@ -617,7 +617,7 @@ public class Robot extends TimedRobot {
               swerve.resetPathController(4); 
               autoStage = 6;
             }
-            break;
+          break;
           case 6:
               swerve.followPath(4);
               if(swerve.getYPos() <0.8){
