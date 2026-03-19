@@ -56,7 +56,7 @@ public class Robot extends TimedRobot {
   private final CANdle topLED = new CANdle(0, canivore); // Initializes the CANdle for controlling the LEDs on the robot. 
   private final SolidColor solidColorRequest = new SolidColor(0, 41); // A SolidColor control request that is used to set the color of the LEDs on the robot. 
   private final RGBWColor purpleColor = new RGBWColor(255, 0, 255, 0); // A purple color for the LEDs to indicate when the robot is not shooting.
-  private final RGBWColor greenColor = new RGBWColor(0, 0, 255, 0); // A green color for the LEDs to indicate when the robot is shooting.
+  private final RGBWColor greenColor = new RGBWColor(0, 255, 0, 0); // A green color for the LEDs to indicate when the robot is shooting.
 
   // Auto Variables
   private final SendableChooser<String> autoChooser = new SendableChooser<>();
@@ -122,7 +122,7 @@ public class Robot extends TimedRobot {
     intake.updateDash();
     updateDash();
 
-    if (isShooting) {
+    if (isReadyToShoot) {
       topLED.setControl(solidColorRequest.withColor(greenColor));
     } else {
       topLED.setControl(solidColorRequest.withColor(purpleColor));
