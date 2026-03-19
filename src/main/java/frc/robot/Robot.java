@@ -378,7 +378,7 @@ public class Robot extends TimedRobot {
 
           case 4:
             // Auto 2, Stage 4 code goes here.
-            swerve.aimDrive(0.0, -2.0, 180.0); // Moves the robot in the neutral zone, collecting fuel.
+            swerve.aimDrive(0.0, -2.0, -167.0); // Moves the robot in the neutral zone, collecting fuel.
             if (swerve.getYPos() <= 4.4) {
               intake.stow(); // Stows the intake.
               swerve.resetPathController(3);
@@ -564,7 +564,7 @@ public class Robot extends TimedRobot {
             if (swerve.getXPos() > 5.7) {
               intake.rightIntake(); // When the X position is greater than 5.7, the right intake will deploy.
             }
-            if (swerve.getXPos() > 7.7) {
+            if (swerve.getXPos() > 7.6) {
               intake.stow(); // Stows the intake.
               swerve.resetPathController(6);
               shooter.spinUp();

@@ -52,7 +52,7 @@
         "y": 6.7
       },
       "prevControl": {
-        "x": 7.295208245807915,
+        "x": 7.295208245807914,
         "y": 7.606748386123789
       },
       "nextControl": null,
@@ -82,8 +82,8 @@
     "unlimited": false
   },
   "goalEndState": {
-    "velocity": 0,
-    "rotation": 180.0
+    "velocity": 0.0,
+    "rotation": -167.0
   },
   "reversed": false,
   "folder": null,
