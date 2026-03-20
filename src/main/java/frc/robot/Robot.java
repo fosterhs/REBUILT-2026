@@ -612,7 +612,7 @@ public class Robot extends TimedRobot {
               }
           break;
           case 5:
-            swerve.driveTo(6.817, 3.386, 180);
+            swerve.driveTo(7.524, 3.410, 180);
             if (swerve.atDriveGoal()){
               swerve.resetPathController(4); 
               autoStage = 6;
