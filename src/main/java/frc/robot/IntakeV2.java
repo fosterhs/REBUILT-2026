@@ -17,8 +17,6 @@ import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.MotorArrangementValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
-import com.ctre.phoenix6.sim.TalonFXSimState;
-import com.ctre.phoenix6.sim.TalonFXSSimState;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
 import edu.wpi.first.units.measure.Angle;
@@ -59,14 +57,6 @@ public class IntakeV2 {
   private double rightCenteringVoltage = 2.0; // Initializes a variable to keep track of the voltage that we want to run the right intake centering motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the centering motors to position the intake arm.
   private double leftIntakeRPM = 3500.0;
   private double rightIntakeRPM = 3500.0;
-
-  // Simulation
-  private final TalonFXSimState rightArmMotorSim = rightArmMotor.getSimState();
-  private final TalonFXSSimState rightRollerMotorSim = rightRollerMotor.getSimState();
-  private final TalonFXSimState rightCenteringMotorSim = rightCenteringMotor.getSimState();
-  private final TalonFXSimState leftArmMotorSim = leftArmMotor.getSimState();
-  private final TalonFXSSimState leftRollerMotorSim = leftRollerMotor.getSimState();
-  private final TalonFXSimState leftCenteringMotorSim = leftCenteringMotor.getSimState();
 
   // Constructor for the Intake class. This will be called when we create a new instance of the Intake in our Robot class. In the constructor, we will configure the motors with the appropriate settings for our robot, initialize the status signals for the arm positions and velocities, set the update frequency for those signals, and optimize the CAN bus utilization for all the motors to ensure that we are getting timely updates from all of them without overloading the CAN bus.
   public IntakeV2() {
@@ -227,19 +217,6 @@ public class IntakeV2 {
     //SmartDashboard.putNumber("Intake getRightArmDesiredPosition", getRightArmDesiredPosition());
     //SmartDashboard.putBoolean("Intake rightArmInPosition", rightArmInPosition());
     //SmartDashboard.putBoolean("Intake isReady", isReady());
-  }
-
-  public void simulationPeriodic() {
-    // TODO: update this code
-    // TalonFX Motor Sims
-    // rightArmMotorSim
-    // rightRollerMotorSim
-    // rightCenteringMotorSim
-    // leftArmMotorSim
-    // leftRollerMotorSim
-    // leftCenteringMotorSim
-
-    // Simulate homing, simulate fully extended
   }
 
   // This method configures the settings for the roller motors. The configuration includes setting the commutation settings specific to the TalonFXS, setting the neutral mode to brake, configuring the motor direction based on the invert parameter, and configuring current limits to protect the motors and mechanical components of the intake mechanism. Finally, it applies the configuration to the motor controller with a specified timeout.

@@ -8,10 +8,8 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VelocityVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
-import com.ctre.phoenix6.sim.CANcoderSimState;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.sim.TalonFXSimState;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
@@ -41,13 +39,6 @@ class SwerveModule {
   private SwerveModulePosition SMP = new SwerveModulePosition(); // Stores the current wheel position and drive motor position of the swerve module.
   private SwerveModuleState SMS = new SwerveModuleState(); // Stores the current velocity and angle of the swerve module.
 
-  public final CANcoderSimState wheelEncoderSim;
-  public final TalonFXSimState driveMotorSim;
-  public final TalonFXSimState turnMotorSim;
-  private double driveMotorSimVel;
-  private double turnMotorSimAngle;
-  private final double simulationDriveFactor = 1;
-  private int driveDirectionSim;  // -1 for inverted, 1 for not inverted
 
   // Constructor for the SwerveModule class. Initializes the CANcoder, drive motor, and turn motor with the given IDs and configurations. Also sets up the status signals for the drive motor and wheel encoder, and optimizes bus utilization for the motors and encoder. The wheelEncoderZero parameter is used to set the zero position of the wheel encoder, which corresponds to the angle at which the swerve wheel is facing straight forward.
   public SwerveModule(int turnID, int driveID, int encoderID, boolean invertDrive, double wheelEncoderZero, String canbus) {
@@ -65,14 +56,6 @@ class SwerveModule {
     wheelEncoderVelocity = wheelEncoder.getVelocity();
     BaseStatusSignal.setUpdateFrequencyForAll(250.0, driveMotorPosition, driveMotorVelocity, wheelEncoderPosition, wheelEncoderVelocity);
     ParentDevice.optimizeBusUtilizationForAll(driveMotor, turnMotor, wheelEncoder);
-
-    // Configure Sims
-    wheelEncoderSim = wheelEncoder.getSimState();
-    turnMotorSim = turnMotor.getSimState();
-    driveMotorSim = driveMotor.getSimState();
-    turnMotorSimAngle = 0;
-    driveMotorSimVel = 0;
-    driveDirectionSim = invertDrive ? -1: 1;
 
   }
 
@@ -116,23 +99,14 @@ class SwerveModule {
 
   // Sets the velocity of the module. Units: meters per second
   private void setVel(double vel) {
-    driveMotorSimVel = vel*simulationDriveFactor*driveGearRatio/(wheelCirc*correctionFactor);
     driveMotor.setControl(driveMotorVelocityRequest.withVelocity(vel*driveGearRatio/(wheelCirc*correctionFactor)));
   }
 
   // Sets the angle of the module. Units: degrees Can accept values outside of -180 to 180, corresponding to multiple rotations of the swerve wheel.
   private void setAngle(double angle) {
-    turnMotorSimAngle = angle/360.0;
     turnMotor.setControl(turnMotorPositionRequest.withPosition(angle/360.0));
   }
 
-  public void simulationPeriodic() {
-    // Update each of the swerve modules
-    turnMotorSim.addRotorPosition(turnMotorSimAngle * Robot.dTime);
-    driveMotorSim.addRotorPosition(driveMotorSimVel * Robot.dTime * driveDirectionSim);
-
-    wheelEncoderSim.addPosition(wheelEncoderVelocity.getValueAsDouble() * Robot.dTime);
-  }
 
   // Configures the swerve module's drive motor.
   private void configDriveMotor(TalonFX motor, boolean invert) {
