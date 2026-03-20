@@ -111,8 +111,8 @@ public class Robot extends TimedRobot {
     // Troll Auto Path #4
     swerve.loadPath("Troll Auto", 0.0, 0.0, 0.0, 90.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     //pass auto 5-6
-    swerve.loadPath("Pass auto- first half", 0.0, 0.0, 0.0, 90.0);
-    swerve.loadPath("Pass auto - second half", 0.0, 0.0, 0.0, 180.0);
+    swerve.loadPath("pass auto- first half", 0.0, 0.0, 0.0, 90.0);
+    swerve.loadPath("pass auto - second half", 0.0, 0.0, 0.0, 0.0);
     runAll(); // Helps prevent loop overruns on startup by running every command before the match starts.
     SignalLogger.enableAutoLogging(false);
     SignalLogger.stop();
@@ -180,6 +180,7 @@ public class Robot extends TimedRobot {
         swerve.pushCalibration(true, 90.0); // Updates the robot's position on the field.
         swerve.resetPathController(4); 
       break;
+      
       case auto6:
         // AutoInit 4 code goes here.
         swerve.pushCalibration(true, 90.0); // Updates the robot's position on the field.
@@ -557,6 +558,7 @@ public class Robot extends TimedRobot {
           break;
         }
       break;
+
       case auto6:
         switch(autoStage){
           case 1:
@@ -565,6 +567,7 @@ public class Robot extends TimedRobot {
             indexer.spoolUp();
             shooter.setHoodPosition(calcHoodPosition()); 
             if (isReadyToShoot) {
+              swerve.resetDriveController(calcShootingHeading());
               shootingTimer.restart();
               indexer.start(); 
               autoStage = 2;  
@@ -575,10 +578,7 @@ public class Robot extends TimedRobot {
             swerve.driveTo(3.5, 0.75, calcShootingHeading()); 
             shooter.setHoodPosition(calcHoodPosition()); 
             if (shootingTimer.get() > 2.0) {
-              shooter.spinDown(); 
-              shooter.lowerHood(); 
-              indexer.spoolDown();
-              indexer.stop();
+              shooter.maxHood();
               autoStage = 3;
             }
           break;
@@ -594,14 +594,10 @@ public class Robot extends TimedRobot {
               swerve.followPath(5);
               if(swerve.getXPos()> 5.5){
                 intake.rightIntake();
-                shooter.maxHood();
-                shooter.spinUp();
-                indexer.spoolUp();
-                indexer.start();
                 if (swerve.getYPos() >3.0){
                   indexer.stop();
                   shooter.spinDown();
-                  indexer.spoolDown();
+                  indexer.spoolDown(); 
                   shooter.lowerHood();
                   intake.leftIntake();
                   autoStage = 5;
@@ -611,12 +607,12 @@ public class Robot extends TimedRobot {
           case 5:
             swerve.driveTo(7.524, 3.410, 180);
             if (swerve.atDriveGoal()){
-              swerve.resetPathController(4); //either 4 or 6
+              swerve.resetPathController(6);
               autoStage = 6;
             }
           break;
           case 6:
-              swerve.followPath(4);
+              swerve.followPath(6);
               if(swerve.getYPos() <0.8){
                 intake.stow();
                 if(swerve.getXPos()<5.8){
@@ -634,6 +630,7 @@ public class Robot extends TimedRobot {
             indexer.spoolUp();
             shooter.setHoodPosition(calcHoodPosition()); 
             if (isReadyToShoot) {
+              swerve.resetDriveController(calcShootingHeading());
               shootingTimer.restart(); 
               indexer.start(); 
               autoStage = 8; 
@@ -650,8 +647,6 @@ public class Robot extends TimedRobot {
               indexer.stop(); 
             }
           break;
-            
-
         }
     }
     // Runs the periodic methods for the subsystems that need to be updated.
@@ -1007,6 +1002,7 @@ public class Robot extends TimedRobot {
   // Publishes information to the dashboard.
   private void updateDash() {
     SmartDashboard.putBoolean("Boost Mode", boostMode);
+    SmartDashboard.putNumber("auto stage", autoStage);
     if (Robot.isSimulation()) {
       SmartDashboard.putNumber("sim/Auto Stage", autoStage);
       SmartDashboard.putBoolean("sim/At Drive Goal", swerve.atDriveGoal());
