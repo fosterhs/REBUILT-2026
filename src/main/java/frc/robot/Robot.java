@@ -560,34 +560,31 @@ public class Robot extends TimedRobot {
       case auto6:
         switch(autoStage){
           case 1:
-            // Auto 1, Stage 1 code goes here.
-            swerve.driveTo(3.5, 0.75, calcShootingHeading()); // Brings the robot slightly backwards.
-            shooter.spinUp(); // Turns the shooter on.
+            swerve.driveTo(3.5, 0.75, calcShootingHeading()); 
+            shooter.spinUp(); 
             indexer.spoolUp();
-            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+            shooter.setHoodPosition(calcHoodPosition()); 
             if (isReadyToShoot) {
-              shootingTimer.restart(); // Restarts the shooting timer.
-              indexer.start(); // Turns on the indexer.
-              autoStage = 2; // Advances to the next stage once the robot has gotten to the shooting position.
+              shootingTimer.restart();
+              indexer.start(); 
+              autoStage = 2;  
             }
           break;
 
           case 2:
-            // Auto 1, Stage 2 code goes here.
-            swerve.driveTo(3.5, 0.75, calcShootingHeading()); // Brings the robot slightly backwards.
-            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+            swerve.driveTo(3.5, 0.75, calcShootingHeading()); 
+            shooter.setHoodPosition(calcHoodPosition()); 
             if (shootingTimer.get() > 2.0) {
-              shooter.spinDown(); // Turns the shooter off.
-              shooter.lowerHood(); // Lowers the hood of the shooter.
+              shooter.spinDown(); 
+              shooter.lowerHood(); 
               indexer.spoolDown();
-              indexer.stop(); // Turns the indexer off.
-              autoStage = 3; // Advances to the next stage once the robot has finished shooting.
+              indexer.stop();
+              autoStage = 3;
             }
           break;
 
           case 3:
-            // Auto 1, Stage 3 code goes here.
-            swerve.driveTo(3.519, 0.716,0.0); // Brings the robot slightly backwards.
+            swerve.driveTo(3.519, 0.716,0.0);
             if (swerve.atDriveGoal()){
               swerve.resetPathController(5); 
               autoStage= 4;
@@ -614,7 +611,7 @@ public class Robot extends TimedRobot {
           case 5:
             swerve.driveTo(7.524, 3.410, 180);
             if (swerve.atDriveGoal()){
-              swerve.resetPathController(4); 
+              swerve.resetPathController(4); //either 4 or 6
               autoStage = 6;
             }
           break;
@@ -632,26 +629,25 @@ public class Robot extends TimedRobot {
               }
           break;
           case 7:
-            // Auto 4, Stage 1 code goes here.
-            swerve.driveTo(3.5, 0.75, calcShootingHeading()); // Brings the robot slightly backwards.
-            shooter.spinUp(); // Turns the shooter on.
+            swerve.driveTo(3.5, 0.75, calcShootingHeading());
+            shooter.spinUp(); 
             indexer.spoolUp();
-            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+            shooter.setHoodPosition(calcHoodPosition()); 
             if (isReadyToShoot) {
-              shootingTimer.restart(); // Restarts the shooting timer.
-              indexer.start(); // Turns on the indexer.
-              autoStage = 8; // Advances to the next stage once the robot has gotten to the shooting position.
+              shootingTimer.restart(); 
+              indexer.start(); 
+              autoStage = 8; 
             }
           break;
 
-          case 8://
-            swerve.driveTo(3.5, 0.75, calcShootingHeading()); // Brings the robot slightly backwards.
-            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+          case 8:
+            swerve.driveTo(3.5, 0.75, calcShootingHeading()); 
+            shooter.setHoodPosition(calcHoodPosition()); 
             if (shootingTimer.get() > 4.0) {
-              shooter.spinDown(); // Turns the shooter off.
+              shooter.spinDown(); 
               indexer.spoolDown();
-              shooter.lowerHood(); // Lowers the hood of the shooter.
-              indexer.stop(); // Turns the indexer off.
+              shooter.lowerHood(); 
+              indexer.stop(); 
             }
           break;
             
