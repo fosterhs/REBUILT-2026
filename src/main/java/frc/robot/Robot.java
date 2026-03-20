@@ -154,8 +154,7 @@ public class Robot extends TimedRobot {
       case auto3:
         // AutoInit 3 code goes here.
         swerve.pushCalibration(true, -90.0); // Updates the robot's position on the field.
-        updateTrajectory();
-        swerve.resetDriveController(calcShootingHeading());
+        swerve.resetDriveController(-35.0);
       break;
 
       case auto4:
@@ -385,7 +384,7 @@ public class Robot extends TimedRobot {
         switch (autoStage) {
           case 1:
             // Auto 3, Stage 1 code goes here.
-            swerve.driveTo(2.0, 4.7, calcShootingHeading()); // Brings the robot to a shooting position.
+            swerve.driveTo(2.9, 4.7, -35.0); // Brings the robot to a shooting position.
             shooter.spinUp(); // Turns the shooter on.
             indexer.spoolUp();
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
