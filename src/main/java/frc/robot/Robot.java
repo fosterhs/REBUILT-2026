@@ -389,7 +389,7 @@ public class Robot extends TimedRobot {
             shooter.spinUp(); // Turns the shooter on.
             indexer.spoolUp();
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
-            if (isReadyToShoot) {
+            if (swerve.atDriveGoal()) {
               indexer.start(); // Turns on the indexer.
               shootingTimer.restart(); // Restarts the shooting timer.
               autoStage = 2; // Advances to the next stage once the robot has gotten to the shooting position.
@@ -400,7 +400,7 @@ public class Robot extends TimedRobot {
             // Auto 3, Stage 2 code goes here.
             swerve.driveTo(2.0, 4.7, -35.0); // Brings the robot to a shooting position.
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
-            if (shootingTimer.get() > 3.0) {
+            if (shootingTimer.get() > 4.0) {
               shooter.spinDown(); // Turns the shooter off.
               shooter.lowerHood(); // Lowers the hood of the shooter.
               indexer.spoolDown();
@@ -414,7 +414,7 @@ public class Robot extends TimedRobot {
             // Auto 3, Stage 3 code goes here.
             swerve.driveTo(1.195, 6.000, -90.0); // Brings the robot to the depot.
 
-            if (swerve.getXPos() < 1.8) {
+            if (swerve.getXPos() < 2.2) {
               intake.rightIntake(); // When the X position is less than 1.8, the right intake will deploy.
             }
 
@@ -426,8 +426,8 @@ public class Robot extends TimedRobot {
 
           case 4:
             // Auto 3, Stage 4 code goes here.
-            swerve.aimDrive(-1.25, 0.0, -90.0); // Moves the robot in the depot, collecting fuel.
-            if (swerve.getXPos() <= 0.65) {
+            swerve.aimDrive(-1.0, 0.0, -90.0); // Moves the robot in the depot, collecting fuel.
+            if (swerve.getXPos() <= 0.56) {
               intake.stow(); // Stows the intake.
               swerve.resetDriveController(-90.0);
               shooter.spinUp(); // Turns the shooter on.
