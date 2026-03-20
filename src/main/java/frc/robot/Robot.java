@@ -65,7 +65,7 @@ public class Robot extends TimedRobot {
   private static final String auto3 = "Center Start, fuel shoot, collect from depot, shoot "; 
   private static final String auto4 = "Right Side start, Shoot, collect from neutral zone, shoot, collect fuel from the human player station."; 
   private static final String auto5 = "Troll Auto";
-  private static final String auto6 = "Left pass auto";
+  private static final String auto6 = "Right pass auto";
 
   private String autoSelected;
   private int autoStage = 1;
@@ -180,7 +180,7 @@ public class Robot extends TimedRobot {
         swerve.pushCalibration(true, 90.0); // Updates the robot's position on the field.
         swerve.resetPathController(4); 
       break;
-      
+
       case auto6:
         // AutoInit 4 code goes here.
         swerve.pushCalibration(true, 90.0); // Updates the robot's position on the field.
