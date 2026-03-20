@@ -575,10 +575,7 @@ public class Robot extends TimedRobot {
             swerve.driveTo(3.5, 0.75, calcShootingHeading()); 
             shooter.setHoodPosition(calcHoodPosition()); 
             if (shootingTimer.get() > 2.0) {
-              shooter.spinDown(); 
-              shooter.lowerHood(); 
-              indexer.spoolDown();
-              indexer.stop();
+              shooter.maxHood();
               autoStage = 3;
             }
           break;
@@ -594,14 +591,10 @@ public class Robot extends TimedRobot {
               swerve.followPath(5);
               if(swerve.getXPos()> 5.5){
                 intake.rightIntake();
-                shooter.maxHood();
-                shooter.spinUp();
-                indexer.spoolUp();
-                indexer.start();
                 if (swerve.getYPos() >3.0){
                   indexer.stop();
                   shooter.spinDown();
-                  indexer.spoolDown();
+                  indexer.spoolDown(); 
                   shooter.lowerHood();
                   intake.leftIntake();
                   autoStage = 5;
@@ -1007,6 +1000,7 @@ public class Robot extends TimedRobot {
   // Publishes information to the dashboard.
   private void updateDash() {
     SmartDashboard.putBoolean("Boost Mode", boostMode);
+    SmartDashboard.putNumber("auto stage", autoStage);
     if (Robot.isSimulation()) {
       SmartDashboard.putNumber("sim/Auto Stage", autoStage);
       SmartDashboard.putBoolean("sim/At Drive Goal", swerve.atDriveGoal());
