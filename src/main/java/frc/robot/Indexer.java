@@ -19,9 +19,10 @@ public class Indexer {
   private final VelocityVoltage shooterIndexMotorVelocityRequest = new VelocityVoltage(0.0).withEnableFOC(true); // Creates a new VoltageOut control mode for the shooter indexer motor. This will allow us to set the voltage that we want to apply to the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
   private final Timer indexTimer = new Timer(); // Creates a new timer that we will use to time how long the indexer has been running. This will allow us to run the motors for a specific amount of time before stopping or reversing them.
   private Mode currMode = Mode.IDLE; // Initializes the current mode of the indexer to IDLE. This means that when the robot is first turned on, the indexer will be in the IDLE state and will not be running.
-  private double indexRPM = 4000.0; // Initializes the voltage that the indexer motors will run at when the indexer is running. This can be adjusted.
-  private double indexVoltage = 12.0;
-  private boolean isSpoolingUp = false; 
+  private double shooterIndexRPM = 4000.0; // Initializes the rpm that the shooter indexer motor will run at when the indexer is running. This can be adjusted.
+  private double hopperIndexVoltage = 12.0; // Initializes the voltage that the hopper indexer motor will run at when the indexer is running. This can be adjusted.
+  private boolean isSpoolingUp = false; // Tracks whether the shooter index motor should be at speed.
+
   
   // Constructor for the Indexer class. This is where we will configure the indexer motors with the appropriate settings for our robot. We will set the neutral mode to brake, set the motor direction based on the invert parameter, and configure current limits for the motor. We will also optimize bus utilization for the motors to improve performance.
   public Indexer() {
@@ -42,20 +43,20 @@ public class Indexer {
     switch (currMode) {
       case INDEX: // Runs the indexer motors at the specified voltage for 2.5 seconds, then reverses the motors for 0.5 seconds to help unjam any stuck fuel.
         if (indexTimer.get() < 2.5) {
-          hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(indexVoltage).withEnableFOC(true));
+          hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(hopperIndexVoltage).withEnableFOC(true));
         } else if (indexTimer.get() < 3.0) {
-          hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(-indexVoltage).withEnableFOC(true));
+          hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(-hopperIndexVoltage).withEnableFOC(true));
         } else {
           indexTimer.restart(); // Restarts the timer to repeat the cycle of running forward for 2.5 seconds and then reversing for 0.5 seconds. This will continue until the mode is changed to IDLE.
         }
-        shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(indexRPM/60.0).withEnableFOC(true));
+        shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(shooterIndexRPM/60.0).withEnableFOC(true));
       break;
 
       case IDLE: // Stops the motors.
         indexTimer.restart();
           hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
         if (isSpoolingUp) {
-          shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(0.0).withEnableFOC(true));
+          shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(shooterIndexRPM/60.0).withEnableFOC(true));
         } else {
           shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(0.0).withEnableFOC(true));
         }
@@ -73,18 +74,20 @@ public class Indexer {
     currMode = Mode.IDLE;
   }
 
+  // Starts spinning the shooter indexer motor up to speed when the indexer is IDLE. Has no effect in INDEX mode.
   public void spoolUp() {
     isSpoolingUp = true;
   }
 
+  // Stops the shooter indexer motor when the indexer is IDLE. Has no effect in INDEX mode.
   public void spoolDown() {
     isSpoolingUp = false;
   }
 
   // Sets the voltage that the indexer motors will run at when the indexer is running.
-  public void setIndexRPM(double RPM) {
-    indexRPM = RPM;
-    indexVoltage = RPM/4000.0 * 12.0;
+  public void setIndexSpeeds(double RPM) {
+    shooterIndexRPM = RPM;
+    hopperIndexVoltage = RPM/4000.0 * 12.0;
   }
 
   // Returns the current mode that the indexer is in.
