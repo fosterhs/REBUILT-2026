@@ -7,7 +7,7 @@ import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
 import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC;
-import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -34,7 +34,7 @@ public class Shooter {
   private final StatusSignal<Angle> hoodPosition; // Creates a new StatusSignal for the position of the hood motor. This will allow us to read the position of the motor in real-time and use it to determine if the motor is at the desired position.
   private final StatusSignal<Voltage> shooterVoltageRight; // Creates a new StatusSignal for the voltage of the right shooter motor. This will allow us to read the voltage of the motor in real-time and use it to monitor the health of the motor and ensure that it is not being overworked.
 
-  private final VelocityVoltage shooterMotorRightVelocityRequest = new VelocityVoltage(0.0).withEnableFOC(true); // Creates a new VelocityVoltage control mode for the right shooter motor. This will allow us to set the velocity that we want to apply to the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
+  private final MotionMagicVelocityVoltage shooterMotorRightVelocityRequest = new MotionMagicVelocityVoltage(0.0).withEnableFOC(true); // Creates a new VelocityVoltage control mode for the right shooter motor. This will allow us to set the velocity that we want to apply to the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
   private final Follower shooterMotorLeftFollowerRequest = new Follower(shootMotorRight.getDeviceID(), MotorAlignmentValue.Opposed); // Creates a new Follower control mode for the left shooter motor. This will allow us to set the left shooter motor to follow the right shooter motor, so that we only have to set the velocity for the right shooter motor and the left shooter motor will automatically match it. The MotorAlignmentValue.Opposed part means that the left shooter motor will run in the opposite direction of the right shooter motor, which is necessary for our shooter configuration.
   private final MotionMagicTorqueCurrentFOC hoodMotorPositionRequest = new MotionMagicTorqueCurrentFOC(0.0); // Creates a new MotionMagicTorqueCurrentFOC control mode for the hood motor. This will allow us to set the position that we want to apply to the motor when it is moving the hood. We will configure the PID values for this control mode in the configHoodMotor method.
 
@@ -217,10 +217,14 @@ public class Shooter {
 
     // VelocityVoltage closed-loop control configuration.
     motorConfigs.Slot0.kP = 0.20; // Units: volts per 1 motor rotation per second of error.
-    motorConfigs.Slot0.kI = 0.5; // Units: volts per 1 motor rotation per second * 1 second of error.
-    motorConfigs.Slot0.kD = 0.02; // Units: volts per 1 motor rotation per second / 1 second of error.
+    motorConfigs.Slot0.kI = 6.0; // Units: volts per 1 motor rotation per second * 1 second of error.
+    motorConfigs.Slot0.kD = 0.012; // Units: volts per 1 motor rotation per second / 1 second of error.
     motorConfigs.Slot0.kV = 0.12; // The amount of voltage required to create 1 motor rotation per second.
     motorConfigs.Slot0.kS = 0.16; // The amount of voltage required to barely overcome static friction.
+
+    motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 5800.0/60.0;
+    motorConfigs.MotionMagic.MotionMagicAcceleration = 2.0*5800.0/60.0;
+    motorConfigs.MotionMagic.MotionMagicJerk = 20.0*5800.0/60.0;
 
     // Current limit configuration. These settings will help protect the motors from drawing too much current and potentially damaging themselves or the electrical system of the robot. 
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
