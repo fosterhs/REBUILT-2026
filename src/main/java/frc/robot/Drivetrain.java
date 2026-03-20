@@ -676,16 +676,4 @@ class Drivetrain {
     }
     return modulePositions;
   }
-
-  public void simulationPeriodic() {
-    // Update gyro (pigeon) simulation via pigeonSim
-    pigeonSim.addYaw(getAngVelMeasured() * Robot.dTime);
-    pigeonSim.setRoll(0);
-    pigeonSim.setPitch(0);
-
-    // Position is updated via the SwerveModule
-    for (int moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {
-      modules[moduleIndex].simulationPeriodic();
-    }
-  }
 }

@@ -6,8 +6,6 @@ import com.ctre.phoenix6.controls.SolidColor;
 import com.ctre.phoenix6.hardware.CANdle;
 import com.ctre.phoenix6.signals.RGBWColor;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
@@ -85,11 +83,6 @@ public class Robot extends TimedRobot {
   private double airTimeApproximation; // An approximation of the time that the fuel will be in the air based on the distance to the target. This is used to calculate how much the robot will need to lead its shots by.
   private double targetX; // The x-position of the point that the robot is aiming at when shooting in meters. This will either be the position of the hub or the position of the passing point, depending on whether the robot is passing or shooting directly at the hub. Includes an offset to lead shots while shooting on the move based on airtime and velocity.
   private double targetY; // The y-position of the point that the robot is aiming at when shooting in meters. This will either be the position of the hub or the position of the passing point, depending on whether the robot is passing or shooting directly at the hub. Includes an offset to lead shots while shooting on the move based on airtime and velocity.
-  
-  // Sim Variables
-  public static final double dTime = 0.020;  // units: seconds
-  private final double startingXPosSim = 3.725;  // m
-  private final double startingYPosSim = 0.900;  // m
 
   public void robotInit() { 
     // Configures the auto chooser on the dashboard.
@@ -160,7 +153,8 @@ public class Robot extends TimedRobot {
 
       case auto3:
         // AutoInit 3 code goes here.
-        swerve.pushCalibration(true, 180.0); // Updates the robot's position on the field.
+        swerve.pushCalibration(true, -90.0); // Updates the robot's position on the field.
+        swerve.resetDriveController(calcShootingHeading());
         swerve.resetPathController(4); 
       break;
 
@@ -175,23 +169,6 @@ public class Robot extends TimedRobot {
         swerve.pushCalibration(true, 90.0); // Updates the robot's position on the field.
         swerve.resetPathController(4); 
       break;
-    }
-
-    if (Robot.isSimulation()) {
-      // Ensure the initial position matches the start of the path
-      switch (autoSelected) {
-        case auto1:
-          swerve.initPathPose(0);
-        break;
-        case auto2:
-          swerve.initPathPose(3);
-        break;
-        case auto3:
-          swerve.initPathPose(6);
-        break;
-        default:
-          swerve.initPathPose(0);
-      }
     }
   }
 
@@ -327,8 +304,8 @@ public class Robot extends TimedRobot {
             } else {
               indexer.stop();
             }
-          break;
-        }
+          break; 
+        } 
       break;
 
       case auto2:
@@ -408,7 +385,7 @@ public class Robot extends TimedRobot {
         switch (autoStage) {
           case 1:
             // Auto 3, Stage 1 code goes here.
-            swerve.driveTo(2.8, 5.0, calcShootingHeading()); // Brings the robot to a shooting position.
+            swerve.driveTo(2.0, 4.7, calcShootingHeading()); // Brings the robot to a shooting position.
             shooter.spinUp(); // Turns the shooter on.
             indexer.spoolUp();
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
@@ -421,36 +398,38 @@ public class Robot extends TimedRobot {
 
           case 2:
             // Auto 3, Stage 2 code goes here.
-            swerve.driveTo(2.8, 5.0, calcShootingHeading()); // Brings the robot to a shooting position.
+            swerve.driveTo(2.0, 4.7, calcShootingHeading()); // Brings the robot to a shooting position.
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
-            if (shootingTimer.get() > 4.0) {
+            if (shootingTimer.get() > 3.0) {
               shooter.spinDown(); // Turns the shooter off.
               shooter.lowerHood(); // Lowers the hood of the shooter.
               indexer.spoolDown();
               indexer.stop(); // Turns the indexer off.
-              swerve.resetDriveController(0.0);
+              swerve.resetDriveController(-90.0);
               autoStage = 3; // Advances to the next stage once the robot has finished shooting.
             }
           break;
 
           case 3:
             // Auto 3, Stage 3 code goes here.
-            swerve.driveTo(0.525, 5.1, 0.0); // Brings the robot to the depot.
+            swerve.driveTo(1.195, 6.000, -90.0); // Brings the robot to the depot.
+
             if (swerve.getXPos() < 1.8) {
-              intake.leftIntake(); // When the X position is less than 1.8, the left intake will deploy.
+              intake.rightIntake(); // When the X position is less than 1.8, the right intake will deploy.
             }
+
             if (swerve.atDriveGoal()) {
-              swerve.resetDriveController(0.0);
+              swerve.resetDriveController(-90.0);
               autoStage = 4; // Advances to the next stage once the robot has gotten to the neutral zone.
             }
           break;
 
           case 4:
             // Auto 3, Stage 4 code goes here.
-            swerve.aimDrive(0.0, 2.0, 0.0); // Moves the robot in the depot, collecting fuel.
-            if (swerve.getYPos() >= 6.0) {
+            swerve.aimDrive(-1.25, 0.0, -90.0); // Moves the robot in the depot, collecting fuel.
+            if (swerve.getXPos() <= 0.65) {
               intake.stow(); // Stows the intake.
-              swerve.resetDriveController(calcShootingHeading());
+              swerve.resetDriveController(-90.0);
               shooter.spinUp(); // Turns the shooter on.
               indexer.spoolUp();
               autoStage = 5; // Advances to the next stage once the robot has finished intaking.
@@ -459,9 +438,11 @@ public class Robot extends TimedRobot {
 
           case 5:
             // Auto 3, Stage 6 code goes here.
-            swerve.aimDrive(0.0, 0.0, calcShootingHeading()); // Rotates the robot to a rotation where it'll have the least misses.
+            swerve.driveTo(2.0, 4.7, calcShootingHeading()); // Brings the robot to a shooting position.
+            shooter.spinUp(); // Turns the shooter on.
+            indexer.spoolUp();
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
-            if (isReadyToShoot) {
+            if (isReadyToShoot && swerve.atDriveGoal()) {
               indexer.start(); // Turns on the indexer.
             }
           break;
@@ -771,15 +752,6 @@ public class Robot extends TimedRobot {
     swerve.addCalibrationEstimate(swerve.getPriorityLimelightIndex(), true); 
   }
 
-  public void simulationPeriodic() {
-    // Runs at 50 Hz, make sure to call all of the subsystem simulationPeriodic methods
-    swerve.simulationPeriodic();
-    //climber.simulationPeriodic();
-    indexer.simulationPeriodic();
-    intake.simulationPeriodic();
-    shooter.simulationPeriodic();
-  }
-
   // This method calculates the amount of time the fuel will be in the air based on the distance to the hub and the velocity of the robot. It uses an iterative approach to account for the fact that the aim point changes based on the velocity of the robot and the air time, which changes the distance to the hub, which changes the air time, which changes the aim point, etc. After 10 iterations, the change in air time should be negligible.
   private double[] scoringAirTimeCalibrationDistances = {2.0, 3.0, 4.0, 5.0, 6.0}; // Represents the distance to the hub in meters for each air time calibration value.
   private double[] scoringAirTimeCalibrationValues = {1.1, 1.22, 1.26, 1.46, 1.66}; // Represents the amount of time the fuel will be in the air in seconds for each distance to the hub in the airTimeCalibrationDistances array. The values in this array should correspond to the distances in the airTimeCalibrationDistances array (i.e. the first value in this array is the air time for the first distance in the airTimeCalibrationDistances array, etc.). These values are used to calculate the aim point of the robot based on its velocity and distance to the hub.
@@ -906,20 +878,10 @@ public class Robot extends TimedRobot {
   // Publishes information to the dashboard.
   private void updateDash() {
     SmartDashboard.putBoolean("Boost Mode", boostMode);
-    if (Robot.isSimulation()) {
-      SmartDashboard.putNumber("sim/Auto Stage", autoStage);
-      SmartDashboard.putBoolean("sim/At Drive Goal", swerve.atDriveGoal());
-      SmartDashboard.putBoolean("sim/Shooter Ready", shooter.isReady());
-
-    }
   }
 
   // Helps prevent loop overruns on startup by running every user created command in every class before the match starts. Not sure why this helps, but it does.
   private void runAll() { 
-    if (Robot.isSimulation()) {
-      // Set the robot's initial pose at the beginning of the sim
-      swerve.setPoseSim(new Pose2d(startingXPosSim, startingYPosSim, Rotation2d.fromDegrees(0.0)));
-    }
 
     swerve.resetDriveController(0.0);
     swerve.xLock();
@@ -1002,7 +964,7 @@ public class Robot extends TimedRobot {
     indexer.spoolUp();
     indexer.spoolDown();
     indexer.setIndexSpeeds(12.0);
-    System.out.println("indexer getMode: " + indexer.getMode().toString());
+    System.out.println("indexer getMode: " + indexer.getMode().toString()); 
     indexer.updateDash();
 
     intake.init();
