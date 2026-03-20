@@ -154,6 +154,7 @@ public class Robot extends TimedRobot {
       case auto3:
         // AutoInit 3 code goes here.
         swerve.pushCalibration(true, -90.0); // Updates the robot's position on the field.
+        updateTrajectory();
         swerve.resetDriveController(calcShootingHeading());
       break;
 
