@@ -38,7 +38,7 @@ import frc.robot.LimelightHelpers.PoseEstimate;
 class Drivetrain {
   public static final double maxAcc = 0.8*9.80665; // The maximum acceleration of the robot, typically limited by the coefficient of friction between the swerve wheels and the field.
   public static final double wheelbaseX = (24.0-2*2.625)*0.0254; // The length of the robot from front to back in units of meters. Measured from the centers of each swerve wheel.
-  public static final double wheelbaseY = (31.0-2*2.625)*0.0254; // The length of the robot from left to right in units of meters. Measured from the centers of each swerve wheel.
+  public static final double wheelbaseY = (24.0-2*2.625)*0.0254; // The length of the robot from left to right in units of meters. Measured from the centers of each swerve wheel.
   public static final double wheelbaseR = Math.sqrt(Math.pow(wheelbaseX/2.0, 2) + Math.pow(wheelbaseY/2.0, 2)); // The "radius" of the robot from robot center to the center of the swerve wheel in units of meters.
   public static final double fieldWidth = 8.0137; // The X width of the field in meters. Used to translate between Blue and Red coordinate systems.
   public static final double fieldLength = 651.22*0.0254; // The Y length of the field in meters.
@@ -59,17 +59,17 @@ class Drivetrain {
   private static final SwerveDriveKinematics kinematics = new SwerveDriveKinematics(frontLeftModulePos, frontRightModulePos, backRightModulePos, backLeftModulePos);
 
   // Initializes each swerve module.
-  private final SwerveModule frontLeftModule = new SwerveModule(3, 4, 25, false, -0.431641, "canivore"); 
-  private final SwerveModule frontRightModule = new SwerveModule(1, 2, 24, true, 0.064453 , "canivore");
-  private final SwerveModule backRightModule = new SwerveModule(5, 6, 27, true, -0.326172, "canivore");
-  private final SwerveModule backLeftModule = new SwerveModule(7, 8, 26, false, -0.163574, "canivore");
+  private final SwerveModule frontLeftModule = new SwerveModule(1, 2, 1, false, 0.30541, "canivore"); 
+  private final SwerveModule frontRightModule = new SwerveModule(3, 4, 2, true, 0.296142 , "canivore");
+  private final SwerveModule backRightModule = new SwerveModule(5, 6, 3, true, 0.480712, "canivore");
+  private final SwerveModule backLeftModule = new SwerveModule(7, 8, 4, false, -0.362304, "canivore");
   private final SwerveModule[] modules = {frontLeftModule, frontRightModule, backRightModule, backLeftModule};
   private SwerveModuleState[] demandedModuleStates = kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(0.0, 0.0, 0.0, new Rotation2d()));
   private SwerveModulePosition[] modulePositions = new SwerveModulePosition[4];
 
   // Gyro Variables
   private final CANBus canivore = new CANBus("canivore"); // Refers to the CAN bus associated with the CANivore.
-  private final Pigeon2 pigeon = new Pigeon2(21, canivore); // Pigeon 2.0 CAN Gyroscope
+  private final Pigeon2 pigeon = new Pigeon2(0, canivore); // Pigeon 2.0 CAN Gyroscope
   private final StatusSignal<Angle> pigeonYaw; // Stores the yaw angle measured by the pigeon. 
   private final StatusSignal<Angle> pigeonPitch; // Stores the pitch angle measured by the pigeon.
   private final StatusSignal<Angle> pigeonRoll; // Stores the roll angle measured by the pigeon.
