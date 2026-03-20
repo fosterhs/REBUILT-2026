@@ -113,6 +113,7 @@ public class Robot extends TimedRobot {
     //pass auto 5-6
     swerve.loadPath("pass auto- first half", 0.0, 0.0, 0.0, 90.0);
     swerve.loadPath("pass auto - second half", 0.0, 0.0, 0.0, 0.0);
+    swerve.loadPath("pass auto- third half.path",0.0, 0.0, 0.0, 0.0);
     runAll(); // Helps prevent loop overruns on startup by running every command before the match starts.
     SignalLogger.enableAutoLogging(false);
     SignalLogger.stop();
@@ -638,6 +639,49 @@ public class Robot extends TimedRobot {
           break;
 
           case 8:
+            swerve.driveTo(3.5, 0.75, calcShootingHeading()); 
+            shooter.setHoodPosition(calcHoodPosition()); 
+            if (shootingTimer.get() > 4.0) {
+              shooter.spinDown(); 
+              indexer.spoolDown();
+              shooter.lowerHood(); 
+              indexer.stop(); 
+              autoStage = 9;
+            }
+          break;
+
+          case 9: 
+            swerve.driveTo(2.898, 0.555, 90); 
+            if (swerve.atDriveGoal()){
+              swerve.resetPathController(7);
+              autoStage = 10;
+            }
+          break;
+
+          case 10:
+          swerve.followPath(7);
+          if(swerve.getYPos()>1.5 && swerve.getXPos()>7.5){
+            intake.rightIntake();
+          }
+          else {
+            intake.home();
+            swerve.resetDriveController(calcShootingHeading());
+            autoStage = 11;
+          }
+          case 11:
+            swerve.driveTo(3.5, 0.75, calcShootingHeading());
+            shooter.spinUp(); 
+            indexer.spoolUp();
+            shooter.setHoodPosition(calcHoodPosition()); 
+            if (isReadyToShoot) {
+              swerve.resetDriveController(calcShootingHeading());
+              shootingTimer.restart(); 
+              indexer.start(); 
+              autoStage = 11; 
+            }
+          break;
+
+          case 12:
             swerve.driveTo(3.5, 0.75, calcShootingHeading()); 
             shooter.setHoodPosition(calcHoodPosition()); 
             if (shootingTimer.get() > 4.0) {
