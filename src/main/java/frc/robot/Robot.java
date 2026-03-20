@@ -632,7 +632,7 @@ public class Robot extends TimedRobot {
     if (driver.getRawButtonPressed(2)) boostMode = true; // A button sets boost mode. (100% speed up from default of 60%).
     if (driver.getRawButtonPressed(3)) boostMode = false; // B Button sets default mode (60% of full speed).
     if (isShooting || isPreparingToShoot) {
-      speedScaleFactor = 0.4; // If the robot is shooting, the speed scale factor is set to 0.4 to allow for more precise movements while shooting.
+      speedScaleFactor = 0.2; // If the robot is shooting, the speed scale factor is set to 0.4 to allow for more precise movements while shooting.
     } else {
       speedScaleFactor = boostMode ? 1.0 : 0.6; // If boost mode is enabled, the speed scale factor is 1.0, otherwise it's 0.6.
     }
