@@ -604,7 +604,7 @@ public class Robot extends TimedRobot {
                   shooter.spinDown();
                   indexer.spoolDown(); 
                   shooter.lowerHood();
-                  intake.leftIntake();
+                  intake.rightIntake();
               swerve.resetPathController(6);
                   autoStage = 5;
                 }
