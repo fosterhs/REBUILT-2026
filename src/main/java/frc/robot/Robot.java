@@ -605,18 +605,13 @@ public class Robot extends TimedRobot {
                   indexer.spoolDown(); 
                   shooter.lowerHood();
                   intake.leftIntake();
+              swerve.resetPathController(6);
                   autoStage = 5;
                 }
               }
           break;
+
           case 5:
-            swerve.driveTo(7.524, 3.410, 180);
-            if (swerve.atDriveGoal()){
-              swerve.resetPathController(6);
-              autoStage = 6;
-            }
-          break;
-          case 6:
               swerve.followPath(6);
               if(swerve.getYPos() <0.8){
                 intake.stow();
@@ -624,12 +619,12 @@ public class Robot extends TimedRobot {
                   intake.home();
                   if(swerve.getXPos()< 3.0){
                    swerve.resetDriveController(calcShootingHeading());
-                    autoStage =7 ;
+                    autoStage =6 ;
                   }
                 }
               }
           break;
-          case 7:
+          case 6:
             swerve.driveTo(3.5, 0.75, calcShootingHeading());
             shooter.spinUp(); 
             indexer.spoolUp();
@@ -638,11 +633,11 @@ public class Robot extends TimedRobot {
               swerve.resetDriveController(calcShootingHeading());
               shootingTimer.restart(); 
               indexer.start(); 
-              autoStage = 8; 
+              autoStage = 7; 
             }
           break;
 
-          case 8:
+          case 7:
             swerve.driveTo(3.5, 0.75, calcShootingHeading()); 
             shooter.setHoodPosition(calcHoodPosition()); 
             if (shootingTimer.get() > 4.0) {
@@ -650,18 +645,11 @@ public class Robot extends TimedRobot {
               indexer.spoolDown();
               shooter.lowerHood(); 
               indexer.stop(); 
-              autoStage = 9;
-            }
-          break;
-          case 9: 
-            swerve.driveTo(2.898, 0.555, 90); 
-            if (swerve.atDriveGoal()){
               swerve.resetPathController(7);
-              autoStage = 10;
+              autoStage = 8;
             }
           break;
-
-          case 10:
+          case 8:
           swerve.followPath(7);
           if(swerve.getYPos()>1.5 && swerve.getXPos()>7.5){
             intake.rightIntake();
@@ -669,9 +657,9 @@ public class Robot extends TimedRobot {
           else {
             intake.home();
             swerve.resetDriveController(calcShootingHeading());
-            autoStage = 11;
+            autoStage = 9;
           }
-          case 11:
+          case 9:
             swerve.driveTo(3.5, 0.75, calcShootingHeading());
             shooter.spinUp(); 
             indexer.spoolUp();
@@ -680,11 +668,11 @@ public class Robot extends TimedRobot {
               swerve.resetDriveController(calcShootingHeading());
               shootingTimer.restart(); 
               indexer.start(); 
-              autoStage = 12; 
+              autoStage = 10; 
             }
           break;
 
-          case 12:
+          case 10:
             swerve.driveTo(3.5, 0.75, calcShootingHeading()); 
             shooter.setHoodPosition(calcHoodPosition()); 
             if (shootingTimer.get() > 4.0) {
