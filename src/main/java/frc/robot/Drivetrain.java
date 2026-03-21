@@ -685,6 +685,12 @@ class Drivetrain {
     pigeonSim.setRoll(0);
     pigeonSim.setPitch(0);
 
+    // TODO: all robot relative
+    // [] Forward-Right drift when going JUST forward
+    // [] Backward-Left drift when going JUST backward
+    // [] Backward-Right drift when going JUST right
+    // [] Forward-Left drift when going JUST left
+
     // Position is updated via the SwerveModule
     for (int moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {
       modules[moduleIndex].simulationPeriodic();
