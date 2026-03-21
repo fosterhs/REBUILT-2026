@@ -46,7 +46,7 @@ class SwerveModule {
   public final TalonFXSimState turnMotorSim;
   private double driveMotorSimVel;
   private double turnMotorSimAngle;
-  private final double simulationDriveFactor = 1;
+  private final double simulationDriveFactor = 3;
   private int driveDirectionSim;  // -1 for inverted, 1 for not inverted
 
   // Constructor for the SwerveModule class. Initializes the CANcoder, drive motor, and turn motor with the given IDs and configurations. Also sets up the status signals for the drive motor and wheel encoder, and optimizes bus utilization for the motors and encoder. The wheelEncoderZero parameter is used to set the zero position of the wheel encoder, which corresponds to the angle at which the swerve wheel is facing straight forward.
@@ -128,7 +128,7 @@ class SwerveModule {
 
   public void simulationPeriodic() {
     // Update each of the swerve modules
-    turnMotorSim.addRotorPosition(turnMotorSimAngle * Robot.dTime);
+    turnMotorSim.addRotorPosition(turnMotor.getRotorVelocity(true).getValueAsDouble() * Robot.dTime);
     driveMotorSim.addRotorPosition(driveMotorSimVel * Robot.dTime * driveDirectionSim);
 
     wheelEncoderSim.addPosition(wheelEncoderVelocity.getValueAsDouble() * Robot.dTime);

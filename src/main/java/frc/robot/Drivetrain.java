@@ -1,6 +1,9 @@
 package frc.robot;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusSignal;
@@ -30,7 +33,6 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.simulation.DifferentialDrivetrainSim;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.LimelightHelpers.PoseEstimate;
@@ -129,20 +131,6 @@ class Drivetrain {
 
   // Simulation
   private final Field2d robotField = new Field2d();
-  DifferentialDrivetrainSim driveSim = new DifferentialDrivetrainSim(
-      DCMotor.getNEO(2),        // 2 NEO motors on each side of the drivetrain.
-      5.357,                       // 7.29:1 gearing reduction.
-      6.498,               // MOI of 7.5 kg m^2 (from CAD model).
-      40.834,                        // The mass of the robot is 60 kg.
-      Units.inchesToMeters(0.051),     // The robot uses 3" radius wheels.
-      0.7112,            // The track width is 0.7112 meters.
-      // The standard deviations for measurement noise:
-      // x and y:          0.001 m
-      // heading:          0.001 rad
-      // l and r velocity: 0.1   m/s
-      // l and r position: 0.005 m
-      VecBuilder.fill(0.001, 0.001, 0.001, 0.1, 0.1, 0.005, 0.005)
-  );
 
   // Constructor for the drivetrain. Initializes the gyro, resets the PID controllers, and sets up the dashboard.
   public Drivetrain() {
@@ -166,6 +154,7 @@ class Drivetrain {
     anglePathController.setIntegratorRange(-maxAngVel*0.6, maxAngVel*0.6);
 
     if (Robot.isSimulation()) {
+      robotField.getObject("targetPath").setPose(0,0,new Rotation2d());
       robotField.setRobotPose(0, 0, new Rotation2d(Math.toRadians(90)));
     }
 
@@ -275,6 +264,10 @@ class Drivetrain {
     atDriveGoal = Math.abs(getFusedAng() - targetAngle) < angTol 
       && Math.sqrt(Math.pow(targetY - getYPos(), 2) + Math.pow(targetX - getXPos(), 2)) < posTol;
 
+    if (Robot.isSimulation()) {
+      robotField.getObject("targetPath").setPose(targetX, targetY, new Rotation2d(Math.toRadians(targetAngle)));
+    }
+
     drive(xDriveController.calculate(getXPos(), targetX), 
       yDriveController.calculate(getYPos(), targetY), 
       angleDriveController.calculate(getAngleDistance(getFusedAng(), targetAngle)*Math.PI/180.0, 0.0));
@@ -320,6 +313,11 @@ class Drivetrain {
         SmartDashboard.putNumber("sim/debug/pathXPos", pathXPos);
         SmartDashboard.putNumber("sim/debug/pathYPos", pathYPos);
         SmartDashboard.putNumber("sim/debug/pathAngPos", pathAngPos);
+        
+        // List<Pose2d> trajectoryPoses = paths.get(pathIndex).getStates().stream().map(state -> state.pose).collect(Collectors.toList());
+        // robotField.getObject("targetPath").setPoses(trajectoryPoses);
+
+        robotField.getObject("targetPath").setPose(currGoal.pose);
       }
 
       drive(currGoal.fieldSpeeds.vxMetersPerSecond + xPathController.calculate(getXPos(), pathXPos), 
@@ -495,6 +493,7 @@ class Drivetrain {
 
   public void initPathPose(int pathIndex) {
     // Used in simulation to overwrite the starting location of the robot based on the path provided
+    System.out.println(paths.size());
     setPoseSim(paths.get(pathIndex).sample(0).pose);
   }
 
@@ -682,7 +681,7 @@ class Drivetrain {
 
   public void simulationPeriodic() {
     // Update gyro (pigeon) simulation via pigeonSim
-    pigeonSim.addYaw(getAngVelMeasured() * Robot.dTime);
+    pigeonSim.addYaw(angVelDemanded * Robot.dTime);
     pigeonSim.setRoll(0);
     pigeonSim.setPitch(0);
 
