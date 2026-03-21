@@ -654,11 +654,13 @@ public class Robot extends TimedRobot {
           if(swerve.getYPos()>1.5 && swerve.getXPos()>7.5){
             intake.rightIntake();
           }
+          break;
           else {
             intake.home();
             swerve.resetDriveController(calcShootingHeading());
             autoStage = 9;
           }
+          break;
           case 9:
             swerve.driveTo(3.5, 0.75, calcShootingHeading());
             shooter.spinUp(); 
