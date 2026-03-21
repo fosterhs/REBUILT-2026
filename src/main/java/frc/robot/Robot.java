@@ -113,6 +113,7 @@ public class Robot extends TimedRobot {
     //pass auto 5-6
     swerve.loadPath("pass auto- first half", 0.0, 0.0, 0.0, 90.0);
     swerve.loadPath("pass auto - second half", 0.0, 0.0, 0.0, 0.0);
+    swerve.loadPath("pass auto- third half.path",0,0,0.0 , 0.0 );
     runAll(); // Helps prevent loop overruns on startup by running every command before the match starts.
     SignalLogger.enableAutoLogging(false);
     SignalLogger.stop();
@@ -575,6 +576,8 @@ public class Robot extends TimedRobot {
           break;
 
           case 2:
+            shooter.spinUp(); 
+            indexer.spoolUp();
             swerve.driveTo(3.5, 0.75, calcShootingHeading()); 
             shooter.setHoodPosition(calcHoodPosition()); 
             if (shootingTimer.get() > 2.0) {
@@ -584,6 +587,8 @@ public class Robot extends TimedRobot {
           break;
 
           case 3:
+            shooter.spinUp(); 
+            indexer.spoolUp();
             swerve.driveTo(3.519, 0.716,0.0);
             if (swerve.atDriveGoal()){
               swerve.resetPathController(5); 
