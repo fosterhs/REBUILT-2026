@@ -613,16 +613,11 @@ public class Robot extends TimedRobot {
 
           case 5:
               swerve.followPath(6);
-              if(swerve.getYPos() <0.8){
-                intake.stow();
-                if(swerve.getXPos()<5.8){
-                  intake.home();
-                  if(swerve.getXPos()< 3.0){
-                   swerve.resetDriveController(calcShootingHeading());
-                    autoStage =6 ;
-                  }
+              if(swerve.getYPos() <5.8){
+                intake.home();
+                swerve.resetDriveController(calcShootingHeading());
+                  autoStage =6 ;
                 }
-              }
           break;
           case 6:
             swerve.driveTo(3.5, 0.75, calcShootingHeading());
