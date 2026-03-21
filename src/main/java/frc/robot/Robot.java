@@ -255,7 +255,7 @@ public class Robot extends TimedRobot {
             if (swerve.getXPos() > 6.0) {
               intake.rightIntake(); // When the X position is greater than 6, the right intake will deploy.
             }
-            if (swerve.getYPos() < 3.4) {
+            if (swerve.getYPos() > 3.4) {
               intake.stow(); // Stows the intake.
               swerve.resetPathController(1);
               shooter.spinUp();
@@ -305,7 +305,7 @@ public class Robot extends TimedRobot {
               indexer.stop();
               shooter.lowerHood(); // Lowers the hood of the shooter.
             }
-            if (swerve.getYPos() < 3.4) {
+            if (swerve.getYPos() > 3.4) {
               indexer.stop();
               shooter.lowerHood(); // Lowers the hood of the shooter.
               intake.stow();
@@ -318,7 +318,7 @@ public class Robot extends TimedRobot {
             // Auto 1, Stage 8 code goes here.
             swerve.followPath(3); // Brings the robot back to a shooting position from the neutral zone.
             intake.leftIntake();
-            if (swerve.getYPos() < 1.0) {
+            if (swerve.getYPos() > 1.0) {
               intake.stow();
             }
             if (swerve.getXPos() < 3.75) {
