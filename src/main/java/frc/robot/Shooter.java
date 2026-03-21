@@ -152,7 +152,7 @@ public class Shooter {
 
   // Returns true or false based on whether the shooter motors are near the desired shooting RPM.
   public boolean flywheelIsAtSpeed() {
-    return Math.abs(shootingRPM - getRightFlywheelMotorRPM()) < rpmTol && Math.abs(shootingRPM - getLeftFlywheelMotorRPM()) < rpmTol;
+    return Math.abs(shootingRPM - Math.abs(getRightFlywheelMotorRPM())) < rpmTol && Math.abs(shootingRPM - Math.abs(getLeftFlywheelMotorRPM())) < rpmTol;
   }
 
   // Returns the left shooter motor velocity in RPM (Rotations Per Minute)
