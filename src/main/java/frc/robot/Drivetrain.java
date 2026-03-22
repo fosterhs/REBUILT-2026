@@ -331,26 +331,6 @@ class Drivetrain {
       pathAngPos = currGoal.pose.getRotation().getDegrees();
       atDriveGoal = atPathEndpoint(pathIndex);
 
-      if (Robot.isSimulation()) {
-        // publish the desired pose to compare against
-        SmartDashboard.putNumber("sim/debug/pathXPos", pathXPos);
-        SmartDashboard.putNumber("sim/debug/pathYPos", pathYPos);
-        SmartDashboard.putNumber("sim/debug/pathAngPos", pathAngPos);
-        
-        // List<Pose2d> trajectoryPoses = paths.get(pathIndex).getStates().stream().map(state -> state.pose).collect(Collectors.toList());
-        // robotField.getObject("targetPath").setPoses(trajectoryPoses);
-
-        robotField.getObject("targetPath").setPose(currGoal.pose);
-
-        Pose2d curPose = odometry.getEstimatedPosition();
-        curPose = curPose.rotateAround(curPose.getTranslation(), new Rotation2d(0));
-
-        // Plot (goal - current) to look at controller response
-        SmartDashboard.putNumber("sim/debug/deltaX", pathXPos - curPose.getX());
-        SmartDashboard.putNumber("sim/debug/deltaY", pathYPos - curPose.getY());
-
-      }
-
       drive(currGoal.fieldSpeeds.vxMetersPerSecond + xPathController.calculate(getXPos(), pathXPos), 
         currGoal.fieldSpeeds.vyMetersPerSecond + yPathController.calculate(getYPos(), pathYPos),
         currGoal.fieldSpeeds.omegaRadiansPerSecond + anglePathController.calculate(getAngleDistance(getFusedAng(), pathAngPos)*Math.PI/180.0, 0.0));
@@ -687,6 +667,23 @@ class Drivetrain {
       Pose2d curPose = odometry.getEstimatedPosition();
       curPose = curPose.rotateAround(curPose.getTranslation(), new Rotation2d(0));
       robotField.setRobotPose(curPose);
+
+      // publish the desired pose to compare against
+      SmartDashboard.putNumber("sim/debug/pathXPos", pathXPos);
+      SmartDashboard.putNumber("sim/debug/pathYPos", pathYPos);
+      SmartDashboard.putNumber("sim/debug/pathAngPos", pathAngPos);
+      robotField.getObject("targetPath").setPose(new Pose2d(pathXPos, pathYPos, new Rotation2d(pathAngPos)));
+
+      // Plot (goal - current) to look at controller response
+      SmartDashboard.putNumber("sim/debug/deltaX", pathXPos - curPose.getX());
+      SmartDashboard.putNumber("sim/debug/deltaY", pathYPos - curPose.getY());
+
+      SwerveModulePosition[] modulePositions = getModulePositions();
+      for (int idx = 0; idx < modulePositions.length; idx++) {
+        SmartDashboard.putNumber("sim/module_position_m_"+String.valueOf(idx), modulePositions[idx].distanceMeters);
+        SmartDashboard.putNumber("sim/module_angle_deg_"+String.valueOf(idx), modulePositions[idx].angle.getDegrees());
+      }
+      
     }
   }
 
