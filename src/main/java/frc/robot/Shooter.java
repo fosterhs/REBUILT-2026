@@ -62,7 +62,7 @@ public class Shooter {
     configHoodEncoder(hoodEncoder);
     configShootMotor(shootMotorRight, true);
     configShootMotor(shootMotorLeft, false); 
-    configHoodMotor(hoodMotor, false);
+    configHoodMotor(hoodMotor, hoodEncoder, false);
     shooterVelocityRight = shootMotorRight.getVelocity();
     shooterVelocityLeft = shootMotorLeft.getVelocity();
     hoodPosition = hoodEncoder.getAbsolutePosition();
@@ -198,14 +198,14 @@ public class Shooter {
   }
 
   // Configures the hood encoder with the appropriate settings for our robot. Sets the absolute sensor discontinuity point, magnet offset, and sensor direction based on the physical configuration of the encoder on our robot. These settings are important to ensure that the encoder readings are accurate and consistent with the actual position of the hood.
-  private void configHoodEncoder(CANcoder CANsensor) {
+  private void configHoodEncoder(CANcoder encoder) {
     CANcoderConfiguration sensorConfigs = new CANcoderConfiguration(); // Creates a new configuration object for the CANcoder. This object will hold all the settings that we want to apply to the encoder.
 
     sensorConfigs.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 0.5; // The point at which the sensor's absolute position reading discontinuously jumps from 1.0 back to 0.0. This should be set based on the physical configuration of the encoder on our robot. 
     sensorConfigs.MagnetSensor.MagnetOffset = 0.378662109375; // The offset to apply to the sensor's absolute position reading to align it with the actual position of the hood. This should be set based on the physical configuration of the encoder on our robot.
     sensorConfigs.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive; // The direction that the sensor counts as positive. This should be set based on the physical configuration of the encoder on our robot.
 
-    CANsensor.getConfigurator().apply(sensorConfigs, 0.03); // Applies the configuration to the encoder with a timeout of 0.03 seconds. This will set all the settings that we specified in the sensorConfigs object to the encoder.
+    encoder.getConfigurator().apply(sensorConfigs, 0.03); // Applies the configuration to the encoder with a timeout of 0.03 seconds. This will set all the settings that we specified in the sensorConfigs object to the encoder.
   }
 
   // Configures the shooter motors with the appropriate settings for our robot. Sets the neutral mode to brake, sets the motor direction based on the invert parameter, configures current limits for the motor, and configures the PID values for velocity control. These settings are important to ensure that the shooter motors perform well and are protected from damage.
@@ -236,13 +236,13 @@ public class Shooter {
   }
 
   // Configures the hood motor with the appropriate settings for our robot. Sets the neutral mode to brake, sets the motor direction based on the invert parameter, configures current limits for the motor, and configures the PID values for MotionMagicTorqueFOC closed-loop control. These settings are important to ensure that the hood motor performs well and is protected from damage.
-  private void configHoodMotor(TalonFX motor, boolean invert) {
+  private void configHoodMotor(TalonFX motor, CANcoder encoder, boolean invert) {
     TalonFXConfiguration motorConfigs = new TalonFXConfiguration(); // Creates a new configuration object for the motor. This object will hold all the settings that we want to apply to the motor.
 
     motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake; // Sets the motor to brake mode, which means it will resist being moved when no power is applied. This is important for the hood motor to help it maintain its position when it is not being actively powered.
     motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive; // Sets the motor direction. If invert is true, then positive voltage will make the motor spin clockwise. If false, then positive voltage will make the motor spin counterclockwise. This should be set based on the physical configuration of the motor on our robot to ensure that positive voltage makes the hood move in the correct direction to raise and lower.
 
-    motorConfigs.Feedback.FeedbackRemoteSensorID = hoodEncoder.getDeviceID(); // Sets the ID of the remote sensor that will be used for feedback in closed-loop control. In this case, we are using the hood encoder as the feedback device for the hood motor, so we set this to the device ID of the hood encoder.
+    motorConfigs.Feedback.FeedbackRemoteSensorID = encoder.getDeviceID(); // Sets the ID of the remote sensor that will be used for feedback in closed-loop control. In this case, we are using the hood encoder as the feedback device for the hood motor, so we set this to the device ID of the hood encoder.
     motorConfigs.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder; // Sets the source of the feedback sensor for closed-loop control. Since we are using the hood encoder as the feedback device, we set this to FusedCANcoder, which means that the motor will use both the integrated sensor and the remote CANcoder sensor for feedback.
     motorConfigs.Feedback.RotorToSensorRatio = 211.68; // The ratio of motor rotations to sensor rotations. This should be set based on the gearing between the motor and the hood mechanism.
 

@@ -53,9 +53,9 @@ class SwerveModule {
   public SwerveModule(int turnID, int driveID, int encoderID, boolean invertDrive, double wheelEncoderZero, String canbus) {
     bus = new CANBus(canbus);
     wheelEncoder = new CANcoder(encoderID, bus);
-    configEncoder(wheelEncoder, wheelEncoderZero);
+    configEncoder(wheelEncoder, wheelEncoderZero, false);
     turnMotor = new TalonFX(turnID, bus);
-    configTurnMotor(turnMotor, true);
+    configTurnMotor(turnMotor, wheelEncoder, true);
     driveMotor = new TalonFX(driveID, bus);
     configDriveMotor(driveMotor, invertDrive);
     driveMotor.setPosition(0.0, 0.03);
@@ -158,7 +158,7 @@ class SwerveModule {
   }
 
   // Configures the swerve module's turn motor.
-  private void configTurnMotor(TalonFX motor, boolean invert) {
+  private void configTurnMotor(TalonFX motor, CANcoder encoder, boolean invert) {
     TalonFXConfiguration motorConfigs = new TalonFXConfiguration(); // Creates a new configuration object for the motor. This object will hold all the settings that we want to apply to the motor.
 
     motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake; // Sets the motor to brake mode, which means it will resist being moved when no power is applied.
@@ -172,9 +172,8 @@ class SwerveModule {
     motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 5800.0/(60.0*turnGearRatio); // Units: roations per second.
 
     // CANcoder feedback configurations.
-    motorConfigs.Feedback.FeedbackRemoteSensorID = wheelEncoder.getDeviceID();
+    motorConfigs.Feedback.FeedbackRemoteSensorID = encoder.getDeviceID();
     motorConfigs.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder;
-    motorConfigs.Feedback.SensorToMechanismRatio = 1.0;
     motorConfigs.Feedback.RotorToSensorRatio = turnGearRatio;
     motorConfigs.ClosedLoopGeneral.ContinuousWrap = true;
 
@@ -188,11 +187,11 @@ class SwerveModule {
   }
 
   // Configures the swerve module's wheel encoder.
-  private void configEncoder(CANcoder encoder, double wheelEncoderZero) {
+  private void configEncoder(CANcoder encoder, double wheelEncoderZero, boolean invert) {
     CANcoderConfiguration encoderConfigs = new CANcoderConfiguration(); // Creates a new configuration object for the encoder. This object will hold all the settings that we want to apply to the encoder.
 
     encoderConfigs.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 0.5; // Sets the point at which the absolute position sensor value wraps around from 360 back to 0 degrees. 
-    encoderConfigs.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive; // Sets the direction of the sensor. If CounterClockwise_Positive, then the sensor value will increase as the wheel turns counterclockwise. If Clockwise_Positive, then the sensor value will increase as the wheel turns clockwise.
+    encoderConfigs.MagnetSensor.SensorDirection = invert ? SensorDirectionValue.Clockwise_Positive : SensorDirectionValue.CounterClockwise_Positive; // Sets the direction of the sensor. If CounterClockwise_Positive, then the sensor value will increase as the wheel turns counterclockwise. If Clockwise_Positive, then the sensor value will increase as the wheel turns clockwise.
     encoderConfigs.MagnetSensor.MagnetOffset = wheelEncoderZero; // Sets the zero position of the encoder. This should be set to the angle at which the swerve wheel is facing straight forward. Adjust this value as needed based on your specific robot's swerve module design and how it is mounted on the robot.
 
     encoder.getConfigurator().apply(encoderConfigs, 0.03); // Applies the configuration to the encoder.

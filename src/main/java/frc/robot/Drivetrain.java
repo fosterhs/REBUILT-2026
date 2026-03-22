@@ -36,27 +36,28 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.LimelightHelpers.PoseEstimate;
 
 class Drivetrain {
-  public static final double maxAcc = 0.8*9.80665; // The maximum acceleration of the robot, typically limited by the coefficient of friction between the swerve wheels and the field.
-  public static final double wheelbaseX = (24.0-2*2.625)*0.0254; // The length of the robot from front to back in units of meters. Measured from the centers of each swerve wheel.
-  public static final double wheelbaseY = (31.0-2*2.625)*0.0254; // The length of the robot from left to right in units of meters. Measured from the centers of each swerve wheel.
-  public static final double wheelbaseR = Math.sqrt(Math.pow(wheelbaseX/2.0, 2) + Math.pow(wheelbaseY/2.0, 2)); // The "radius" of the robot from robot center to the center of the swerve wheel in units of meters.
-  public static final double fieldWidth = 8.0137; // The X width of the field in meters. Used to translate between Blue and Red coordinate systems.
-  public static final double fieldLength = 651.22*0.0254; // The Y length of the field in meters.
-  public static final double maxVelTeleop = SwerveModule.maxVel; // User defined maximum speed of the robot. Enforced during teleop. Unit: meters per second Robot maximum is 4 m/s.
-  public static final double maxAngVelTeleop = SwerveModule.maxVel/wheelbaseR; // User defined maximum rotational speed of the robot. Enforced during teleop. Unit: raidans per second Robot maximum is 4pi rad/s.
-  public static final double maxAccTeleop = maxAcc; // User defined maximum acceleration of the robot. Enforced during teleop. Unit: meters per second^2 Robot maximum is 5 m/s2.
-  public static final double maxAngAccTeleop = maxAccTeleop/wheelbaseR; // User defined maximum rotational acceleration of the robot. Enforced during teleop. Unit: raidans per second^2 Robot maximum is 5pi rad/s2.
-  public static final double maxVelAuto = 0.9*SwerveModule.maxVel; // User defined maximum speed of the robot. Enforced during auto. Unit: meters per second
-  public static final double maxAngVelAuto = 0.9*SwerveModule.maxVel/wheelbaseR; // User defined maximum rotational speed of the robot. Enforced during auto. Unit: raidans per second
-  public static final double maxAccAuto = 0.8*maxAcc; // User defined maximum acceleration of the robot. Enforced during auto. Unit: meters per second^2
-  public static final double maxAngAccAuto = 0.8*maxAccAuto/wheelbaseR; // User defined maximum rotational acceleration of the robot. Enforced during auto. Unit: raidans per second^2
+  public final double maxVel = SwerveModule.maxVel; // The maximum velocity of the robot, limited by the speed of the swerve modules at full power.
+  public final double maxAcc = 0.8*9.80665; // The maximum acceleration of the robot, typically limited by the coefficient of friction between the swerve wheels and the field.
+  public final double wheelbaseX = (24.0-2*2.625)*0.0254; // The length of the robot from front to back in units of meters. Measured from the centers of each swerve wheel.
+  public final double wheelbaseY = (31.0-2*2.625)*0.0254; // The length of the robot from left to right in units of meters. Measured from the centers of each swerve wheel.
+  public final double wheelbaseR = Math.sqrt(Math.pow(wheelbaseX/2.0, 2) + Math.pow(wheelbaseY/2.0, 2)); // The "radius" of the robot from robot center to the center of the swerve wheel in units of meters.
+  public final double robotMass = 70.0; // Robot mass in kg with batteries and bumper.
+  public final double robotMOI = 7.0; // Robot moment of inertia in kg*m^ with batteries and bumper.
+  public final double maxAngVel = maxVel/wheelbaseR; // The physics-limited maximum angular velocity of the robot in rad/s.
+  public final double maxAngAcc = maxAcc*robotMass*wheelbaseR/robotMOI; // The physics-limited maximum angular acceleration of the robot in rad/s^2.
+  public final double fieldWidth = 8.0137; // The X width of the field in meters. Used to translate between Blue and Red coordinate systems.
+  public final double fieldLength = 651.22*0.0254; // The Y length of the field in meters.
+  public double maxVelSet = maxVel; // User defined maximum speed of the robot. Enforced during teleop. Unit: meters per second Robot maximum is 4 m/s.
+  public double maxAngVelSet = maxAngVel; // User defined maximum rotational speed of the robot. Enforced during teleop. Unit: raidans per second Robot maximum is 4pi rad/s.
+  public double maxAccSet = maxAcc; // User defined maximum acceleration of the robot. Enforced during teleop. Unit: meters per second^2 Robot maximum is 5 m/s2.
+  public double maxAngAccSet = maxAngAcc; // User defined maximum rotational acceleration of the robot. Enforced during teleop. Unit: raidans per second^2 Robot maximum is 5pi rad/s2.
 
   // Positions of the swerve modules relative to the center of the roboot. +x points towards the robot's front. +y points to the robot's left. Units: meters.
-  private static final Translation2d frontLeftModulePos = new Translation2d(wheelbaseX/2.0, wheelbaseY/2.0);
-  private static final Translation2d frontRightModulePos = new Translation2d(wheelbaseX/2.0, -wheelbaseY/2.0); 
-  private static final Translation2d backRightModulePos = new Translation2d(-wheelbaseX/2.0, -wheelbaseY/2.0);
-  private static final Translation2d backLeftModulePos = new Translation2d(-wheelbaseX/2.0, wheelbaseY/2.0);
-  private static final SwerveDriveKinematics kinematics = new SwerveDriveKinematics(frontLeftModulePos, frontRightModulePos, backRightModulePos, backLeftModulePos);
+  private final Translation2d frontLeftModulePos = new Translation2d(wheelbaseX/2.0, wheelbaseY/2.0);
+  private final Translation2d frontRightModulePos = new Translation2d(wheelbaseX/2.0, -wheelbaseY/2.0); 
+  private final Translation2d backRightModulePos = new Translation2d(-wheelbaseX/2.0, -wheelbaseY/2.0);
+  private final Translation2d backLeftModulePos = new Translation2d(-wheelbaseX/2.0, wheelbaseY/2.0);
+  private final SwerveDriveKinematics kinematics = new SwerveDriveKinematics(frontLeftModulePos, frontRightModulePos, backRightModulePos, backLeftModulePos);
 
   // Initializes each swerve module.
   private final SwerveModule frontLeftModule = new SwerveModule(3, 4, 25, false, -0.431641, "canivore"); 
@@ -93,9 +94,9 @@ class Drivetrain {
   private ArrayList<PathPlannerTrajectory> paths = new ArrayList<PathPlannerTrajectory>(); // Stores the trajectories generated by Path Planner.
   private final SwerveDrivePoseEstimator odometry = new SwerveDrivePoseEstimator(kinematics, new Rotation2d(), getModulePositions(), new Pose2d(), VecBuilder.fill(0.02, 0.02, Units.degreesToRadians(0.2)), VecBuilder.fill(0.5, 0.5, Double.MAX_VALUE)); // Uses the limelight, motor encoders, and gyroscope to track the position of the robot on the field.
   private final Timer pathTimer = new Timer(); // Keeps track of how long the robot has been following a path. Used to sample Path Planner trajectories.
-  private final ProfiledPIDController xDriveController = new ProfiledPIDController(3.0, 0.0, 0.0, new TrapezoidProfile.Constraints(maxVelAuto, maxAccAuto)); // Controls the x-position of the robot in aimDrive() and driveTo().
-  private final ProfiledPIDController yDriveController = new ProfiledPIDController(3.0, 0.0, 0.0, new TrapezoidProfile.Constraints(maxVelAuto, maxAccAuto)); // Controls the y-position of the robot in aimDrive() and driveTo().
-  private final ProfiledPIDController angleDriveController = new ProfiledPIDController(6.0, 0.0, 0.0, new TrapezoidProfile.Constraints(maxAngVelAuto, maxAngAccAuto)); // Controls the angle of the robot in aimDrive() and driveTo(). 
+  private final ProfiledPIDController xDriveController = new ProfiledPIDController(3.0, 0.0, 0.0, new TrapezoidProfile.Constraints(0.9*maxVel, 0.8*maxAcc)); // Controls the x-position of the robot in aimDrive() and driveTo().
+  private final ProfiledPIDController yDriveController = new ProfiledPIDController(3.0, 0.0, 0.0, new TrapezoidProfile.Constraints(0.9*maxVel, 0.8*maxAcc)); // Controls the y-position of the robot in aimDrive() and driveTo().
+  private final ProfiledPIDController angleDriveController = new ProfiledPIDController(6.0, 0.0, 0.0, new TrapezoidProfile.Constraints(0.9*maxAngVel, 0.8*maxAngAcc)); // Controls the angle of the robot in aimDrive() and driveTo(). 
   private final PIDController xPathController = new PIDController(1.5, 0.0, 0.0); // Controls the x-position of the robot in followPath(). 
   private final PIDController yPathController = new PIDController(1.5, 0.0, 0.0); // Controls the y-position of the robot in followPath().
   private final PIDController anglePathController = new PIDController(2.0, 0.0, 0.0); // Controls the angle of the robot in followPath().
@@ -156,12 +157,12 @@ class Drivetrain {
     visionTimer.restart();
     accurateVisionTimer.restart();
     accTimer.restart();
-    xDriveController.setIntegratorRange(-maxVelAuto*0.8, maxVelAuto*0.8);
-    yDriveController.setIntegratorRange(-maxVelAuto*0.8, maxVelAuto*0.8);
-    angleDriveController.setIntegratorRange(-maxAngVelAuto*0.8, maxAngVelAuto*0.8);
-    xPathController.setIntegratorRange(-maxVelAuto*0.8, maxVelAuto*0.8);
-    yPathController.setIntegratorRange(-maxVelAuto*0.8, maxVelAuto*0.8);
-    anglePathController.setIntegratorRange(-maxAngVelAuto*0.8, maxAngVelAuto*0.8);
+    xDriveController.setIntegratorRange(-maxVel*0.6, maxVel*0.6);
+    yDriveController.setIntegratorRange(-maxVel*0.6, maxVel*0.6);
+    angleDriveController.setIntegratorRange(-maxAngVel*0.6, maxAngVel*0.6);
+    xPathController.setIntegratorRange(-maxVel*0.6, maxVel*0.6);
+    yPathController.setIntegratorRange(-maxVel*0.6, maxVel*0.6);
+    anglePathController.setIntegratorRange(-maxAngVel*0.6, maxAngVel*0.6);
 
     if (Robot.isSimulation()) {
       robotField.setRobotPose(0, 0, new Rotation2d(Math.toRadians(90)));
@@ -178,25 +179,25 @@ class Drivetrain {
     lastYVelDemanded = yVelDemanded;
     lastAngVelDemanded = angVelDemanded;
 
-    double accDemanded = Math.sqrt(Math.pow(_xVel - lastXVelDemanded, 2) + Math.pow(_yVel - lastYVelDemanded, 2))/(currTime - lastTime);
-    if (accDemanded > maxAccTeleop) {
-      _xVel = lastXVelDemanded + maxAccTeleop/accDemanded*(_xVel - lastXVelDemanded);
-      _yVel = lastYVelDemanded + maxAccTeleop/accDemanded*(_yVel - lastYVelDemanded);
-    }
     double velDemanded = Math.sqrt(Math.pow(_xVel, 2) + Math.pow(_yVel, 2));
-    if (velDemanded > maxVelTeleop) {
-      _xVel = _xVel/velDemanded*maxVelTeleop;
-      _yVel = _yVel/velDemanded*maxVelTeleop;
+    if (velDemanded > maxVelSet) {
+      _xVel = _xVel/velDemanded*maxVelSet;
+      _yVel = _yVel/velDemanded*maxVelSet;
+    }
+    double accDemanded = Math.sqrt(Math.pow(_xVel - lastXVelDemanded, 2) + Math.pow(_yVel - lastYVelDemanded, 2))/(currTime - lastTime);
+    if (accDemanded > maxAccSet) {
+      _xVel = lastXVelDemanded + maxAccSet/accDemanded*(_xVel - lastXVelDemanded);
+      _yVel = lastYVelDemanded + maxAccSet/accDemanded*(_yVel - lastYVelDemanded);
     }
     if (velDemanded < minVel) {
       _xVel = 0.0;
       _yVel = 0.0;
     }
 
-    if (Math.abs(_angVel-lastAngVelDemanded*Math.PI/180.0) > Math.abs(maxAngAccTeleop*(currTime-lastTime))) {
-      _angVel = _angVel > lastAngVelDemanded*Math.PI/180.0 ? lastAngVelDemanded*Math.PI/180.0 + maxAngAccTeleop*(currTime-lastTime) : lastAngVelDemanded*Math.PI/180.0 - maxAngAccTeleop*(currTime-lastTime);
+    if (Math.abs(_angVel) > maxAngVelSet) _angVel = _angVel > 0.0 ? maxAngVelSet : -maxAngVelSet;
+    if (Math.abs(_angVel-lastAngVelDemanded*Math.PI/180.0) > Math.abs(maxAngAccSet*(currTime-lastTime))) {
+      _angVel = _angVel > lastAngVelDemanded*Math.PI/180.0 ? lastAngVelDemanded*Math.PI/180.0 + maxAngAccSet*(currTime-lastTime) : lastAngVelDemanded*Math.PI/180.0 - maxAngAccSet*(currTime-lastTime);
     }
-    if (Math.abs(_angVel) > maxAngVelTeleop) _angVel = _angVel > 0.0 ? maxAngVelTeleop : -maxAngVelTeleop;
     if (Math.abs(_angVel) < minAngVel) _angVel = 0.0;
 
     xVelDemanded = _xVel;
@@ -206,7 +207,7 @@ class Drivetrain {
     demandedModuleStates = fieldRelative
       ? kinematics.toSwerveModuleStates(ChassisSpeeds.fromFieldRelativeSpeeds(_xVel, _yVel, _angVel, Rotation2d.fromDegrees(getFusedAng())), new Translation2d(centerOfRotationX, centerOfRotationY))
       : kinematics.toSwerveModuleStates(new ChassisSpeeds(_xVel, _yVel, _angVel), new Translation2d(centerOfRotationX, centerOfRotationY));
-    SwerveDriveKinematics.desaturateWheelSpeeds(demandedModuleStates, maxVelTeleop); // Makes sure the calculated velocities are attainable. If they are not, all modules velocities are scaled back.
+    SwerveDriveKinematics.desaturateWheelSpeeds(demandedModuleStates, maxVelSet); // Makes sure the calculated velocities are attainable. If they are not, all modules velocities are scaled back.
     for (int moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {
       modules[moduleIndex].setSMS(demandedModuleStates[moduleIndex]); // Sets the module angles and velocities.
     }
@@ -239,6 +240,24 @@ class Drivetrain {
       demandedModuleStates[moduleIndex].angle = (moduleIndex == 0 || moduleIndex == 2) ? Rotation2d.fromDegrees(45.0) : Rotation2d.fromDegrees(-45.0);
       modules[moduleIndex].setSMS(demandedModuleStates[moduleIndex]);
     }
+  }
+
+  // Sets the maximum velocity and acceleration of the drivetrain in teleop. Takes a fraction from 0 to 1, where 1 represents full velocity and acceleration and 0 represents no motion.
+  public void setLimits(double maxVelFraction, double maxAngVelFraction, double maxAccFraction, double maxAngAccFraction) {
+    // Input Sterilization. Only accepts percents between 0 and 1.
+    if (maxVelFraction < 0.0) maxVelFraction = 0.0;
+    if (maxVelFraction > 1.0) maxVelFraction = 1.0;
+    if (maxAngVelFraction < 0.0) maxAngVelFraction = 0.0;
+    if (maxAngVelFraction > 1.0) maxAngVelFraction = 1.0;
+    if (maxAccFraction < 0.0) maxAccFraction = 0.0;
+    if (maxAccFraction > 1.0) maxAccFraction = 1.0;
+    if (maxAngAccFraction < 0.0) maxAngAccFraction = 0.0;
+    if (maxAngAccFraction > 1.0) maxAngAccFraction = 1.0;
+
+    maxVelSet = maxVel*maxVelFraction; 
+    maxAngVelSet = maxAngVel*maxAngVelFraction; 
+    maxAccSet = maxAcc*maxAccFraction; 
+    maxAngAccSet = maxAngAcc*maxAngAccFraction; 
   }
 
   // Should be called immediately prior to aimDrive() or driveTo(). Resets the PID controllers. Target angle specifies the first angle that will be demanded.
