@@ -113,9 +113,9 @@ public class Robot extends TimedRobot {
     // Auto 4 Path : Troll Auto. 
     swerve.loadPath("Troll Auto", 0.0, 0.0, 0.0, 90.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     // Auto 7 passing
-    swerve.loadPath("pass auto- first half", 0.0, 0.0, 0.0, 90.0);
-    swerve.loadPath("pass auto - second half", 0.0, 0.0, 0.0, 0.0);
-    swerve.loadPath("pass auto- third half.path",0,0,0.0 , 0.0 );
+    swerve.loadPath("pass auto- first half", 0.0, 0.0, 0.0, 90.0);// Loads a Path Planner generated path into the path follower code in the drivetrain.
+    swerve.loadPath("pass auto - second half", 0.0, 0.0, 0.0, 0.0);// Loads a Path Planner generated path into the path follower code in the drivetrain.
+    swerve.loadPath("pass auto- third half.path",0,0,0.0 , 0.0 );// Loads a Path Planner generated path into the path follower code in the drivetrain.
     runAll(); // Helps prevent loop overruns on startup by running every command before the match starts.
     SignalLogger.enableAutoLogging(false);
     SignalLogger.stop();
@@ -197,7 +197,7 @@ public class Robot extends TimedRobot {
       case auto7:
         swerve.pushCalibration(true, 90.0); // Updates the robot's position on the field.
         updateTrajectory();
-        swerve.resetDriveController(calcShotHeading()); 
+        swerve.resetDriveController(calcHubHeading(3.5, 0.79));
       break;
     }
 
