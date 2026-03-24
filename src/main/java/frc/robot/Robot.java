@@ -492,28 +492,28 @@ public class Robot extends TimedRobot {
               shooter.lowerHood(); // Lowers the hood of the shooter.
               indexer.spoolDown();
               indexer.stop(); // Turns the indexer off.
-              swerve.resetDriveController(calcHubHeading(1.195, 6.000));
+              swerve.resetDriveController(-90.0);
               autoStage = 3; // Advances to the next stage once the robot has finished shooting.
             }
           break;
 
           case 3:
             // Auto 3, Stage 3 code goes here.
-            swerve.driveTo(1.195, 6.000, calcHubHeading(1.195, 6.000)); // Brings the robot to the depot.
+            swerve.driveTo(1.195, 6.000, -90.0); // Brings the robot to the depot.
 
             if (swerve.getXPos() < 2.2) {
               intake.rightIntake(); // When the X position is less than 1.8, the right intake will deploy.
             }
 
             if (swerve.atDriveGoal()) {
-              swerve.resetDriveController(calcHubHeading(-1.0, 0.0));
+              swerve.resetDriveController(-90.0);
               autoStage = 4; // Advances to the next stage once the robot has gotten to the neutral zone.
             }
           break;
 
           case 4:
             // Auto 3, Stage 4 code goes here.
-            swerve.aimDrive(-1.0, 0.0, calcHubHeading(-1.0, 0.0)); // Moves the robot in the depot, collecting fuel.
+            swerve.aimDrive(-1.0, 0.0, -90.0); // Moves the robot in the depot, collecting fuel.
             if (swerve.getXPos() <= 0.56) {
               intake.stow(); // Stows the intake.
               swerve.resetDriveController(calcHubHeading(2.0, 4.7));
