@@ -156,6 +156,29 @@ class Drivetrain {
     if (Robot.isSimulation()) {
       robotField.getObject("targetPath").setPose(0,0,new Rotation2d());
       robotField.setRobotPose(0, 0, new Rotation2d(Math.toRadians(90)));
+
+      setPosTol(0);
+      setAngTol(0);
+
+      // Configure the Drive Controllers for Simulation
+      xDriveController.setP(5);
+      xDriveController.setI(0.0);
+      xDriveController.setD(0.0);
+
+      yDriveController.setP(5);
+      yDriveController.setI(0.0);
+      yDriveController.setD(0.0);
+
+      // Configure the Path Controllers for Simulation
+      // DO NOT USE THESE VALUES FOR THE REAL ROBOT, IT WILL FREAK OUT
+      xPathController.setP(12);
+      xPathController.setI(3.5);
+      xPathController.setD(2);
+
+      yPathController.setP(12);
+      yPathController.setI(3.5);
+      yPathController.setD(2);
+      
     }
 
     SmartDashboard.putData("Field", robotField);
@@ -318,6 +341,14 @@ class Drivetrain {
         // robotField.getObject("targetPath").setPoses(trajectoryPoses);
 
         robotField.getObject("targetPath").setPose(currGoal.pose);
+
+        Pose2d curPose = odometry.getEstimatedPosition();
+        curPose = curPose.rotateAround(curPose.getTranslation(), new Rotation2d(0));
+
+        // Plot (goal - current) to look at controller response
+        SmartDashboard.putNumber("sim/debug/deltaX", pathXPos - curPose.getX());
+        SmartDashboard.putNumber("sim/debug/deltaY", pathYPos - curPose.getY());
+
       }
 
       drive(currGoal.fieldSpeeds.vxMetersPerSecond + xPathController.calculate(getXPos(), pathXPos), 
