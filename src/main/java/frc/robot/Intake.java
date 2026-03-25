@@ -24,11 +24,11 @@ public class Intake {
   private final TalonFX rightArmMotor = new TalonFX(16, canivore); // Creates a new TalonFX motor controller for the right intake arm motor. The motor is assigned an ID of 16 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
   private final TalonFX rightRollerMotor = new TalonFX(15, canivore); // Creates a new TalonFXS motor controller for the right intake roller motor. The motor is assigned an ID of 15 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
   private final TalonFX rightCenteringMotor = new TalonFX(20, canivore); // Creates a new TalonFX motor controller for the right intake centering motor. The motor is assigned an ID of 20 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
-  private final CANcoder rightArmEncoder = new CANcoder(40, canivore);
+  private final CANcoder rightArmEncoder = new CANcoder(2, canivore);
   private final TalonFX leftArmMotor = new TalonFX(14, canivore); // Creates a new TalonFX motor controller for the left intake arm motor. The motor is assigned an ID of 14 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
   private final TalonFX leftRollerMotor = new TalonFX(17, canivore); // Creates a new TalonFXS motor controller for the left intake roller motor. The motor is assigned an ID of 17 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
   private final TalonFX leftCenteringMotor = new TalonFX(13, canivore); // Creates a new TalonFX motor controller for the left intake centering motor. The motor is assigned an ID of 13 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
-  private final CANcoder leftArmEncoder = new CANcoder(41, canivore);
+  private final CANcoder leftArmEncoder = new CANcoder(1, canivore);
 
   // Control Requests
   private final MotionMagicTorqueCurrentFOC rightArmPositionRequest = new MotionMagicTorqueCurrentFOC(0.0); // Creates a new MotionMagicTorqueCurrentFOC control request for the right intake arm motor. This will allow us to set a desired position for the motor. 
@@ -43,7 +43,7 @@ public class Intake {
   private final StatusSignal<Angle> rightArmPosition; // Creates a new StatusSignal for the position of the right intake arm motor. This will allow us to read the current position of the motor in units of rotations. The TalonFX's integrated encoder provides position feedback that we can use to determine the angle of the intake arm.
   private final double armPosTol = 0.01; // Tolerance for considering the intake arms to be in position at their desired angles. This is in units of motor rotations, so 0.5 means that if the arm is within 0.5 rotations of the desired position, we will consider it to be in position. Adjust this value as needed based on the performance of your specific robot's intake mechanism and how precise you want the positioning to be.
   private final double armStowPosition = 0.0;  // The position that we want to stow the intake arms at when they are not in use. This is in units of motor rotations, so 0.4 means that the arms will be stowed at a position that is 0.4 rotations away from the zero position. Adjust this value as needed based on the physical configuration of your robot's intake mechanism and how you want it to be positioned when stowed.
-  private final double armIntakePosition = 0.20; // The position that we want to move the intake arms to when we are intaking fuel. This is in units of motor rotations, so 10.5 means that the arms will move to a position that is 10.5 rotations away from the zero position when intaking. Adjust this value as needed based on the physical configuration of your robot's intake mechanism and how you want it to be positioned when intaking.
+  private final double armIntakePosition = 0.45; // The position that we want to move the intake arms to when we are intaking fuel. This is in units of motor rotations, so 10.5 means that the arms will move to a position that is 10.5 rotations away from the zero position when intaking. Adjust this value as needed based on the physical configuration of your robot's intake mechanism and how you want it to be positioned when intaking.
   public enum Mode {LEFT, RIGHT, STOW} // HOME mode runs the homing procedure to find the zero position of the intake arms. LEFT mode moves the left arm to the intake position and the right arm to the stow position. RIGHT mode moves the right arm to the intake position and the left arm to the stow position. STOW mode moves both arms to the stow position.
   private Mode currMode = Mode.STOW; // Initializes the current mode of the intake to HOME. This means that when the robot is first turned on, the intake will be in the process of homing to find the zero position of the arms. After homing is complete, it will switch to STOW mode.
   private double desiredLeftArmPosition = 0.0; // Initializes a variable to keep track of the desired position for the left intake arm. This will be updated based on the current mode of the intake (LEFT, RIGHT, or STOW) to determine where we want the left arm to move to.
@@ -52,8 +52,8 @@ public class Intake {
   private boolean rightArmIsStowed = true; // Initializes a boolean variable to keep track of whether the right intake arm is currently in the stowed position. This will be used to determine whether we should run the intake rollers and centering motors, since we only want to run those when the arm is out of the way and ready to intake fuel.
   private double leftCenteringVoltage = 2.0; // Initializes a variable to keep track of the voltage that we want to run the left intake centering motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the centering motors to position the intake arm.
   private double rightCenteringVoltage = 2.0; // Initializes a variable to keep track of the voltage that we want to run the right intake centering motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the centering motors to position the intake arm.
-  private double leftIntakeRPM = 3500.0;
-  private double rightIntakeRPM = 3500.0;
+  private double leftIntakeRPM = 5800.0;
+  private double rightIntakeRPM = 5800.0;
 
   // Simulation
   private final TalonFXSimState rightArmMotorSim = rightArmMotor.getSimState();
@@ -66,15 +66,15 @@ public class Intake {
   // Constructor for the Intake class. This will be called when we create a new instance of the Intake in our Robot class. In the constructor, we will configure the motors with the appropriate settings for our robot, initialize the status signals for the arm positions and velocities, set the update frequency for those signals, and optimize the CAN bus utilization for all the motors to ensure that we are getting timely updates from all of them without overloading the CAN bus.
   public Intake() {
     configArmMotor(leftArmMotor, leftArmEncoder, true);
-    configArmMotor(rightArmMotor, leftArmEncoder, false);
+    configArmMotor(rightArmMotor, rightArmEncoder, false);
     configRollerMotor(leftRollerMotor, false);
     configRollerMotor(rightRollerMotor, true);
     configCenteringMotor(leftCenteringMotor, true);
     configCenteringMotor(rightCenteringMotor, false);
-    configArmEncoder(leftArmEncoder, 0.0, false);
-    configArmEncoder(rightArmEncoder, 0.0, false);
-    leftArmPosition = leftArmEncoder.getPosition();
-    rightArmPosition = rightArmEncoder.getPosition();
+    configArmEncoder(leftArmEncoder, -0.2893, true);
+    configArmEncoder(rightArmEncoder, 0.0573, true);
+    leftArmPosition = leftArmEncoder.getAbsolutePosition();
+    rightArmPosition = rightArmEncoder.getAbsolutePosition();
     BaseStatusSignal.setUpdateFrequencyForAll(250.0, leftArmPosition, rightArmPosition);
     ParentDevice.optimizeBusUtilizationForAll(rightArmMotor, rightRollerMotor, rightCenteringMotor, rightArmEncoder, leftArmMotor, leftRollerMotor, leftCenteringMotor, leftArmEncoder);
   }
@@ -87,8 +87,8 @@ public class Intake {
   // This method will be called periodically (about every 20 milliseconds) while the robot is on. In this method, we will implement the logic for controlling the intake arms based on the current mode of the intake system. We will also dynamically adjust the voltage for the rollers and centering motors based on the position of the arms to ensure that we are running them at appropriate speeds for intaking fuel without putting too much strain on the motors or causing excessive wear.
   public void periodic() {
     // Dynamically adjust the roller voltage based on the position of the arms. If the arm is close to the stow position (less than 3 rotations away), we can run the rollers at a lower voltage. If the arm is further out (more than 3 rotations away), we can run the rollers at a higher voltage to more aggressively pull in fuel. Adjust these thresholds and voltage values as needed based on your specific robot's intake mechanism and how it performs during testing.
-    leftIntakeRPM = getLeftArmPosition() < 3.0 ? 1500.0 : 3500.0; 
-    rightIntakeRPM = getRightArmPosition() < 3.0 ? 1500.0 : 3500.0;
+    leftIntakeRPM = getLeftArmPosition() < 0.1 ? 1500.0 : 5800.0; 
+    rightIntakeRPM = getRightArmPosition() < 0.1 ? 1500.0 : 5800.0;
 
     switch (currMode) {
       case LEFT: // In LEFT mode, we want to move the left arm to the intake position and the right arm to the stow position. We will check if each arm is currently in position at its desired angle, and update the leftArmIsStowed and rightArmIsStowed variables accordingly. This will allow us to know whether we should run the rollers and centering motors for each arm based on whether they are stowed or not.
@@ -287,20 +287,20 @@ public class Intake {
 
     motorConfigs.Feedback.FeedbackRemoteSensorID = encoder.getDeviceID(); // Sets the ID of the remote sensor that will be used for feedback in closed-loop control. In this case, we are using the hood encoder as the feedback device for the hood motor, so we set this to the device ID of the hood encoder.
     motorConfigs.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder; // Sets the source of the feedback sensor for closed-loop control. Since we are using the hood encoder as the feedback device, we set this to FusedCANcoder, which means that the motor will use both the integrated sensor and the remote CANcoder sensor for feedback.
-    motorConfigs.Feedback.RotorToSensorRatio = 211.68; // The ratio of motor rotations to sensor rotations. This should be set based on the gearing between the motor and the hood mechanism.
+    motorConfigs.Feedback.RotorToSensorRatio = 25.0; // The ratio of motor rotations to sensor rotations. This should be set based on the gearing between the motor and the hood mechanism.
 
     // MotionMagicTorqueFOC closed-loop control configuration.
-    motorConfigs.Slot0.kP = 800.0*211.68/18.75; // Units: amperes per 1 swerve wheel rotation of error.
+    motorConfigs.Slot0.kP = 800.0*25.0/18.75; // Units: amperes per 1 swerve wheel rotation of error.
     motorConfigs.Slot0.kI = 0.0; // Units: amperes per 1 swerve wheel rotation * 1 second of error.
-    motorConfigs.Slot0.kD = 18.0*211.68/18.75; // Units: amperes per 1 swerve wheel rotation / 1 second of error.
-    motorConfigs.MotionMagic.MotionMagicAcceleration = 10.0*5800.0/(60.0*211.68); // Units: rotations per second per second.
-    motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 5800.0/(60.0*211.68); // Units: roations per second.
+    motorConfigs.Slot0.kD = 80.0*25.0/18.75; // Units: amperes per 1 swerve wheel rotation / 1 second of error.
+    motorConfigs.MotionMagic.MotionMagicAcceleration = 5.0*5800.0/(60.0*25.0); // Units: rotations per second per second.
+    motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 5800.0/(60.0*25.0); // Units: roations per second.
 
     // Current limits configuration. These limits can help protect the motors and the mechanical components of the intake from drawing too much current and potentially causing damage. Adjust these values as needed based on the performance of your specific robot's intake mechanism and the capabilities of your motors.
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
-    motorConfigs.CurrentLimits.SupplyCurrentLimit = 20.0;
-    motorConfigs.CurrentLimits.StatorCurrentLimit = 80.0;
+    motorConfigs.CurrentLimits.SupplyCurrentLimit = 10.0;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 40.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03); // Apply the configuration to the motor with a timeout of 0.03 seconds (30 milliseconds). This will send the configuration settings to the motor controller so that it can use them for controlling the motor.
   }
