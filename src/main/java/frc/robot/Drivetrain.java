@@ -161,6 +161,7 @@ class Drivetrain {
       setAngTol(0);
 
       // Configure the Drive Controllers for Simulation
+      // !!! DO NOT USE THESE VALUES FOR THE REAL ROBOT, IT WILL NOT BE GOOD !!!
       xDriveController.setP(5);
       xDriveController.setI(0.0);
       xDriveController.setD(0.0);
@@ -170,14 +171,14 @@ class Drivetrain {
       yDriveController.setD(0.0);
 
       // Configure the Path Controllers for Simulation
-      // DO NOT USE THESE VALUES FOR THE REAL ROBOT, IT WILL FREAK OUT
-      xPathController.setP(12);
+      // !!! DO NOT USE THESE VALUES FOR THE REAL ROBOT, IT WILL NOT BE GOOD !!!
+      xPathController.setP(18);
       xPathController.setI(3.5);
-      xPathController.setD(2);
+      xPathController.setD(3);
 
-      yPathController.setP(12);
-      yPathController.setI(3.5);
-      yPathController.setD(2);
+      yPathController.setP(18);
+      yPathController.setI(4.5);
+      yPathController.setD(3);
       
     }
 
@@ -330,6 +331,12 @@ class Drivetrain {
       pathYPos = currGoal.pose.getY();
       pathAngPos = currGoal.pose.getRotation().getDegrees();
       atDriveGoal = atPathEndpoint(pathIndex);
+
+      if (Robot.isSimulation()) {
+        // Located here because we're not *always* following a path
+        robotField.getObject("targetPath").setPose(new Pose2d(pathXPos, pathYPos, new Rotation2d(Math.toRadians(pathAngPos))));
+      }
+
 
       drive(currGoal.fieldSpeeds.vxMetersPerSecond + xPathController.calculate(getXPos(), pathXPos), 
         currGoal.fieldSpeeds.vyMetersPerSecond + yPathController.calculate(getYPos(), pathYPos),
@@ -672,16 +679,16 @@ class Drivetrain {
       SmartDashboard.putNumber("sim/debug/pathXPos", pathXPos);
       SmartDashboard.putNumber("sim/debug/pathYPos", pathYPos);
       SmartDashboard.putNumber("sim/debug/pathAngPos", pathAngPos);
-      robotField.getObject("targetPath").setPose(new Pose2d(pathXPos, pathYPos, new Rotation2d(pathAngPos)));
 
       // Plot (goal - current) to look at controller response
       SmartDashboard.putNumber("sim/debug/deltaX", pathXPos - curPose.getX());
       SmartDashboard.putNumber("sim/debug/deltaY", pathYPos - curPose.getY());
 
+      // Report Swerve Drive Modules to the smart dash
       SwerveModulePosition[] modulePositions = getModulePositions();
       for (int idx = 0; idx < modulePositions.length; idx++) {
-        SmartDashboard.putNumber("sim/module_position_m_"+String.valueOf(idx), modulePositions[idx].distanceMeters);
-        SmartDashboard.putNumber("sim/module_angle_deg_"+String.valueOf(idx), modulePositions[idx].angle.getDegrees());
+        SmartDashboard.putNumber("sim/debug/module_position_m_"+String.valueOf(idx), modulePositions[idx].distanceMeters);
+        SmartDashboard.putNumber("sim/debug/module_angle_deg_"+String.valueOf(idx), modulePositions[idx].angle.getDegrees());
       }
       
     }
