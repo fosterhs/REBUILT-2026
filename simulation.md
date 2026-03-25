@@ -14,6 +14,7 @@ View this page in GitHub or use VSCode using "ctrl+shift+p" then "Markdown: Open
 5. Adding to the SimGUI
     1. Field visualization: At the top, go to the `NetworkTables > SmartDashboard > Field`
     2. Plots: `Plots > New Plot Window`, then you can drag variables from the NetworkTables window into the plot popup
+    3. Auto Selector: `NetworkTables > SmartDashboard > Autos`
 6. Starting the Sim
     1. The `Robot State` window has the different states you can set the robot to. I usually test in `Autonomous` mode to work with the autos, but `Teleoperated` works too.
     2. For `Teleoperated` to work, a joystick configuration needs to be dragged from the `System Joysticks` into the `Joysticks` window. Think about this as "what's connected to my laptop" versus what is being sent to the simulation.
@@ -29,6 +30,28 @@ View this page in GitHub or use VSCode using "ctrl+shift+p" then "Markdown: Open
 * Shooter, Hood, and Hopper
     * The shooter immediately jumps to the desired RPM
     * The hood immediately jumps to the desired position.
+
+### Key Drivetrain Notes
+
+All of this is in the `Drivetrain.java` file.
+
+First, a second object `targetPath` is visualized. This is updated for the current goal pose of the currently followed path in `followPath()`, or to the pose requested in `driveTo()`. 
+
+* This object may appear the same as the green and red robot. If that occurs, right click the Field window in simGUI and expand the `targetPath` object. I prefer making it fully white and also decreasing some of the line widths.
+* The idea is that the robot should be aligned (for paths), or moving toward (for driveTo), this target pose.
+
+The robot's visualized pose is updated in `updateDash()` from the current `odometry`. Odometry is updated via `simulationPeriodic()` by:
+
+* Commanding the `pigeonSim` yaw to be added by angVelDemanded*dt
+* Calling each swerve module's `simulationPeriodic()` which in turn just adds rotor and encoder position based on the velocities requested by the same controller as the physical robot.
+
+Why does the robot not exactly follow the path? And why doesn't it match exactly what we see in the real world?
+
+* I believe this comes down to only simulating so much. We're not building the universe or even a physics model. We're relying on idealized kinematics to calculate expected positions and velocities. 
+* That means that our P(ID) controller tuned for the real world isn't tuned for the simulated environment.
+* To that end, the PID gains for the x/y Drive/Path controllers have been exposed in the `Drivetrain()` constructor. (The position and angle tolerances have also been reduced to zero since we don't have limelights to correct odometry).
+* The PathControllers have been somewhat tuned to have extremely fast responses, reduced oscillation, and reduced error against the desired target path. We could always tune more but this is a good start.
+* The DriveControllers **have not been tuned** for simulation yet.
 
 ### What is not currently simulated
 
