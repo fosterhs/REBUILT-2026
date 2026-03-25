@@ -48,7 +48,7 @@ public class Robot extends TimedRobot {
   private boolean currRT = false; // Stores whether the robot is preparing to shoot based on driver inputs. This can be used to start spinning up the shooter and calculating the shooting trajectory before the robot is actually ready to shoot to help improve accuracy and reduce the amount of time it takes for the robot to start shooting once the driver wants to shoot.
   private boolean lastRT = false; // Stores the value of prepareToShoot from the previous iteration of the teleop periodic loop to detect when the driver has just started preparing to shoot.
   private boolean RTPressed = false; // Stores whether the right trigger is currently pressed. This is used to control when the robot is preparing to shoot based on driver inputs.
-  private boolean RTReleased = false; 
+  private boolean RTReleased = false;
   private boolean isPreparingToShoot = false;
 
   // LED Variables
@@ -92,9 +92,7 @@ public class Robot extends TimedRobot {
   private double targetY; // The y-position of the point that the robot is aiming at when shooting in meters. This will either be the position of the hub or the position of the passing point, depending on whether the robot is passing or shooting directly at the hub. Includes an offset to lead shots while shooting on the move based on airtime and velocity.
   
   // Sim Variables
-  public static long lastTime = System.currentTimeMillis();
-  public static long currentTime = System.currentTimeMillis();
-  public static double dTime = (double)(currentTime - lastTime) / 1000.0;  // units: seconds
+  public final static double dTime = 0.020; // units: seconds
   private final double startingXPosSim = 3.725;  // m
   private final double startingYPosSim = 0.900;  // m
 
@@ -1076,17 +1074,11 @@ public class Robot extends TimedRobot {
   }
 
   public void simulationPeriodic() {
-    // Update dTime with the actual difference in time since the last cycle
-    currentTime = System.currentTimeMillis();
-    dTime = (double)(currentTime - lastTime) / 1000.0;  // units: seconds
-
     // Runs at 50 Hz, make sure to call all of the subsystem simulationPeriodic methods
     swerve.simulationPeriodic();
     indexer.simulationPeriodic();
     intake.simulationPeriodic();
     shooter.simulationPeriodic();
-
-    lastTime = System.currentTimeMillis();
   }
 
   // This method calculates the amount of time the fuel will be in the air based on the distance to the hub and the velocity of the robot. It uses an iterative approach to account for the fact that the aim point changes based on the velocity of the robot and the air time, which changes the distance to the hub, which changes the air time, which changes the aim point, etc. After 10 iterations, the change in air time should be negligible.
