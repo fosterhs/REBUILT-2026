@@ -1178,8 +1178,6 @@ public class Robot extends TimedRobot {
     swerve.updateOdometry();
     swerve.setPosTol(0.20);
     swerve.setAngTol(5.0);
-    swerve.drive(0.01, 0.0, 0.0, true, 0.0, 0.0);
-    swerve.drive(0.01, 0.0, 0.0, true);
     swerve.drive(0.01, 0.0, 0.0);
     System.out.println("swerve atDriveGoal: " + swerve.atDriveGoal());
     System.out.println("swerve atPathEndpoint: " + swerve.atPathEndpoint(0));

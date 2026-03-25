@@ -221,10 +221,9 @@ public class Shooter {
     motorConfigs.Slot0.kD = 0.012; // Units: volts per 1 motor rotation per second / 1 second of error.
     motorConfigs.Slot0.kV = 0.12; // The amount of voltage required to create 1 motor rotation per second.
     motorConfigs.Slot0.kS = 0.16; // The amount of voltage required to barely overcome static friction.
+    motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 5800.0/60.0; // Units: roations per second.
+    motorConfigs.MotionMagic.MotionMagicAcceleration = 2.0*5800.0/60.0; // Units: rotations per second per second. 
 
-    motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 5800.0/60.0;
-    motorConfigs.MotionMagic.MotionMagicAcceleration = 2.0*5800.0/60.0;
-    motorConfigs.MotionMagic.MotionMagicJerk = 20.0*5800.0/60.0;
 
     // Current limit configuration. These settings will help protect the motors from drawing too much current and potentially damaging themselves or the electrical system of the robot. 
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;

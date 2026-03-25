@@ -3,22 +3,17 @@ package frc.robot;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.configs.TalonFXSConfiguration;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC;
-import com.ctre.phoenix6.controls.VelocityVoltage;
+import com.ctre.phoenix6.controls.MotionMagicVelocityVoltage;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.hardware.TalonFXS;
-import com.ctre.phoenix6.signals.AdvancedHallSupportValue;
 import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
-import com.ctre.phoenix6.signals.MotorArrangementValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
 import com.ctre.phoenix6.sim.TalonFXSimState;
-import com.ctre.phoenix6.sim.TalonFXSSimState;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
 import edu.wpi.first.units.measure.Angle;
@@ -27,19 +22,19 @@ public class Intake {
   // Motors and Sensors
   private final CANBus canivore = new CANBus("canivore"); // Creates a new CAN bus called "canivore". This is the name of the CAN bus that the intake motors are connected to. Make sure to set this correctly based on your robot's wiring.
   private final TalonFX rightArmMotor = new TalonFX(16, canivore); // Creates a new TalonFX motor controller for the right intake arm motor. The motor is assigned an ID of 16 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
-  private final TalonFXS rightRollerMotor = new TalonFXS(15, canivore); // Creates a new TalonFXS motor controller for the right intake roller motor. The motor is assigned an ID of 15 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
+  private final TalonFX rightRollerMotor = new TalonFX(15, canivore); // Creates a new TalonFXS motor controller for the right intake roller motor. The motor is assigned an ID of 15 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
   private final TalonFX rightCenteringMotor = new TalonFX(20, canivore); // Creates a new TalonFX motor controller for the right intake centering motor. The motor is assigned an ID of 20 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
   private final CANcoder rightArmEncoder = new CANcoder(40, canivore);
   private final TalonFX leftArmMotor = new TalonFX(14, canivore); // Creates a new TalonFX motor controller for the left intake arm motor. The motor is assigned an ID of 14 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
-  private final TalonFXS leftRollerMotor = new TalonFXS(17, canivore); // Creates a new TalonFXS motor controller for the left intake roller motor. The motor is assigned an ID of 17 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
+  private final TalonFX leftRollerMotor = new TalonFX(17, canivore); // Creates a new TalonFXS motor controller for the left intake roller motor. The motor is assigned an ID of 17 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
   private final TalonFX leftCenteringMotor = new TalonFX(13, canivore); // Creates a new TalonFX motor controller for the left intake centering motor. The motor is assigned an ID of 13 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
   private final CANcoder leftArmEncoder = new CANcoder(41, canivore);
 
   // Control Requests
   private final MotionMagicTorqueCurrentFOC rightArmPositionRequest = new MotionMagicTorqueCurrentFOC(0.0); // Creates a new MotionMagicTorqueCurrentFOC control request for the right intake arm motor. This will allow us to set a desired position for the motor. 
   private final MotionMagicTorqueCurrentFOC leftArmPositionRequest = new MotionMagicTorqueCurrentFOC(0.0); // Creates a new MotionMagicTorqueCurrentFOC control request for the left intake arm motor. This will allow us to set a desired position for the motor.
-  private final VelocityVoltage rightRollerVelocityRequest = new VelocityVoltage(0.0).withEnableFOC(true);
-  private final VelocityVoltage leftRollerVelocityRequest = new VelocityVoltage(0.0).withEnableFOC(true);
+  private final MotionMagicVelocityVoltage rightRollerVelocityRequest = new MotionMagicVelocityVoltage(0.0).withEnableFOC(true);
+  private final MotionMagicVelocityVoltage leftRollerVelocityRequest = new MotionMagicVelocityVoltage(0.0).withEnableFOC(true);
   private final VoltageOut rightCenteringVoltageRequest = new VoltageOut(0.0).withEnableFOC(true); // Creates a new VoltageOut control mode for the right intake centering motor. This will allow us to set the voltage that we want to apply to the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
   private final VoltageOut leftCenteringVoltageRequest = new VoltageOut(0.0).withEnableFOC(true); // Creates a new VoltageOut control mode for the left intake centering motor. This will allow us to set the voltage that we want to apply to the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
 
@@ -62,10 +57,10 @@ public class Intake {
 
   // Simulation
   private final TalonFXSimState rightArmMotorSim = rightArmMotor.getSimState();
-  private final TalonFXSSimState rightRollerMotorSim = rightRollerMotor.getSimState();
+  private final TalonFXSimState rightRollerMotorSim = rightRollerMotor.getSimState();
   private final TalonFXSimState rightCenteringMotorSim = rightCenteringMotor.getSimState();
   private final TalonFXSimState leftArmMotorSim = leftArmMotor.getSimState();
-  private final TalonFXSSimState leftRollerMotorSim = leftRollerMotor.getSimState();
+  private final TalonFXSimState leftRollerMotorSim = leftRollerMotor.getSimState();
   private final TalonFXSimState leftCenteringMotorSim = leftCenteringMotor.getSimState();
 
   // Constructor for the Intake class. This will be called when we create a new instance of the Intake in our Robot class. In the constructor, we will configure the motors with the appropriate settings for our robot, initialize the status signals for the arm positions and velocities, set the update frequency for those signals, and optimize the CAN bus utilization for all the motors to ensure that we are getting timely updates from all of them without overloading the CAN bus.
@@ -243,21 +238,20 @@ public class Intake {
   }
 
   // This method configures the settings for the roller motors. The configuration includes setting the commutation settings specific to the TalonFXS, setting the neutral mode to brake, configuring the motor direction based on the invert parameter, and configuring current limits to protect the motors and mechanical components of the intake mechanism. Finally, it applies the configuration to the motor controller with a specified timeout.
-  private void configRollerMotor(TalonFXS motor, boolean invert) {
-    TalonFXSConfiguration motorConfigs = new TalonFXSConfiguration(); // Start with a new configuration object for the roller motors. The TalonFXS has some different configuration options compared to the TalonFX, so we use a different configuration class.
-
-    motorConfigs.Commutation.MotorArrangement = MotorArrangementValue.Minion_JST; // Set the motor arrangement to Minion_JST, which is a specific configuration for the internal wiring of the motor. This is important to set correctly based on the type of motor you are using and how it is wired, as it affects how the motor controller will drive the motor and read feedback from it.
-    motorConfigs.Commutation.AdvancedHallSupport = AdvancedHallSupportValue.Enabled; // Enable advanced hall support, which can help improve the performance of the motor by providing better feedback.
+  private void configRollerMotor(TalonFX motor, boolean invert) {
+    TalonFXConfiguration motorConfigs = new TalonFXConfiguration(); // Start with a new configuration object for the roller motors. The TalonFXS has some different configuration options compared to the TalonFX, so we use a different configuration class.
 
     motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake; // Set the neutral mode to brake so that the motors will resist movement when no power is applied. This can help hold the rollers in position when we want them to stay still.
     motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive; // Set the motor direction based on the invert parameter. This allows us to easily configure one roller to be inverted and the other to be non-inverted, which can help ensure that they move in the correct directions when we apply positive or negative voltages to them.
 
-    // VelocityVoltage closed-loop control configuration.
-    motorConfigs.Slot0.kP = 0.10; // Units: volts per 1 motor rotation per second of error.
-    motorConfigs.Slot0.kI = 5.0; // Units: volts per 1 motor rotation per second * 1 second of error.
-    motorConfigs.Slot0.kD = 0.0005; // Units: volts per 1 motor rotation per second / 1 second of error.
+    // MotionMagicVelocityVoltage closed-loop control configuration.
+    motorConfigs.Slot0.kP = 0.20; // Units: volts per 1 motor rotation per second of error.
+    motorConfigs.Slot0.kI = 6.0; // Units: volts per 1 motor rotation per second * 1 second of error.
+    motorConfigs.Slot0.kD = 0.012; // Units: volts per 1 motor rotation per second / 1 second of error.
     motorConfigs.Slot0.kV = 0.12; // The amount of voltage required to create 1 motor rotation per second.
-    motorConfigs.Slot0.kS = 0.16; // The amount of voltage required to barely overcome static friction in the swerve wheel.
+    motorConfigs.Slot0.kS = 0.16; // The amount of voltage required to barely overcome static friction.
+    motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 5800.0/60.0; // Units: roations per second.
+    motorConfigs.MotionMagic.MotionMagicAcceleration = 8.0*5800.0/60.0; // Units: rotations per second per second. 
 
     // Current limits configuration. These limits can help protect the motors and the mechanical components of the intake from drawing too much current and potentially causing damage. Adjust these values as needed based on the performance of your specific robot's intake mechanism and the capabilities of your motors.
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
@@ -296,11 +290,11 @@ public class Intake {
     motorConfigs.Feedback.RotorToSensorRatio = 211.68; // The ratio of motor rotations to sensor rotations. This should be set based on the gearing between the motor and the hood mechanism.
 
     // MotionMagicTorqueFOC closed-loop control configuration.
-    motorConfigs.Slot0.kP = 800.0/18.75; // Units: amperes per 1 rotation of error.
-    motorConfigs.Slot0.kI = 0.0; // Units: amperes per 1 rotation * 1 second of error.
-    motorConfigs.Slot0.kD = 18.0/18.75; // Units: amperes per 1 rotation / 1 second of error.
-    motorConfigs.MotionMagic.MotionMagicAcceleration = 5800.0/60.0; // Units: rotations per second per second.
-    motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 5800.0/60.0; // Units: rotations per second.
+    motorConfigs.Slot0.kP = 800.0*211.68/18.75; // Units: amperes per 1 swerve wheel rotation of error.
+    motorConfigs.Slot0.kI = 0.0; // Units: amperes per 1 swerve wheel rotation * 1 second of error.
+    motorConfigs.Slot0.kD = 18.0*211.68/18.75; // Units: amperes per 1 swerve wheel rotation / 1 second of error.
+    motorConfigs.MotionMagic.MotionMagicAcceleration = 10.0*5800.0/(60.0*211.68); // Units: rotations per second per second.
+    motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 5800.0/(60.0*211.68); // Units: roations per second.
 
     // Current limits configuration. These limits can help protect the motors and the mechanical components of the intake from drawing too much current and potentially causing damage. Adjust these values as needed based on the performance of your specific robot's intake mechanism and the capabilities of your motors.
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
