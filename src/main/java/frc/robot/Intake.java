@@ -44,14 +44,13 @@ public class Intake {
   private final double armPosTol = 0.01; // Tolerance for considering the intake arms to be in position at their desired angles. This is in units of motor rotations, so 0.5 means that if the arm is within 0.5 rotations of the desired position, we will consider it to be in position. Adjust this value as needed based on the performance of your specific robot's intake mechanism and how precise you want the positioning to be.
   private final double armStowPosition = 0.0;  // The position that we want to stow the intake arms at when they are not in use. This is in units of motor rotations, so 0.4 means that the arms will be stowed at a position that is 0.4 rotations away from the zero position. Adjust this value as needed based on the physical configuration of your robot's intake mechanism and how you want it to be positioned when stowed.
   private final double armIntakePosition = 0.45; // The position that we want to move the intake arms to when we are intaking fuel. This is in units of motor rotations, so 10.5 means that the arms will move to a position that is 10.5 rotations away from the zero position when intaking. Adjust this value as needed based on the physical configuration of your robot's intake mechanism and how you want it to be positioned when intaking.
+  private final double centeringVoltage = 2.0; // Initializes a variable to keep track of the voltage that we want to run the left intake centering motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the centering motors to position the intake arm.
   public enum Mode {LEFT, RIGHT, STOW} // HOME mode runs the homing procedure to find the zero position of the intake arms. LEFT mode moves the left arm to the intake position and the right arm to the stow position. RIGHT mode moves the right arm to the intake position and the left arm to the stow position. STOW mode moves both arms to the stow position.
   private Mode currMode = Mode.STOW; // Initializes the current mode of the intake to HOME. This means that when the robot is first turned on, the intake will be in the process of homing to find the zero position of the arms. After homing is complete, it will switch to STOW mode.
-  private double desiredLeftArmPosition = 0.0; // Initializes a variable to keep track of the desired position for the left intake arm. This will be updated based on the current mode of the intake (LEFT, RIGHT, or STOW) to determine where we want the left arm to move to.
-  private double desiredRightArmPosition = 0.0; // Initializes a variable to keep track of the desired position for the right intake arm. This will be updated based on the current mode of the intake (LEFT, RIGHT, or STOW) to determine where we want the right arm to move to.
+  private double desiredLeftArmPosition = armStowPosition; // Initializes a variable to keep track of the desired position for the left intake arm. This will be updated based on the current mode of the intake (LEFT, RIGHT, or STOW) to determine where we want the left arm to move to.
+  private double desiredRightArmPosition = armStowPosition; // Initializes a variable to keep track of the desired position for the right intake arm. This will be updated based on the current mode of the intake (LEFT, RIGHT, or STOW) to determine where we want the right arm to move to.
   private boolean leftArmIsStowed = true; // Initializes a boolean variable to keep track of whether the left intake arm is currently in the stowed position. This will be used to determine whether we should run the intake rollers and centering motors, since we only want to run those when the arm is out of the way and ready to intake fuel.
   private boolean rightArmIsStowed = true; // Initializes a boolean variable to keep track of whether the right intake arm is currently in the stowed position. This will be used to determine whether we should run the intake rollers and centering motors, since we only want to run those when the arm is out of the way and ready to intake fuel.
-  private double leftCenteringVoltage = 2.0; // Initializes a variable to keep track of the voltage that we want to run the left intake centering motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the centering motors to position the intake arm.
-  private double rightCenteringVoltage = 2.0; // Initializes a variable to keep track of the voltage that we want to run the right intake centering motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the centering motors to position the intake arm.
   private double leftIntakeRPM = 5800.0;
   private double rightIntakeRPM = 5800.0;
 
@@ -81,14 +80,18 @@ public class Intake {
 
   // This method will be called when the robot is first turned on to initialize the intake subsystem. In this method, we will restart both homing timers to ensure that they are starting from zero, and if the arms are already homed, we will call the stow() method to make sure they are in the stow position and ready for operation.
   public void init() {
-    stow();
+    currMode = Mode.STOW;
+    desiredLeftArmPosition = armStowPosition;
+    desiredRightArmPosition = armStowPosition;
+    leftArmIsStowed = true;
+    rightArmIsStowed = true;
   }
 
   // This method will be called periodically (about every 20 milliseconds) while the robot is on. In this method, we will implement the logic for controlling the intake arms based on the current mode of the intake system. We will also dynamically adjust the voltage for the rollers and centering motors based on the position of the arms to ensure that we are running them at appropriate speeds for intaking fuel without putting too much strain on the motors or causing excessive wear.
   public void periodic() {
     // Dynamically adjust the roller voltage based on the position of the arms. If the arm is close to the stow position (less than 3 rotations away), we can run the rollers at a lower voltage. If the arm is further out (more than 3 rotations away), we can run the rollers at a higher voltage to more aggressively pull in fuel. Adjust these thresholds and voltage values as needed based on your specific robot's intake mechanism and how it performs during testing.
-    leftIntakeRPM = getLeftArmPosition() < 0.1 ? 1500.0 : 5800.0; 
-    rightIntakeRPM = getRightArmPosition() < 0.1 ? 1500.0 : 5800.0;
+    leftIntakeRPM = getLeftArmPosition() < 0.1 ? 1800.0 : 5800.0; 
+    rightIntakeRPM = getRightArmPosition() < 0.1 ? 1800.0 : 5800.0;
 
     switch (currMode) {
       case LEFT: // In LEFT mode, we want to move the left arm to the intake position and the right arm to the stow position. We will check if each arm is currently in position at its desired angle, and update the leftArmIsStowed and rightArmIsStowed variables accordingly. This will allow us to know whether we should run the rollers and centering motors for each arm based on whether they are stowed or not.
@@ -130,14 +133,14 @@ public class Intake {
       leftCenteringMotor.setControl(leftCenteringVoltageRequest.withOutput(0.0).withEnableFOC(true));
     } else {
       leftRollerMotor.setControl(leftRollerVelocityRequest.withVelocity(leftIntakeRPM/60.0).withEnableFOC(true));
-      leftCenteringMotor.setControl(leftCenteringVoltageRequest.withOutput(leftCenteringVoltage).withEnableFOC(true));
+      leftCenteringMotor.setControl(leftCenteringVoltageRequest.withOutput(centeringVoltage).withEnableFOC(true));
     }
     if (rightArmIsStowed) {
       rightRollerMotor.setControl(rightRollerVelocityRequest.withVelocity(0.0).withEnableFOC(true));
       rightCenteringMotor.setControl(rightCenteringVoltageRequest.withOutput(0.0).withEnableFOC(true));
     } else {
       rightRollerMotor.setControl(rightRollerVelocityRequest.withVelocity(rightIntakeRPM/60.0).withEnableFOC(true));
-      rightCenteringMotor.setControl(rightCenteringVoltageRequest.withOutput(rightCenteringVoltage).withEnableFOC(true));
+      rightCenteringMotor.setControl(rightCenteringVoltageRequest.withOutput(centeringVoltage).withEnableFOC(true));
     }
   }
 
