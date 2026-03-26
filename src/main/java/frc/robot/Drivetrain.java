@@ -682,15 +682,7 @@ class Drivetrain {
 
       // Plot (goal - current) to look at controller response
       SmartDashboard.putNumber("sim/debug/deltaX", pathXPos - curPose.getX());
-      SmartDashboard.putNumber("sim/debug/deltaY", pathYPos - curPose.getY());
-
-      // Report Swerve Drive Modules to the smart dash
-      SwerveModulePosition[] modulePositions = getModulePositions();
-      for (int idx = 0; idx < modulePositions.length; idx++) {
-        SmartDashboard.putNumber("sim/debug/module_position_m_"+String.valueOf(idx), modulePositions[idx].distanceMeters);
-        SmartDashboard.putNumber("sim/debug/module_angle_deg_"+String.valueOf(idx), modulePositions[idx].angle.getDegrees());
-      }
-      
+      SmartDashboard.putNumber("sim/debug/deltaY", pathYPos - curPose.getY());     
     }
   }
 
