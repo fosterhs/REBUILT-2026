@@ -51,8 +51,8 @@ public class Intake {
   private double desiredRightArmPosition = armStowPosition; // Initializes a variable to keep track of the desired position for the right intake arm. This will be updated based on the current mode of the intake (LEFT, RIGHT, or STOW) to determine where we want the right arm to move to.
   private boolean leftArmIsStowed = true; // Initializes a boolean variable to keep track of whether the left intake arm is currently in the stowed position. This will be used to determine whether we should run the intake rollers and centering motors, since we only want to run those when the arm is out of the way and ready to intake fuel.
   private boolean rightArmIsStowed = true; // Initializes a boolean variable to keep track of whether the right intake arm is currently in the stowed position. This will be used to determine whether we should run the intake rollers and centering motors, since we only want to run those when the arm is out of the way and ready to intake fuel.
-  private double leftIntakeRPM = 5800.0;
-  private double rightIntakeRPM = 5800.0;
+  private double leftIntakeRPM = 5800.0; // The RPM that the left intake is running at.
+  private double rightIntakeRPM = 5800.0; // The RPM that the right intake is running at.
 
   // Simulation
   private final TalonFXSimState rightArmMotorSim = rightArmMotor.getSimState();

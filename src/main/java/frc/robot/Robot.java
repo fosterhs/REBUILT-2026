@@ -231,7 +231,7 @@ public class Robot extends TimedRobot {
 
     switch (autoSelected) {
      case auto1:
-          switch (autoStage) {
+        switch (autoStage) {
           case 1:
             // Auto 1, Stage 1 code goes here.
             swerve.driveTo(3.5, 0.79, calcHubHeading(3.5, 0.79)); // Brings the robot slightly backwards.
@@ -240,11 +240,10 @@ public class Robot extends TimedRobot {
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
             if (isReadyToShoot) {
               shootingTimer.restart(); // Restarts the shooting timer.
-              indexer.start(); // Turns on the indexer.
+              indexer.index(); // Turns on the indexer.
               autoStage = 2; // Advances to the next stage once the robot has gotten to the shooting position.
             }
           break;
-
 
           case 2:
             // Auto 1, Stage 2 code goes here.
@@ -253,13 +252,11 @@ public class Robot extends TimedRobot {
             if (shootingTimer.get() > 1.3) {
               shooter.spinDown(); // Turns the shooter off.
               shooter.lowerHood(); // Lowers the hood of the shooter.
-              indexer.spoolDown();//Stops indexers
-              indexer.stop(); // Turns the indexer off.
+              indexer.idle();//Stops indexers
               swerve.resetPathController(9);
               autoStage = 3; // Advances to the next stage once the robot has finished shooting.
             }
           break;
-
 
           case 3:
             // Auto 1, Stage 3 code goes here.
@@ -272,7 +269,6 @@ public class Robot extends TimedRobot {
             }
           break;
 
-
           case 4:
             // Auto 1, Stage 4 code goes here.
             swerve.followPath(9); //Begin auto path 9
@@ -280,15 +276,13 @@ public class Robot extends TimedRobot {
               intake.rightIntake(); //Deploy right intake
             }
             if (swerve.getYPos() > 3.0 && swerve.getXPos() > 6.7) { //If robot reached to this coordinate. (near the end of the auto path)
-              indexer.stop(); //Stops indexer
+              indexer.idle(); //Stops indexer
               shooter.spinDown(); //Stops the shooter
-              indexer.spoolDown(); //Stop indexer
               shooter.lowerHood(); //Stop shooter
               swerve.resetPathController(10); //Prepare the robot to start path 10
               autoStage = 5; //Advance to the next stage after the hood is being lowered, shooter/indexer is stopped
             }
           break;
-
 
           case 5:
             // Auto 1, Stage 5 code goes here.
@@ -299,7 +293,6 @@ public class Robot extends TimedRobot {
             }
           break;
 
-
           case 6:
             // Auto 1, Stage 6 code goes here.
             swerve.driveTo(3.5, 0.79, calcHubHeading(3.5, 0.79)); //Drive to this position to start shooting
@@ -308,11 +301,10 @@ public class Robot extends TimedRobot {
             shooter.setHoodPosition(calcHoodPosition()); //Adjust hood position
             if (isReadyToShoot) {
               shootingTimer.restart(); //Prepare shooter timer for the next stage
-              indexer.start(); //starts the indexer
+              indexer.index(); //starts the indexer
               autoStage = 7;  //advance to the next stage after it's ready to shoot
             }
           break;
-
 
           case 7:
             // Auto 1, Stage 7 code goes here.
@@ -326,7 +318,6 @@ public class Robot extends TimedRobot {
             }
           break;
 
-
           case 8:
             // Auto 1, Stage 8 code goes here.
             swerve.driveTo(3.5, 0.79, calcHubHeading(3.5, 0.79)); // Brings the robot slightly backwards.
@@ -334,12 +325,10 @@ public class Robot extends TimedRobot {
             if (shootingTimer.get() > 1.3) {
               shooter.spinDown(); // Turns the shooter off.
               shooter.lowerHood(); // Lowers the hood of the shooter.
-              indexer.spoolDown();//Stops indexers
-              indexer.stop(); // Turns the indexer off.
+              indexer.idle(); // Turns the indexer off.
               autoStage = 9; // Advances to the next stage once the robot has finished shooting.
             }
           break;
-
 
           case 9:
             // Auto 1, Stage 9 code goes here.
@@ -352,7 +341,6 @@ public class Robot extends TimedRobot {
             }
           break;
 
-
           case 10:
             // Auto 1, Stage 10 code goes here.
             swerve.followPath(9);// Begin the path
@@ -360,9 +348,8 @@ public class Robot extends TimedRobot {
               intake.rightIntake();// Deploy right intake
             }
             if (swerve.getYPos() > 3.0 && swerve.getXPos() > 6.7) { // If robot reached to this coordinate. (near the end of the auto path)
-              indexer.stop(); // Stops indexer
               shooter.spinDown(); // Stops the shooter
-              indexer.spoolDown(); // Stop indexer
+              indexer.idle(); // Stop indexer
               shooter.lowerHood(); // Stop shooter
               swerve.resetPathController(10); // Prepare the robot to start the next path
               autoStage = 11;// Advance to the next stage after every thing has stopped and path controll has resetted for path 10
@@ -378,7 +365,6 @@ public class Robot extends TimedRobot {
             }
           break;
 
-
           case 12:
             // Auto 1, Stage 12 code goes here.
             swerve.driveTo(3.5, 0.79, calcHubHeading(3.5, 0.79)); // Drive to this position to start shooting
@@ -387,11 +373,10 @@ public class Robot extends TimedRobot {
             shooter.setHoodPosition(calcHoodPosition()); // Adjust hood position
             if (isReadyToShoot) {
               shootingTimer.restart();// Prepare shooter timer for the next stage
-              indexer.start(); // Starts the indexer after it's ready to shoot
+              indexer.index(); // Starts the indexer after it's ready to shoot
               autoStage = 13;  // Advance to the next stage after shooter timer and indexer has restarted
             }
           break;
-
 
           case 13:
             // Auto 1, Stage 13 code goes here.
@@ -403,7 +388,7 @@ public class Robot extends TimedRobot {
               shooter.setHoodPosition(shooter.hoodMinPosition); // Pull the hood back down after two second
             }
           break;
-      }
+        }
       break;
 
       case auto2:
@@ -1256,7 +1241,6 @@ public class Robot extends TimedRobot {
     System.out.println("shooter getLeftShooterRPM: " + shooter.getLeftFlywheelMotorRPM());
     System.out.println("shooter getRightShooterRPM: " + shooter.getRightFlywheelMotorRPM());
     System.out.println("shooter isReady: " + shooter.isReady());
-    System.out.println("shooter getMode: " + shooter.getMode().toString());
     shooter.updateDash();
 
     indexer.init();

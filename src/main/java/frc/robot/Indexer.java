@@ -12,7 +12,7 @@ import edu.wpi.first.wpilibj.Timer;
 import com.ctre.phoenix6.CANBus;
 
 public class Indexer {
-  public enum Mode {INDEX, SPOOL_UP, IDLE} // INDEX mode runs the indexer motors to feed fuel into the shooter. IDLE mode stops the motors.
+  public enum Mode {INDEX, SPIN_UP, IDLE} // INDEX mode runs the indexer motors to feed fuel into the shooter. IDLE mode stops the motors.
   private final CANBus canivore = new CANBus("canivore"); // Creates a new CAN bus called "canivore". This is the name of the CAN bus that the indexer motors are connected to. Make sure to set this correctly based on your robot's wiring.
   private final TalonFX hopperIndexMotor = new TalonFX(19, canivore); // Creates a new TalonFX motor controller for the hopper indexer motor. The motor is assigned an ID of 19 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
   private final TalonFX shooterIndexMotor = new TalonFX(10, canivore); // Creates a new TalonFX motor controller for the shooter indexer motor. The motor is assigned an ID of 10 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
@@ -57,7 +57,7 @@ public class Indexer {
         shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(shooterIndexRPM/60.0).withEnableFOC(true));
       break;
 
-      case SPOOL_UP:
+      case SPIN_UP: // Starts the shooter index motor, but does not run the hopper index motor. Ensures the shooter index motor is spun up before balls enter the shooter for more consistent shots.
         hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
         shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(shooterIndexRPM/60.0).withEnableFOC(true));
       break;
@@ -79,9 +79,9 @@ public class Indexer {
     currMode = Mode.IDLE;
   }
 
-  // Starts spinning the shooter indexer motor up to speed when the indexer is IDLE. Has no effect in INDEX mode.
+  // Starts spinning the shooter indexer motor up to speed before the hopper motor is turned on.
   public void spoolUp() {
-    currMode = Mode.SPOOL_UP;
+    currMode = Mode.SPIN_UP;
   }
 
   // Sets the voltage that the indexer motors will run at when the indexer is running.

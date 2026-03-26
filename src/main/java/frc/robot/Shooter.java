@@ -43,10 +43,9 @@ public class Shooter {
   public final double hoodMinPosition = 0.020; // The minimum position of the hood in hood rotations.
   public final double hoodMaxPosition = 0.115; // The maximum position of the hood in hood rotations.
   public final double maxFlywheelRPM = 5800.0; // The maximum RPM of the flywheel.
-  public enum Mode {SHOOT, IDLE} // SHOOT mode runs the shooter motors to shoot fuel. IDLE mode stops the shooter motors.
-  private Mode currMode = Mode.IDLE; // Initializes the current mode of the shooter to IDLE. This means that when the robot is first turned on, the shooter will be in the IDLE state and will not be running.
   private double shootingRPM = 3000.0; // Initializes the desired shooting RPM of the shooter motors. 
   private double desiredHoodPosition = hoodMinPosition; // Initializes the desired position of the hood. 
+  private double desiredFlywheelRPM = 0.0;
 
   // Simulation
   private final TalonFXSimState hoodMotorSim = hoodMotor.getSimState();
@@ -72,35 +71,26 @@ public class Shooter {
 
   // Resets the shooter to the default state: sets the current mode to IDLE, stops the shooter motors, and lowers the hood. Should be called when the robot is enabled to ensure that the shooter starts in a known state.
   public void init() {
-    currMode = Mode.IDLE;
     spinDown();
     lowerHood();
   }
   
   // Runs code every 20ms: if the current state is SHOOT, then run the shooter motors at the specified shooting RPM. If the current state is IDLE, then stop the shooter motors. In both cases, set the left shooter motor to follow the right shooter motor, and set the hood motor to move to the desired hood position using MotionMagicTorqueCurrentFOC control mode.
   public void periodic() {
-    switch (currMode) {
-      case SHOOT: // Runs the shooter motors at the specified shooting RPM.
-        shootMotorRight.setControl(shooterMotorRightVelocityRequest.withVelocity(shootingRPM/60.0).withEnableFOC(true));
-      break;
-
-      case IDLE: // Stops the shooter motors.
-        shootMotorRight.setControl(shooterMotorRightVelocityRequest.withVelocity(0.0).withEnableFOC(true));
-      break;
-    } 
+    shootMotorRight.setControl(shooterMotorRightVelocityRequest.withVelocity(desiredFlywheelRPM/60.0).withEnableFOC(true));
     shootMotorLeft.setControl(shooterMotorLeftFollowerRequest); // Sets the left shooter motor to follow the right shooter motor.
     hoodMotor.setControl(hoodMotorPositionRequest.withPosition(desiredHoodPosition)); // Sets the hood motor to move to the desired hood position using MotionMagicTorqueCurrentFOC control mode.
   }
 
   // Sets the current state to SHOOT, which will cause the shooter to run in the periodic method at the specified shooting RPM.
   public void spinUp() {
-    currMode = Mode.SHOOT;
+    desiredFlywheelRPM = shootingRPM;
     desiredRPMSim = shootingRPM;
   }
 
   // Sets the current state to IDLE, which will cause the shooter to stop in the periodic method.
   public void spinDown() {
-    currMode = Mode.IDLE;
+    desiredFlywheelRPM = 0.0;
     desiredRPMSim = 0;
   }
 
@@ -129,11 +119,6 @@ public class Shooter {
   // Sets the desired position of the hood to the minimum position, which will lower the hood.
   public void lowerHood() {
     desiredHoodPosition = hoodMinPosition;
-  }
-
-  // Gets the current mode that the shooter is in. This will return either SHOOT or IDLE, which can be used to determine if the shooter is currently running or not.
-  public Mode getMode() {
-    return currMode;
   }
 
   // Returns true or false based on whether the hood is near the desired position.
