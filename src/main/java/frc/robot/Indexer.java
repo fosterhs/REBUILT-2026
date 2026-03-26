@@ -12,7 +12,7 @@ import edu.wpi.first.wpilibj.Timer;
 import com.ctre.phoenix6.CANBus;
 
 public class Indexer {
-  public enum Mode {INDEX, IDLE} // INDEX mode runs the indexer motors to feed fuel into the shooter. IDLE mode stops the motors.
+  public enum Mode {INDEX, SPOOL_UP, IDLE} // INDEX mode runs the indexer motors to feed fuel into the shooter. IDLE mode stops the motors.
   private final CANBus canivore = new CANBus("canivore"); // Creates a new CAN bus called "canivore". This is the name of the CAN bus that the indexer motors are connected to. Make sure to set this correctly based on your robot's wiring.
   private final TalonFX hopperIndexMotor = new TalonFX(19, canivore); // Creates a new TalonFX motor controller for the hopper indexer motor. The motor is assigned an ID of 19 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
   private final TalonFX shooterIndexMotor = new TalonFX(10, canivore); // Creates a new TalonFX motor controller for the shooter indexer motor. The motor is assigned an ID of 10 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
@@ -22,7 +22,6 @@ public class Indexer {
   private Mode currMode = Mode.IDLE; // Initializes the current mode of the indexer to IDLE. This means that when the robot is first turned on, the indexer will be in the IDLE state and will not be running.
   private double shooterIndexRPM = 4000.0; // Initializes the rpm that the shooter indexer motor will run at when the indexer is running. This can be adjusted.
   private double hopperIndexVoltage = 12.0; // Initializes the voltage that the hopper indexer motor will run at when the indexer is running. This can be adjusted.
-  private boolean isSpoolingUp = false; // Tracks whether the shooter index motor should be at speed.
 
   // Simulation
   private final TalonFXSimState hopperIndexMotorSim = hopperIndexMotor.getSimState();
@@ -39,60 +38,56 @@ public class Indexer {
   // Resets the indexer to the default state: sets the current mode to IDLE and restarts the timer. Should be called when the robot is enabled to ensure that the indexer starts in a known state.
   public void init() {
     currMode = Mode.IDLE;
-    isSpoolingUp = false;
     indexTimer.restart();
   }
 
   // Runs code every 20ms: if the current state is INDEX, then run the indexer motors at the specified voltage for 2.5 seconds, then reverse the motors for 0.5 seconds to help unjam any stuck fuel. If the current state is IDLE, then stop the motors and reset the timer.
   public void periodic() {
+    if (currMode != Mode.INDEX) indexTimer.restart();
     switch (currMode) {
       case INDEX: // Runs the indexer motors at the specified voltage for 2.5 seconds, then reverses the motors for 0.5 seconds to help unjam any stuck fuel.
-        if (indexTimer.get() < 2.5) {
+        if (indexTimer.get() < 2.6) {
           hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(hopperIndexVoltage).withEnableFOC(true));
         } else if (indexTimer.get() < 3.0) {
           hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(-hopperIndexVoltage).withEnableFOC(true));
         } else {
+          hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(hopperIndexVoltage).withEnableFOC(true));
           indexTimer.restart(); // Restarts the timer to repeat the cycle of running forward for 2.5 seconds and then reversing for 0.5 seconds. This will continue until the mode is changed to IDLE.
         }
         shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(shooterIndexRPM/60.0).withEnableFOC(true));
       break;
 
+      case SPOOL_UP:
+        hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
+        shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(shooterIndexRPM/60.0).withEnableFOC(true));
+      break;
+
       case IDLE: // Stops the motors.
-        indexTimer.restart();
-          hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
-        if (isSpoolingUp) {
-          shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(shooterIndexRPM/60.0).withEnableFOC(true));
-        } else {
-          shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(0.0).withEnableFOC(true));
-        }
+        hopperIndexMotor.setControl(hopperIndexMotorVoltageRequest.withOutput(0.0).withEnableFOC(true));
+        shooterIndexMotor.setControl(shooterIndexMotorVelocityRequest.withVelocity(0.0).withEnableFOC(true));
       break;
     }
   }
 
   // Sets the current state to INDEX, which will cause the indexer to run in the periodic method.
-  public void start() {
+  public void index() {
     currMode = Mode.INDEX;
   }
 
   // Sets the current state to IDLE, which will cause the indexer to stop in the periodic method.
-  public void stop() {
+  public void idle() {
     currMode = Mode.IDLE;
   }
 
   // Starts spinning the shooter indexer motor up to speed when the indexer is IDLE. Has no effect in INDEX mode.
   public void spoolUp() {
-    isSpoolingUp = true;
-  }
-
-  // Stops the shooter indexer motor when the indexer is IDLE. Has no effect in INDEX mode.
-  public void spoolDown() {
-    isSpoolingUp = false;
+    currMode = Mode.SPOOL_UP;
   }
 
   // Sets the voltage that the indexer motors will run at when the indexer is running.
-  public void setIndexSpeeds(double RPM) {
+  public void setSpeeds(double RPM) {
     shooterIndexRPM = RPM;
-    hopperIndexVoltage = RPM/4000.0 * 12.0;
+    hopperIndexVoltage = 12.0*RPM/4000.0;
   }
 
   // Returns the current mode that the indexer is in.
