@@ -80,7 +80,7 @@ public class Indexer {
   }
 
   // Starts spinning the shooter indexer motor up to speed before the hopper motor is turned on.
-  public void spoolUp() {
+  public void spinUp() {
     currMode = Mode.SPIN_UP;
   }
 
