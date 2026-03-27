@@ -17,6 +17,8 @@ import com.ctre.phoenix6.sim.TalonFXSimState;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Intake { 
   // Motors and Sensors
@@ -47,12 +49,14 @@ public class Intake {
   private final double centeringVoltage = 6.0; // Initializes a variable to keep track of the voltage that we want to run the left intake centering motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the centering motors to position the intake arm.
   public enum Mode {LEFT, RIGHT, STOW} // HOME mode runs the homing procedure to find the zero position of the intake arms. LEFT mode moves the left arm to the intake position and the right arm to the stow position. RIGHT mode moves the right arm to the intake position and the left arm to the stow position. STOW mode moves both arms to the stow position.
   private Mode currMode = Mode.STOW; // Initializes the current mode of the intake to HOME. This means that when the robot is first turned on, the intake will be in the process of homing to find the zero position of the arms. After homing is complete, it will switch to STOW mode.
+  private Mode lastMode = Mode.STOW;
   private double desiredLeftArmPosition = armStowPosition; // Initializes a variable to keep track of the desired position for the left intake arm. This will be updated based on the current mode of the intake (LEFT, RIGHT, or STOW) to determine where we want the left arm to move to.
   private double desiredRightArmPosition = armStowPosition; // Initializes a variable to keep track of the desired position for the right intake arm. This will be updated based on the current mode of the intake (LEFT, RIGHT, or STOW) to determine where we want the right arm to move to.
   private boolean leftArmIsStowed = true; // Initializes a boolean variable to keep track of whether the left intake arm is currently in the stowed position. This will be used to determine whether we should run the intake rollers and centering motors, since we only want to run those when the arm is out of the way and ready to intake fuel.
   private boolean rightArmIsStowed = true; // Initializes a boolean variable to keep track of whether the right intake arm is currently in the stowed position. This will be used to determine whether we should run the intake rollers and centering motors, since we only want to run those when the arm is out of the way and ready to intake fuel.
   private double leftIntakeRPM = 5800.0; // The RPM that the left intake is running at.
   private double rightIntakeRPM = 5800.0; // The RPM that the right intake is running at.
+  private final Timer jamTimer = new Timer();
 
   // Simulation
   private final TalonFXSimState rightArmMotorSim = rightArmMotor.getSimState();
@@ -76,15 +80,18 @@ public class Intake {
     rightArmPosition = rightArmEncoder.getAbsolutePosition();
     BaseStatusSignal.setUpdateFrequencyForAll(250.0, leftArmPosition, rightArmPosition);
     ParentDevice.optimizeBusUtilizationForAll(rightArmMotor, rightRollerMotor, rightCenteringMotor, rightArmEncoder, leftArmMotor, leftRollerMotor, leftCenteringMotor, leftArmEncoder);
+    jamTimer.restart();
   }
 
   // This method will be called when the robot is first turned on to initialize the intake subsystem. In this method, we will restart both homing timers to ensure that they are starting from zero, and if the arms are already homed, we will call the stow() method to make sure they are in the stow position and ready for operation.
   public void init() {
+    lastMode = Mode.STOW;
     currMode = Mode.STOW;
     desiredLeftArmPosition = armStowPosition;
     desiredRightArmPosition = armStowPosition;
     leftArmIsStowed = true;
     rightArmIsStowed = true;
+    jamTimer.restart();
   }
 
   // This method will be called periodically (about every 20 milliseconds) while the robot is on. In this method, we will implement the logic for controlling the intake arms based on the current mode of the intake system. We will also dynamically adjust the voltage for the rollers and centering motors based on the position of the arms to ensure that we are running them at appropriate speeds for intaking fuel without putting too much strain on the motors or causing excessive wear.
@@ -93,12 +100,25 @@ public class Intake {
     leftIntakeRPM = getLeftArmPosition() < 0.1 ? 1800.0 : 5800.0; 
     rightIntakeRPM = getRightArmPosition() < 0.1 ? 1800.0 : 5800.0;
 
+    if (currMode != lastMode) jamTimer.restart();
+    lastMode = currMode;
+
     switch (currMode) {
       case LEFT: // In LEFT mode, we want to move the left arm to the intake position and the right arm to the stow position. We will check if each arm is currently in position at its desired angle, and update the leftArmIsStowed and rightArmIsStowed variables accordingly. This will allow us to know whether we should run the rollers and centering motors for each arm based on whether they are stowed or not.
         if (leftArmInPosition()) leftArmIsStowed = false;
         if (rightArmInPosition()) rightArmIsStowed = true;
 
-        rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
+        if (rightArmIsStowed) {
+          rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
+        } else if (jamTimer.get() < 0.7) {
+          rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
+        } else if (jamTimer.get() < 1.0) {
+          rightArmMotor.setControl(rightArmPositionRequest.withPosition(armIntakePosition));
+        } else {
+          rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
+          jamTimer.restart();
+        }
+
         if (rightArmIsStowed) {
           leftArmMotor.setControl(leftArmPositionRequest.withPosition(armIntakePosition));
         } else {
@@ -110,7 +130,17 @@ public class Intake {
         if (leftArmInPosition()) leftArmIsStowed = true;
         if (rightArmInPosition()) rightArmIsStowed = false;
 
-        leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
+        if (leftArmIsStowed) {
+          leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
+        } else if (jamTimer.get() < 0.7) {
+          leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
+        } else if (jamTimer.get() < 1.0) {
+          leftArmMotor.setControl(leftArmPositionRequest.withPosition(armIntakePosition));
+        } else {
+          leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
+          jamTimer.restart();
+        }
+
         if (leftArmIsStowed) {
           rightArmMotor.setControl(rightArmPositionRequest.withPosition(armIntakePosition));
         } else {
@@ -122,8 +152,27 @@ public class Intake {
         if (leftArmInPosition()) leftArmIsStowed = true;
         if (rightArmInPosition()) rightArmIsStowed = true;
 
-        leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
-        rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
+        if (rightArmIsStowed) {
+          rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
+        } else if (jamTimer.get() < 0.7) {
+          rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
+        } else if (jamTimer.get() < 1.0) {
+          rightArmMotor.setControl(rightArmPositionRequest.withPosition(armIntakePosition));
+        } else {
+          rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
+          jamTimer.restart();
+        }
+
+        if (leftArmIsStowed) {
+          leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
+        } else if (jamTimer.get() < 0.7) {
+          leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
+        } else if (jamTimer.get() < 1.0) {
+          leftArmMotor.setControl(leftArmPositionRequest.withPosition(armIntakePosition));
+        } else {
+          leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
+          jamTimer.restart();
+        }
       break;
     }
 
@@ -225,6 +274,7 @@ public class Intake {
     //SmartDashboard.putNumber("Intake getRightArmDesiredPosition", getRightArmDesiredPosition());
     //SmartDashboard.putBoolean("Intake rightArmInPosition", rightArmInPosition());
     //SmartDashboard.putBoolean("Intake isReady", isReady());
+    SmartDashboard.putNumber("jamTimer", jamTimer.get());
   }
 
   public void simulationPeriodic() {
@@ -296,14 +346,14 @@ public class Intake {
     motorConfigs.Slot0.kP = 1000.0; // Units: amperes per 1 swerve wheel rotation of error.
     motorConfigs.Slot0.kI = 2600.0; // Units: amperes per 1 swerve wheel rotation * 1 second of error.
     motorConfigs.Slot0.kD = 100.0; // Units: amperes per 1 swerve wheel rotation / 1 second of error.
-    motorConfigs.MotionMagic.MotionMagicAcceleration = 1.0*5800.0/(60.0*25.0); // Units: rotations per second per second.
-    motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 2.0*5800.0/(60.0*25.0); // Units: roations per second.
+    motorConfigs.MotionMagic.MotionMagicAcceleration = 10.0*5800.0/(60.0*25.0); // Units: rotations per second per second.
+    motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 20.0*5800.0/(60.0*25.0); // Units: roations per second.
 
     // Current limits configuration. These limits can help protect the motors and the mechanical components of the intake from drawing too much current and potentially causing damage. Adjust these values as needed based on the performance of your specific robot's intake mechanism and the capabilities of your motors.
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.SupplyCurrentLimit = 20.0;
-    motorConfigs.CurrentLimits.StatorCurrentLimit = 40.0;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 30.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03); // Apply the configuration to the motor with a timeout of 0.03 seconds (30 milliseconds). This will send the configuration settings to the motor controller so that it can use them for controlling the motor.
   }
