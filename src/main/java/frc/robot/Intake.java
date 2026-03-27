@@ -18,6 +18,7 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Intake { 
   // Motors and Sensors
@@ -105,17 +106,12 @@ public class Intake {
       case LEFT: // In LEFT mode, we want to move the left arm to the intake position and the right arm to the stow position. We will check if each arm is currently in position at its desired angle, and update the leftArmIsStowed and rightArmIsStowed variables accordingly. This will allow us to know whether we should run the rollers and centering motors for each arm based on whether they are stowed or not.
         if (leftArmInPosition()) leftArmIsStowed = false;
         if (rightArmInPosition()) rightArmIsStowed = true;
-        if (desiredRightArmPosition == armStowPosition && !rightArmIsStowed) {
-          if (rightArmStowTimer.get() > 3) { // Right arm is jammed, enter JAM mode (time adjust-able)🦎🦎🦎
-            requestedMode = Mode.LEFT;
-            currMode = Mode.JAM;
-            spamExtend = false;
-            rightArmStowTimer.restart();
-          }
-        } else {
+        if (!rightArmIsStowed && rightArmStowTimer.get() > 1.5) {
+          requestedMode = Mode.LEFT;
+          currMode = Mode.JAM;
+          spamExtend = false;
           rightArmStowTimer.restart();
         }
-
 
         rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
         if (rightArmIsStowed) {
@@ -128,14 +124,10 @@ public class Intake {
       case RIGHT: // In RIGHT mode, we want to move the right arm to the intake position and the left arm to the stow position. We will check if each arm is currently in position at its desired angle, and update the leftArmIsStowed and rightArmIsStowed variables accordingly. This will allow us to know whether we should run the rollers and centering motors for each arm based on whether they are stowed or not.
         if (leftArmInPosition()) leftArmIsStowed = true;
         if (rightArmInPosition()) rightArmIsStowed = false;
-        if (desiredLeftArmPosition == armStowPosition && !leftArmIsStowed) {
-        if (leftArmStowTimer.get() > 3) {// Left arm is jammed, enter JAM mode(timer adjust-able)🦎🦎🦎
-            requestedMode = Mode.RIGHT;
-            currMode = Mode.JAM;
-            spamExtend = false;
-            leftArmStowTimer.restart();
-          }
-        } else {
+        if (!leftArmIsStowed && leftArmStowTimer.get() > 1.5) {//🦎🦎🦎
+          requestedMode = Mode.RIGHT;
+          currMode = Mode.JAM;
+          spamExtend = false;
           leftArmStowTimer.restart();
         }
         leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
@@ -149,49 +141,38 @@ public class Intake {
       case STOW: // In STOW mode, we want to move both arms to the stow position. We will check if each arm is currently in position at the stow angle, and update the leftArmIsStowed and rightArmIsStowed variables accordingly. This will allow us to know whether we should run the rollers and centering motors for each arm based on whether they are stowed or not.
         if (leftArmInPosition()) leftArmIsStowed = true;
         if (rightArmInPosition()) rightArmIsStowed = true;
-        if (desiredLeftArmPosition == armStowPosition && !leftArmIsStowed) {
-          if (leftArmStowTimer.get() > 3) {//adjustable timer btw🦎🦎🦎
-            requestedMode = Mode.STOW;
-            currMode = Mode.JAM;
-            spamExtend = false;
-            leftArmStowTimer.restart();
-          }
-        } else {
+        if (!leftArmIsStowed && leftArmStowTimer.get() > 1.5) {//🦎🦎
+          requestedMode = Mode.STOW;
+          currMode = Mode.JAM;
+          spamExtend = false;
           leftArmStowTimer.restart();
         }
-        if (desiredRightArmPosition == armStowPosition && !rightArmIsStowed) {
-          if (rightArmStowTimer.get() > 3) {// same here🦎🦎
-            requestedMode = Mode.STOW;
-            currMode = Mode.JAM;
-            spamExtend = false;
-            rightArmStowTimer.restart();
-          }
-        } else {
+        if (!rightArmIsStowed && rightArmStowTimer.get() > 1.5) {//🦎🦎
+          requestedMode = Mode.STOW;
+          currMode = Mode.JAM;
+          spamExtend = false;
           rightArmStowTimer.restart();
         }
+
         leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
         rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
       break;
       case JAM:
-        if (requestedMode == Mode.LEFT || requestedMode == Mode.STOW) {// If Right arm was trying to stow
-          if (spamExtend) {
-            rightArmMotor.setControl(rightArmPositionRequest.withPosition(armIntakePosition));
-          } else {
-            rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
-          }
-          if (requestedMode == Mode.LEFT) { // Keep left arm in correct position based on requested mode
-            if (rightArmIsStowed) {
-              leftArmMotor.setControl(leftArmPositionRequest.withPosition(armIntakePosition));
-            } else {
-              leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
-            }
-          } else {
-            leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
-          }
-          // Spam time
-          if (rightArmStowTimer.get() > 1) {//adjust-able🦎🦎🦎
+        // Handle jam recovery - spam the stuck arm
+        if (requestedMode == Mode.LEFT || requestedMode == Mode.STOW) {
+          if (rightArmStowTimer.get() > 0.5) {
             spamExtend = !spamExtend;
             rightArmStowTimer.restart();
+          }
+          if (spamExtend) {
+            rightArmMotor.setControl(rightArmPositionRequest.withPosition(armIntakePosition)); // Extend
+          } else {
+            rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition)); // Stow
+          }
+          if (requestedMode == Mode.LEFT) {
+            leftArmMotor.setControl(leftArmPositionRequest.withPosition(armIntakePosition));
+          } else {
+            leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
           }
           if (getRightArmPosition() < armStowPosition + armPosTol) {
             rightArmIsStowed = true;
@@ -200,25 +181,21 @@ public class Intake {
           }
         } 
         else if (requestedMode == Mode.RIGHT || requestedMode == Mode.STOW) {
-          if (spamExtend) { // If left arm was trying to stow
+          if (leftArmStowTimer.get() > 0.5) {
+            spamExtend = !spamExtend;
+            leftArmStowTimer.restart();
+          }
+          
+          if (spamExtend) {
             leftArmMotor.setControl(leftArmPositionRequest.withPosition(armIntakePosition)); // Extend
           } else {
             leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition)); // Stow
           }
-          if (requestedMode == Mode.RIGHT) {// Keep right arm in correct position based on requested mode
-            if (leftArmIsStowed) {
-              rightArmMotor.setControl(rightArmPositionRequest.withPosition(armIntakePosition));
-            } else {
-              rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
-            }
+
+          if (requestedMode == Mode.RIGHT) {
+            rightArmMotor.setControl(rightArmPositionRequest.withPosition(armIntakePosition));
           } else {
             rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
-          }
-          
-          // Spam time
-          if (leftArmStowTimer.get() > 1) {//adjust-able🦎🦎🦎
-            spamExtend = !spamExtend;
-            leftArmStowTimer.restart();
           }
           if (getLeftArmPosition() < armStowPosition + armPosTol) {
             leftArmIsStowed = true;
@@ -327,6 +304,8 @@ public class Intake {
     //SmartDashboard.putNumber("Intake getRightArmDesiredPosition", getRightArmDesiredPosition());
     //SmartDashboard.putBoolean("Intake rightArmInPosition", rightArmInPosition());
     //SmartDashboard.putBoolean("Intake isReady", isReady());
+    SmartDashboard.putNumber("left intake stow timer", leftArmStowTimer.get());
+    SmartDashboard.putNumber("right intake stow timer", rightArmStowTimer.get());
   }
 
   public void simulationPeriodic() {
