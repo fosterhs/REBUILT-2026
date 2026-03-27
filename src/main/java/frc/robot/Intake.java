@@ -17,6 +17,7 @@ import com.ctre.phoenix6.sim.TalonFXSimState;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
 import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.wpilibj.Timer;
 
 public class Intake { 
   // Motors and Sensors
@@ -45,7 +46,7 @@ public class Intake {
   private final double armStowPosition = 0.01;  // The position that we want to stow the intake arms at when they are not in use. This is in units of motor rotations, so 0.4 means that the arms will be stowed at a position that is 0.4 rotations away from the zero position. Adjust this value as needed based on the physical configuration of your robot's intake mechanism and how you want it to be positioned when stowed.
   private final double armIntakePosition = 0.43; // The position that we want to move the intake arms to when we are intaking fuel. This is in units of motor rotations, so 10.5 means that the arms will move to a position that is 10.5 rotations away from the zero position when intaking. Adjust this value as needed based on the physical configuration of your robot's intake mechanism and how you want it to be positioned when intaking.
   private final double centeringVoltage = 6.0; // Initializes a variable to keep track of the voltage that we want to run the left intake centering motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the centering motors to position the intake arm.
-  public enum Mode {LEFT, RIGHT, STOW} // HOME mode runs the homing procedure to find the zero position of the intake arms. LEFT mode moves the left arm to the intake position and the right arm to the stow position. RIGHT mode moves the right arm to the intake position and the left arm to the stow position. STOW mode moves both arms to the stow position.
+  public enum Mode {LEFT, RIGHT, STOW, JAM} // HOME mode runs the homing procedure to find the zero position of the intake arms. LEFT mode moves the left arm to the intake position and the right arm to the stow position. RIGHT mode moves the right arm to the intake position and the left arm to the stow position. STOW mode moves both arms to the stow position.
   private Mode currMode = Mode.STOW; // Initializes the current mode of the intake to HOME. This means that when the robot is first turned on, the intake will be in the process of homing to find the zero position of the arms. After homing is complete, it will switch to STOW mode.
   private double desiredLeftArmPosition = armStowPosition; // Initializes a variable to keep track of the desired position for the left intake arm. This will be updated based on the current mode of the intake (LEFT, RIGHT, or STOW) to determine where we want the left arm to move to.
   private double desiredRightArmPosition = armStowPosition; // Initializes a variable to keep track of the desired position for the right intake arm. This will be updated based on the current mode of the intake (LEFT, RIGHT, or STOW) to determine where we want the right arm to move to.
@@ -54,6 +55,11 @@ public class Intake {
   private double leftIntakeRPM = 5800.0; // The RPM that the left intake is running at.
   private double rightIntakeRPM = 5800.0; // The RPM that the right intake is running at.
 
+  //Jam situation
+  private final Timer leftArmStowTimer = new Timer();
+  private final Timer rightArmStowTimer = new Timer();
+  private Mode requestedMode = Mode.STOW; // Store which mode we were trying to enter
+  private boolean spamExtend = false; // Toggle for spamming stow/extend
   // Simulation
   private final TalonFXSimState rightArmMotorSim = rightArmMotor.getSimState();
   private final TalonFXSimState rightRollerMotorSim = rightRollerMotor.getSimState();
@@ -85,6 +91,8 @@ public class Intake {
     desiredRightArmPosition = armStowPosition;
     leftArmIsStowed = true;
     rightArmIsStowed = true;
+    leftArmStowTimer.restart();
+    rightArmStowTimer.restart();
   }
 
   // This method will be called periodically (about every 20 milliseconds) while the robot is on. In this method, we will implement the logic for controlling the intake arms based on the current mode of the intake system. We will also dynamically adjust the voltage for the rollers and centering motors based on the position of the arms to ensure that we are running them at appropriate speeds for intaking fuel without putting too much strain on the motors or causing excessive wear.
@@ -97,6 +105,17 @@ public class Intake {
       case LEFT: // In LEFT mode, we want to move the left arm to the intake position and the right arm to the stow position. We will check if each arm is currently in position at its desired angle, and update the leftArmIsStowed and rightArmIsStowed variables accordingly. This will allow us to know whether we should run the rollers and centering motors for each arm based on whether they are stowed or not.
         if (leftArmInPosition()) leftArmIsStowed = false;
         if (rightArmInPosition()) rightArmIsStowed = true;
+        if (desiredRightArmPosition == armStowPosition && !rightArmIsStowed) {
+          if (rightArmStowTimer.get() > 3) { // Right arm is jammed, enter JAM mode (time adjust-able)🦎🦎🦎
+            requestedMode = Mode.LEFT;
+            currMode = Mode.JAM;
+            spamExtend = false;
+            rightArmStowTimer.restart();
+          }
+        } else {
+          rightArmStowTimer.restart();
+        }
+
 
         rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
         if (rightArmIsStowed) {
@@ -109,7 +128,16 @@ public class Intake {
       case RIGHT: // In RIGHT mode, we want to move the right arm to the intake position and the left arm to the stow position. We will check if each arm is currently in position at its desired angle, and update the leftArmIsStowed and rightArmIsStowed variables accordingly. This will allow us to know whether we should run the rollers and centering motors for each arm based on whether they are stowed or not.
         if (leftArmInPosition()) leftArmIsStowed = true;
         if (rightArmInPosition()) rightArmIsStowed = false;
-
+        if (desiredLeftArmPosition == armStowPosition && !leftArmIsStowed) {
+        if (leftArmStowTimer.get() > 3) {// Left arm is jammed, enter JAM mode(timer adjust-able)🦎🦎🦎
+            requestedMode = Mode.RIGHT;
+            currMode = Mode.JAM;
+            spamExtend = false;
+            leftArmStowTimer.restart();
+          }
+        } else {
+          leftArmStowTimer.restart();
+        }
         leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
         if (leftArmIsStowed) {
           rightArmMotor.setControl(rightArmPositionRequest.withPosition(armIntakePosition));
@@ -121,9 +149,83 @@ public class Intake {
       case STOW: // In STOW mode, we want to move both arms to the stow position. We will check if each arm is currently in position at the stow angle, and update the leftArmIsStowed and rightArmIsStowed variables accordingly. This will allow us to know whether we should run the rollers and centering motors for each arm based on whether they are stowed or not.
         if (leftArmInPosition()) leftArmIsStowed = true;
         if (rightArmInPosition()) rightArmIsStowed = true;
-
+        if (desiredLeftArmPosition == armStowPosition && !leftArmIsStowed) {
+          if (leftArmStowTimer.get() > 3) {//adjustable timer btw🦎🦎🦎
+            requestedMode = Mode.STOW;
+            currMode = Mode.JAM;
+            spamExtend = false;
+            leftArmStowTimer.restart();
+          }
+        } else {
+          leftArmStowTimer.restart();
+        }
+        if (desiredRightArmPosition == armStowPosition && !rightArmIsStowed) {
+          if (rightArmStowTimer.get() > 3) {// same here🦎🦎
+            requestedMode = Mode.STOW;
+            currMode = Mode.JAM;
+            spamExtend = false;
+            rightArmStowTimer.restart();
+          }
+        } else {
+          rightArmStowTimer.restart();
+        }
         leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
         rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
+      break;
+      case JAM:
+        if (requestedMode == Mode.LEFT || requestedMode == Mode.STOW) {// If Right arm was trying to stow
+          if (spamExtend) {
+            rightArmMotor.setControl(rightArmPositionRequest.withPosition(armIntakePosition));
+          } else {
+            rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
+          }
+          if (requestedMode == Mode.LEFT) { // Keep left arm in correct position based on requested mode
+            if (rightArmIsStowed) {
+              leftArmMotor.setControl(leftArmPositionRequest.withPosition(armIntakePosition));
+            } else {
+              leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
+            }
+          } else {
+            leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
+          }
+          // Spam time
+          if (rightArmStowTimer.get() > 1) {//adjust-able🦎🦎🦎
+            spamExtend = !spamExtend;
+            rightArmStowTimer.restart();
+          }
+          if (getRightArmPosition() < armStowPosition + armPosTol) {
+            rightArmIsStowed = true;
+            currMode = requestedMode;
+            rightArmStowTimer.restart();
+          }
+        } 
+        else if (requestedMode == Mode.RIGHT || requestedMode == Mode.STOW) {
+          if (spamExtend) { // If left arm was trying to stow
+            leftArmMotor.setControl(leftArmPositionRequest.withPosition(armIntakePosition)); // Extend
+          } else {
+            leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition)); // Stow
+          }
+          if (requestedMode == Mode.RIGHT) {// Keep right arm in correct position based on requested mode
+            if (leftArmIsStowed) {
+              rightArmMotor.setControl(rightArmPositionRequest.withPosition(armIntakePosition));
+            } else {
+              rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
+            }
+          } else {
+            rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
+          }
+          
+          // Spam time
+          if (leftArmStowTimer.get() > 1) {//adjust-able🦎🦎🦎
+            spamExtend = !spamExtend;
+            leftArmStowTimer.restart();
+          }
+          if (getLeftArmPosition() < armStowPosition + armPosTol) {
+            leftArmIsStowed = true;
+            currMode = requestedMode;
+            leftArmStowTimer.restart();
+          }
+        }
       break;
     }
 
