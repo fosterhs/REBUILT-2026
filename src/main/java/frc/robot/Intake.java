@@ -41,8 +41,8 @@ public class Intake {
   // Status Signals
   private final StatusSignal<Angle> leftArmPosition; // Creates a new StatusSignal for the position of the left intake arm motor. This will allow us to read the current position of the motor in units of rotations. The TalonFX's integrated encoder provides position feedback that we can use to determine the angle of the intake arm.
   private final StatusSignal<Angle> rightArmPosition; // Creates a new StatusSignal for the position of the right intake arm motor. This will allow us to read the current position of the motor in units of rotations. The TalonFX's integrated encoder provides position feedback that we can use to determine the angle of the intake arm.
-  private final double armPosTol = 0.03; // Tolerance for considering the intake arms to be in position at their desired angles. This is in units of motor rotations, so 0.5 means that if the arm is within 0.5 rotations of the desired position, we will consider it to be in position. Adjust this value as needed based on the performance of your specific robot's intake mechanism and how precise you want the positioning to be.
-  private final double armStowPosition = 0.02;  // The position that we want to stow the intake arms at when they are not in use. This is in units of motor rotations, so 0.4 means that the arms will be stowed at a position that is 0.4 rotations away from the zero position. Adjust this value as needed based on the physical configuration of your robot's intake mechanism and how you want it to be positioned when stowed.
+  private final double armPosTol = 0.05; // Tolerance for considering the intake arms to be in position at their desired angles. This is in units of motor rotations, so 0.5 means that if the arm is within 0.5 rotations of the desired position, we will consider it to be in position. Adjust this value as needed based on the performance of your specific robot's intake mechanism and how precise you want the positioning to be.
+  private final double armStowPosition = 0.01;  // The position that we want to stow the intake arms at when they are not in use. This is in units of motor rotations, so 0.4 means that the arms will be stowed at a position that is 0.4 rotations away from the zero position. Adjust this value as needed based on the physical configuration of your robot's intake mechanism and how you want it to be positioned when stowed.
   private final double armIntakePosition = 0.43; // The position that we want to move the intake arms to when we are intaking fuel. This is in units of motor rotations, so 10.5 means that the arms will move to a position that is 10.5 rotations away from the zero position when intaking. Adjust this value as needed based on the physical configuration of your robot's intake mechanism and how you want it to be positioned when intaking.
   private final double centeringVoltage = 6.0; // Initializes a variable to keep track of the voltage that we want to run the left intake centering motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the centering motors to position the intake arm.
   public enum Mode {LEFT, RIGHT, STOW} // HOME mode runs the homing procedure to find the zero position of the intake arms. LEFT mode moves the left arm to the intake position and the right arm to the stow position. RIGHT mode moves the right arm to the intake position and the left arm to the stow position. STOW mode moves both arms to the stow position.
@@ -248,9 +248,9 @@ public class Intake {
     motorConfigs.MotorOutput.Inverted = invert ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive; // Set the motor direction based on the invert parameter. This allows us to easily configure one roller to be inverted and the other to be non-inverted, which can help ensure that they move in the correct directions when we apply positive or negative voltages to them.
 
     // MotionMagicVelocityVoltage closed-loop control configuration.
-    motorConfigs.Slot0.kP = 0.20; // Units: volts per 1 motor rotation per second of error.
+    motorConfigs.Slot0.kP = 0.25; // Units: volts per 1 motor rotation per second of error.
     motorConfigs.Slot0.kI = 6.0; // Units: volts per 1 motor rotation per second * 1 second of error.
-    motorConfigs.Slot0.kD = 0.012; // Units: volts per 1 motor rotation per second / 1 second of error.
+    motorConfigs.Slot0.kD = 0.0; // Units: volts per 1 motor rotation per second / 1 second of error.
     motorConfigs.Slot0.kV = 0.12; // The amount of voltage required to create 1 motor rotation per second.
     motorConfigs.Slot0.kS = 0.16; // The amount of voltage required to barely overcome static friction.
     motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 5800.0/60.0; // Units: roations per second.
@@ -259,8 +259,8 @@ public class Intake {
     // Current limits configuration. These limits can help protect the motors and the mechanical components of the intake from drawing too much current and potentially causing damage. Adjust these values as needed based on the performance of your specific robot's intake mechanism and the capabilities of your motors.
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
-    motorConfigs.CurrentLimits.SupplyCurrentLimit = 20.0;
-    motorConfigs.CurrentLimits.StatorCurrentLimit = 200.0;
+    motorConfigs.CurrentLimits.SupplyCurrentLimit = 70.0;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 120.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03); // Apply the configuration to the motor with a timeout of 0.03 seconds (30 milliseconds). This will send the configuration settings to the motor controller so that it can use them for controlling the motor.
   }
@@ -275,8 +275,8 @@ public class Intake {
     // Current limits configuration. These limits can help protect the motors and the mechanical components of the intake from drawing too much current and potentially causing damage. Adjust these values as needed based on the performance of your specific robot's intake mechanism and the capabilities of your motors.
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
-    motorConfigs.CurrentLimits.SupplyCurrentLimit = 10.0;
-    motorConfigs.CurrentLimits.StatorCurrentLimit = 60.0;
+    motorConfigs.CurrentLimits.SupplyCurrentLimit = 70.0;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 120.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03); // Apply the configuration to the motor with a timeout of 0.03 seconds (30 milliseconds). This will send the configuration settings to the motor controller so that it can use them for controlling the motor.
   }
@@ -293,16 +293,16 @@ public class Intake {
     motorConfigs.Feedback.RotorToSensorRatio = 25.0; // The ratio of motor rotations to sensor rotations. This should be set based on the gearing between the motor and the hood mechanism.
 
     // MotionMagicTorqueFOC closed-loop control configuration.
-    motorConfigs.Slot0.kP = 800.0*25.0/18.75; // Units: amperes per 1 swerve wheel rotation of error.
-    motorConfigs.Slot0.kI = 0.0; // Units: amperes per 1 swerve wheel rotation * 1 second of error.
-    motorConfigs.Slot0.kD = 80.0*25.0/18.75; // Units: amperes per 1 swerve wheel rotation / 1 second of error.
-    motorConfigs.MotionMagic.MotionMagicAcceleration = 5.0*5800.0/(60.0*25.0); // Units: rotations per second per second.
-    motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 5800.0/(60.0*25.0); // Units: roations per second.
+    motorConfigs.Slot0.kP = 1000.0; // Units: amperes per 1 swerve wheel rotation of error.
+    motorConfigs.Slot0.kI = 2600.0; // Units: amperes per 1 swerve wheel rotation * 1 second of error.
+    motorConfigs.Slot0.kD = 100.0; // Units: amperes per 1 swerve wheel rotation / 1 second of error.
+    motorConfigs.MotionMagic.MotionMagicAcceleration = 1.0*5800.0/(60.0*25.0); // Units: rotations per second per second.
+    motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 2.0*5800.0/(60.0*25.0); // Units: roations per second.
 
     // Current limits configuration. These limits can help protect the motors and the mechanical components of the intake from drawing too much current and potentially causing damage. Adjust these values as needed based on the performance of your specific robot's intake mechanism and the capabilities of your motors.
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
-    motorConfigs.CurrentLimits.SupplyCurrentLimit = 10.0;
+    motorConfigs.CurrentLimits.SupplyCurrentLimit = 20.0;
     motorConfigs.CurrentLimits.StatorCurrentLimit = 40.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03); // Apply the configuration to the motor with a timeout of 0.03 seconds (30 milliseconds). This will send the configuration settings to the motor controller so that it can use them for controlling the motor.
