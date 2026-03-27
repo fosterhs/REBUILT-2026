@@ -45,7 +45,7 @@ public class Shooter {
   public final double maxFlywheelRPM = 5800.0; // The maximum RPM of the flywheel.
   private double shootingRPM = 3000.0; // Initializes the desired shooting RPM of the shooter motors. 
   private double desiredHoodPosition = hoodMinPosition; // Initializes the desired position of the hood. 
-  private double desiredFlywheelRPM = 0.0;
+  private boolean isSpunUp = false;
 
   // Simulation
   private final TalonFXSimState hoodMotorSim = hoodMotor.getSimState();
@@ -77,20 +77,24 @@ public class Shooter {
   
   // Runs code every 20ms: if the current state is SHOOT, then run the shooter motors at the specified shooting RPM. If the current state is IDLE, then stop the shooter motors. In both cases, set the left shooter motor to follow the right shooter motor, and set the hood motor to move to the desired hood position using MotionMagicTorqueCurrentFOC control mode.
   public void periodic() {
-    shootMotorRight.setControl(shooterMotorRightVelocityRequest.withVelocity(desiredFlywheelRPM/60.0).withEnableFOC(true));
+    if (isSpunUp) {
+      shootMotorRight.setControl(shooterMotorRightVelocityRequest.withVelocity(shootingRPM/60.0).withEnableFOC(true));
+    } else {
+      shootMotorRight.setControl(shooterMotorRightVelocityRequest.withVelocity(0.0).withEnableFOC(true));
+    }
     shootMotorLeft.setControl(shooterMotorLeftFollowerRequest); // Sets the left shooter motor to follow the right shooter motor.
     hoodMotor.setControl(hoodMotorPositionRequest.withPosition(desiredHoodPosition)); // Sets the hood motor to move to the desired hood position using MotionMagicTorqueCurrentFOC control mode.
   }
 
   // Sets the current state to SHOOT, which will cause the shooter to run in the periodic method at the specified shooting RPM.
   public void spinUp() {
-    desiredFlywheelRPM = shootingRPM;
+    isSpunUp = true;
     desiredRPMSim = shootingRPM;
   }
 
   // Sets the current state to IDLE, which will cause the shooter to stop in the periodic method.
   public void spinDown() {
-    desiredFlywheelRPM = 0.0;
+    isSpunUp = false;
     desiredRPMSim = 0;
   }
 
@@ -156,16 +160,16 @@ public class Shooter {
 
   // Updates the SmartDashboard with the current mode, shooting RPM, hood position, and whether the shooter is at speed and in position. Useful for debugging and tuning.
   public void updateDash() {
-    //SmartDashboard.putNumber("Shooter getRightShooterRPM", getRightShooterRPM());
-    //SmartDashboard.putNumber("Shooter getLeftShooterRPM", getLeftShooterRPM());
-    //SmartDashboard.putBoolean("Shooter shooterIsAtSpeed", shooterIsAtSpeed());
+    //SmartDashboard.putNumber("Shooter getRightShooterRPM", getRightFlywheelMotorRPM());
+    //SmartDashboard.putNumber("Shooter getLeftShooterRPM", getLeftFlywheelMotorRPM());
+    //SmartDashboard.putBoolean("Shooter shooterIsAtSpeed", flywheelIsAtSpeed());
     //SmartDashboard.putNumber("Shooter shootingRPM", shootingRPM);
     //SmartDashboard.putNumber("Shooter getHoodPosition", getHoodPosition());
     //SmartDashboard.putBoolean("Shooter hoodIsInPosition", hoodIsInPosition());
     //SmartDashboard.putNumber("Shooter desiredHoodPosition", desiredHoodPosition);
     //SmartDashboard.putBoolean("Shooter isReady", isReady());
     //SmartDashboard.putBoolean("Shooter flywheelIsReady", flywheelIsReady());
-    //SmartDashboard.putBoolean("Shooter flywheelIsAtSpeed", flywheelIsAtSpeed);
+    //SmartDashboard.putBoolean("Shooter flywheelIsAtSpeed", flywheelIsAtSpeed());
     //SmartDashboard.putString("Shooter getMode", getMode().toString());
   }
 

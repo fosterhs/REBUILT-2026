@@ -619,7 +619,7 @@ class Drivetrain {
 
   // Publishes information to the dashboard. Should be called each period.
   public void updateDash() {
-    //SmartDashboard.putNumber("Vision Calibration Timer", getCalibrationTimer());
+    SmartDashboard.putNumber("Vision Calibration Timer", getVisionTimer());
     //SmartDashboard.putBoolean("atDriveGoal", atDriveGoal);
     //SmartDashboard.putNumber("Front Left Swerve Module Position", frontLeftModule.getDriveMotorPos());
     //SmartDashboard.putNumber("Front Right Swerve Module Position", frontRightModule.getDriveMotorPos());
