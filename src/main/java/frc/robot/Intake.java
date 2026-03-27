@@ -165,13 +165,19 @@ public class Intake {
 
         if (leftArmIsStowed) {
           leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
-        } else if (jamTimer.get() < 0.7) {
-          leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
-        } else if (jamTimer.get() < 1.0) {
-          leftArmMotor.setControl(leftArmPositionRequest.withPosition(armIntakePosition));
         } else {
-          leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
-          jamTimer.restart();
+          if (rightArmIsStowed) {
+            if (jamTimer.get() < 0.7) {
+              leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
+            } else if (jamTimer.get() < 1.0) {
+              leftArmMotor.setControl(leftArmPositionRequest.withPosition(armIntakePosition));
+            } else {
+              leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
+              jamTimer.restart();
+            }
+          } else {
+            leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
+          }
         }
       break;
     }
