@@ -111,9 +111,9 @@ public class Robot extends TimedRobot {
     // Auto 4 Path : Troll Auto. 
     swerve.loadPath("Troll Auto", 0.0, 0.0, 0.0, 90.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     // Auto 1 passing
-    swerve.loadPath("pass auto- first half", 0.0, 0.0, 0.0, 90.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+    swerve.loadPath("pass auto - first half", 0.0, 0.0, 0.0, 90.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     swerve.loadPath("pass auto - second half", 0.0, 0.0, 0.0, 0.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
-    swerve.loadPath("pass auto- third half.path",0,0,0.0 , 0.0 ); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+    swerve.loadPath("pass auto - third half",0,0,0.0 , 0.0 ); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     runAll(); // Helps prevent loop overruns on startup by running every command before the match starts.
     SignalLogger.enableAutoLogging(false);
     SignalLogger.stop();
@@ -167,7 +167,7 @@ public class Robot extends TimedRobot {
       case auto3:
         // AutoInit 3 code goes here.
         swerve.pushCalibration(true, -90.0); // Updates the robot's position on the field.
-        swerve.resetDriveController(calcHubHeading(2.9, 4.7));
+        swerve.resetDriveController(calcHubHeading(2.2, 4.7));
       break;
 
       case auto4:
@@ -503,7 +503,7 @@ public class Robot extends TimedRobot {
         switch (autoStage) {
           case 1:
             // Auto 3, Stage 1 code goes here.
-            swerve.driveTo(2.9, 4.7, calcHubHeading(2.9, 4.7)); // Brings the robot to a shooting position.
+            swerve.driveTo(2.2, 4.7, calcHubHeading(2.2, 4.7)); // Brings the robot to a shooting position.
             shooter.spinUp(); // Turns the shooter on.
             indexer.spinUp();
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
@@ -516,7 +516,7 @@ public class Robot extends TimedRobot {
 
           case 2:
             // Auto 3, Stage 2 code goes here.
-            swerve.driveTo(2.9, 4.7, calcHubHeading(2.9, 4.7)); // Brings the robot to a shooting position.
+            swerve.driveTo(2.2, 4.7, calcHubHeading(2.2, 4.7)); // Brings the robot to a shooting position.
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
             if (shootingTimer.get() > 4.0) {
               shooter.spinDown(); // Turns the shooter off.
