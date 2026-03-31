@@ -18,7 +18,6 @@ import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Intake { 
   // Motors and Sensors
@@ -68,8 +67,8 @@ public class Intake {
 
   // Constructor for the Intake class. This will be called when we create a new instance of the Intake in our Robot class. In the constructor, we will configure the motors with the appropriate settings for our robot, initialize the status signals for the arm positions and velocities, set the update frequency for those signals, and optimize the CAN bus utilization for all the motors to ensure that we are getting timely updates from all of them without overloading the CAN bus.
   public Intake() {
-    configArmMotor(leftArmMotor, leftArmEncoder, true);
-    configArmMotor(rightArmMotor, rightArmEncoder, false);
+    configArmMotor(leftArmMotor, leftArmEncoder, true, 38.0);
+    configArmMotor(rightArmMotor, rightArmEncoder, false, 30.0);
     configRollerMotor(leftRollerMotor, false);
     configRollerMotor(rightRollerMotor, true);
     configCenteringMotor(leftCenteringMotor, true);
@@ -112,7 +111,7 @@ public class Intake {
           rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
         } else if (jamTimer.get() < 0.7) {
           rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
-        } else if (jamTimer.get() < 1.0) {
+        } else if (jamTimer.get() < 1.1) {
           rightArmMotor.setControl(rightArmPositionRequest.withPosition(armIntakePosition));
         } else {
           rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
@@ -134,7 +133,7 @@ public class Intake {
           leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
         } else if (jamTimer.get() < 0.7) {
           leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
-        } else if (jamTimer.get() < 1.0) {
+        } else if (jamTimer.get() < 1.1) {
           leftArmMotor.setControl(leftArmPositionRequest.withPosition(armIntakePosition));
         } else {
           leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
@@ -156,7 +155,7 @@ public class Intake {
           rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
         } else if (jamTimer.get() < 0.7) {
           rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
-        } else if (jamTimer.get() < 1.0) {
+        } else if (jamTimer.get() < 1.1) {
           rightArmMotor.setControl(rightArmPositionRequest.withPosition(armIntakePosition));
         } else {
           rightArmMotor.setControl(rightArmPositionRequest.withPosition(armStowPosition));
@@ -169,7 +168,7 @@ public class Intake {
           if (rightArmIsStowed) {
             if (jamTimer.get() < 0.7) {
               leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
-            } else if (jamTimer.get() < 1.0) {
+            } else if (jamTimer.get() < 1.1) {
               leftArmMotor.setControl(leftArmPositionRequest.withPosition(armIntakePosition));
             } else {
               leftArmMotor.setControl(leftArmPositionRequest.withPosition(armStowPosition));
@@ -280,7 +279,7 @@ public class Intake {
     //SmartDashboard.putNumber("Intake getRightArmDesiredPosition", getRightArmDesiredPosition());
     //SmartDashboard.putBoolean("Intake rightArmInPosition", rightArmInPosition());
     //SmartDashboard.putBoolean("Intake isReady", isReady());
-    SmartDashboard.putNumber("jamTimer", jamTimer.get());
+    //SmartDashboard.putNumber("jamTimer", jamTimer.get());
   }
 
   public void simulationPeriodic() {
@@ -338,7 +337,7 @@ public class Intake {
   }
 
   // This method configures the settings for the arm motors. The configuration includes setting the neutral mode to brake, configuring the motor direction based on the invert parameter, setting up the PIDF constants for MotionMagicTorqueFOC closed-loop control, and configuring current limits to protect the motors and mechanical components of the intake mechanism. Finally, it applies the configuration to the motor controller with a specified timeout.
-  private void configArmMotor(TalonFX motor, CANcoder encoder, boolean invert) {
+  private void configArmMotor(TalonFX motor, CANcoder encoder, boolean invert, double statorLimit) {
     TalonFXConfiguration motorConfigs = new TalonFXConfiguration(); // Start with a new configuration object for the arm motors.
 
     motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake; // Set the neutral mode to brake so that the motors will resist movement when no power is applied. This can help hold the arms in position when we want them to stay still.
@@ -352,14 +351,14 @@ public class Intake {
     motorConfigs.Slot0.kP = 1000.0; // Units: amperes per 1 swerve wheel rotation of error.
     motorConfigs.Slot0.kI = 2600.0; // Units: amperes per 1 swerve wheel rotation * 1 second of error.
     motorConfigs.Slot0.kD = 100.0; // Units: amperes per 1 swerve wheel rotation / 1 second of error.
-    motorConfigs.MotionMagic.MotionMagicAcceleration = 10.0*5800.0/(60.0*25.0); // Units: rotations per second per second.
-    motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 20.0*5800.0/(60.0*25.0); // Units: roations per second.
+    motorConfigs.MotionMagic.MotionMagicAcceleration = 1.0*5800.0/(60.0*25.0); // Units: rotations per second per second.
+    motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 2.0*5800.0/(60.0*25.0); // Units: roations per second.
 
     // Current limits configuration. These limits can help protect the motors and the mechanical components of the intake from drawing too much current and potentially causing damage. Adjust these values as needed based on the performance of your specific robot's intake mechanism and the capabilities of your motors.
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.SupplyCurrentLimit = 20.0;
-    motorConfigs.CurrentLimits.StatorCurrentLimit = 30.0;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = statorLimit;
 
     motor.getConfigurator().apply(motorConfigs, 0.03); // Apply the configuration to the motor with a timeout of 0.03 seconds (30 milliseconds). This will send the configuration settings to the motor controller so that it can use them for controlling the motor.
   }

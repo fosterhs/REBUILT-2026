@@ -37,7 +37,7 @@ import frc.robot.LimelightHelpers.PoseEstimate;
 
 class Drivetrain {
   public final double maxVel = SwerveModule.maxVel; // The maximum velocity of the robot, limited by the speed of the swerve modules at full power.
-  public final double maxAcc = 0.8*9.80665; // The maximum acceleration of the robot, typically limited by the coefficient of friction between the swerve wheels and the field.
+  public final double maxAcc = 1.0*9.80665; // The maximum acceleration of the robot, typically limited by the coefficient of friction between the swerve wheels and the field.
   public final double wheelbaseX = (24.0-2*2.625)*0.0254; // The length of the robot from front to back in units of meters. Measured from the centers of each swerve wheel.
   public final double wheelbaseY = (31.0-2*2.625)*0.0254; // The length of the robot from left to right in units of meters. Measured from the centers of each swerve wheel.
   public final double wheelbaseR = Math.sqrt(Math.pow(wheelbaseX/2.0, 2) + Math.pow(wheelbaseY/2.0, 2)); // The "radius" of the robot from robot center to the center of the swerve wheel in units of meters.
@@ -619,8 +619,8 @@ class Drivetrain {
 
   // Publishes information to the dashboard. Should be called each period.
   public void updateDash() {
-    SmartDashboard.putNumber("Vision Calibration Timer", getVisionTimer());
-    //SmartDashboard.putBoolean("atDriveGoal", atDriveGoal);
+    //SmartDashboard.putNumber("Vision Calibration Timer", getVisionTimer());
+    SmartDashboard.putBoolean("atDriveGoal", atDriveGoal);
     //SmartDashboard.putNumber("Front Left Swerve Module Position", frontLeftModule.getDriveMotorPos());
     //SmartDashboard.putNumber("Front Right Swerve Module Position", frontRightModule.getDriveMotorPos());
     //SmartDashboard.putNumber("Back Right Swerve Module Position", backRightModule.getDriveMotorPos());

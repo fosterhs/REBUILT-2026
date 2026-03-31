@@ -115,8 +115,8 @@ public class Robot extends TimedRobot {
     swerve.loadPath("pass auto - second half", 0.0, 0.0, 0.0, 0.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     swerve.loadPath("pass auto - third half",0,0,0.0 , 0.0 ); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     runAll(); // Helps prevent loop overruns on startup by running every command before the match starts.
-    SignalLogger.enableAutoLogging(false);
-    SignalLogger.stop();
+    SignalLogger.setPath("/media/sda1/");
+    SignalLogger.enableAutoLogging(true);
   }
 
   public void robotPeriodic() {
@@ -1072,8 +1072,8 @@ public class Robot extends TimedRobot {
   }
 
   // This method calculates the position the hood needs to be at to shoot accurately based on the distance to the target. It uses a calibration array to return hood position values based on distance to the target.
-  private double[] scoringHoodCalibrationDistances = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0}; 
-  private double[] scoringHoodCalibrationValues = {0.02, 0.035, 0.0545, 0.0575, 0.062, 0.065, 0.068, 0.06895, 0.06}; 
+  private double[] scoringHoodCalibrationDistances = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0, 7.0}; 
+  private double[] scoringHoodCalibrationValues = {0.02, 0.035, 0.0545, 0.0575, 0.062, 0.065, 0.068, 0.06895, 0.06, 0.045}; 
   private double[] passingHoodCalibrationDistances = {4.0, 6.0, 8.0, 10.0};
   private double[] passingHoodCalibrationValues = {0.06, 0.066, 0.092, 0.115};
   private double calcHoodPosition() {

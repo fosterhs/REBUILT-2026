@@ -23,7 +23,7 @@ import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 
 class SwerveModule {
-  public static final double correctionFactor = 0.98; // Factor that corrects for real-world deviations from the odometry calculated position of the robot. These can be caused by things like tread wear. Set this value to 1, then make the robot follow a 1 meter path in auto. Set this value to the distance the robot actually traveled.
+  public static final double correctionFactor = 1.0; // Factor that corrects for real-world deviations from the odometry calculated position of the robot. These can be caused by things like tread wear. Set this value to 1, then make the robot follow a 1 meter path in auto. Set this value to the distance the robot actually traveled.
   public static final double wheelCirc = 4.0*0.0254*Math.PI; // Circumference of the wheel. Unit: meters
   public static final double turnGearRatio = 18.75; // Turn motor rotor rotations per turn rotation of the swerve wheel.
   public static final double driveGearRatio = 75.0/14.0; // Drive motor rotor rotations per drive rotation of the swerve wheel.
@@ -151,8 +151,8 @@ class SwerveModule {
     // Current limit configuration. 
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
-    motorConfigs.CurrentLimits.SupplyCurrentLimit = 70.0;
-    motorConfigs.CurrentLimits.StatorCurrentLimit = 120.0;
+    motorConfigs.CurrentLimits.SupplyCurrentLimit = 55.0;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 80.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03); // Applies the configuration to the motor. 
   }
