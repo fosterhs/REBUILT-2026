@@ -22,7 +22,6 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
@@ -30,7 +29,6 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.simulation.DifferentialDrivetrainSim;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.LimelightHelpers.PoseEstimate;
@@ -129,20 +127,6 @@ class Drivetrain {
 
   // Simulation
   private final Field2d robotField = new Field2d();
-  DifferentialDrivetrainSim driveSim = new DifferentialDrivetrainSim(
-      DCMotor.getNEO(2),        // 2 NEO motors on each side of the drivetrain.
-      5.357,                       // 7.29:1 gearing reduction.
-      6.498,               // MOI of 7.5 kg m^2 (from CAD model).
-      40.834,                        // The mass of the robot is 60 kg.
-      Units.inchesToMeters(0.051),     // The robot uses 3" radius wheels.
-      0.7112,            // The track width is 0.7112 meters.
-      // The standard deviations for measurement noise:
-      // x and y:          0.001 m
-      // heading:          0.001 rad
-      // l and r velocity: 0.1   m/s
-      // l and r position: 0.005 m
-      VecBuilder.fill(0.001, 0.001, 0.001, 0.1, 0.1, 0.005, 0.005)
-  );
 
   // Constructor for the drivetrain. Initializes the gyro, resets the PID controllers, and sets up the dashboard.
   public Drivetrain() {
@@ -166,7 +150,32 @@ class Drivetrain {
     anglePathController.setIntegratorRange(-maxAngVel*0.6, maxAngVel*0.6);
 
     if (Robot.isSimulation()) {
+      robotField.getObject("targetPath").setPose(0,0,new Rotation2d());
       robotField.setRobotPose(0, 0, new Rotation2d(Math.toRadians(90)));
+
+      setPosTol(0);
+      setAngTol(0);
+
+      // Configure the Drive Controllers for Simulation
+      // !!! DO NOT USE THESE VALUES FOR THE REAL ROBOT, IT WILL NOT BE GOOD !!!
+      xDriveController.setP(5);
+      xDriveController.setI(0.0);
+      xDriveController.setD(0.0);
+
+      yDriveController.setP(5);
+      yDriveController.setI(0.0);
+      yDriveController.setD(0.0);
+
+      // Configure the Path Controllers for Simulation
+      // !!! DO NOT USE THESE VALUES FOR THE REAL ROBOT, IT WILL NOT BE GOOD !!!
+      xPathController.setP(18);
+      xPathController.setI(3.5);
+      xPathController.setD(3);
+
+      yPathController.setP(18);
+      yPathController.setI(4.5);
+      yPathController.setD(3);
+      
     }
 
     SmartDashboard.putData("Field", robotField);
@@ -275,6 +284,10 @@ class Drivetrain {
     atDriveGoal = Math.abs(getFusedAng() - targetAngle) < angTol 
       && Math.sqrt(Math.pow(targetY - getYPos(), 2) + Math.pow(targetX - getXPos(), 2)) < posTol;
 
+    if (Robot.isSimulation()) {
+      robotField.getObject("targetPath").setPose(targetX, targetY, new Rotation2d(Math.toRadians(targetAngle)));
+    }
+
     drive(xDriveController.calculate(getXPos(), targetX), 
       yDriveController.calculate(getYPos(), targetY), 
       angleDriveController.calculate(getAngleDistance(getFusedAng(), targetAngle)*Math.PI/180.0, 0.0));
@@ -316,11 +329,10 @@ class Drivetrain {
       atDriveGoal = atPathEndpoint(pathIndex);
 
       if (Robot.isSimulation()) {
-        // publish the desired pose to compare against
-        SmartDashboard.putNumber("sim/debug/pathXPos", pathXPos);
-        SmartDashboard.putNumber("sim/debug/pathYPos", pathYPos);
-        SmartDashboard.putNumber("sim/debug/pathAngPos", pathAngPos);
+        // Located here because we're not *always* following a path
+        robotField.getObject("targetPath").setPose(new Pose2d(pathXPos, pathYPos, new Rotation2d(Math.toRadians(pathAngPos))));
       }
+
 
       drive(currGoal.fieldSpeeds.vxMetersPerSecond + xPathController.calculate(getXPos(), pathXPos), 
         currGoal.fieldSpeeds.vyMetersPerSecond + yPathController.calculate(getYPos(), pathYPos),
@@ -495,6 +507,7 @@ class Drivetrain {
 
   public void initPathPose(int pathIndex) {
     // Used in simulation to overwrite the starting location of the robot based on the path provided
+    System.out.println(paths.size());
     setPoseSim(paths.get(pathIndex).sample(0).pose);
   }
 
@@ -657,6 +670,15 @@ class Drivetrain {
       Pose2d curPose = odometry.getEstimatedPosition();
       curPose = curPose.rotateAround(curPose.getTranslation(), new Rotation2d(0));
       robotField.setRobotPose(curPose);
+
+      // publish the desired pose to compare against
+      SmartDashboard.putNumber("sim/debug/pathXPos", pathXPos);
+      SmartDashboard.putNumber("sim/debug/pathYPos", pathYPos);
+      SmartDashboard.putNumber("sim/debug/pathAngPos", pathAngPos);
+
+      // Plot (goal - current) to look at controller response
+      SmartDashboard.putNumber("sim/debug/deltaX", pathXPos - curPose.getX());
+      SmartDashboard.putNumber("sim/debug/deltaY", pathYPos - curPose.getY());     
     }
   }
 
@@ -682,9 +704,15 @@ class Drivetrain {
 
   public void simulationPeriodic() {
     // Update gyro (pigeon) simulation via pigeonSim
-    pigeonSim.addYaw(getAngVelMeasured() * Robot.dTime);
+    pigeonSim.addYaw(angVelDemanded * Robot.dTime);
     pigeonSim.setRoll(0);
     pigeonSim.setPitch(0);
+
+    // TODO: all robot relative
+    // [] Forward-Right drift when going JUST forward
+    // [] Backward-Left drift when going JUST backward
+    // [] Backward-Right drift when going JUST right
+    // [] Forward-Left drift when going JUST left
 
     // Position is updated via the SwerveModule
     for (int moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {

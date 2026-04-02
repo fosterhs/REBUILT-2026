@@ -45,7 +45,7 @@ public class Robot extends TimedRobot {
   private boolean currRT = false; // Stores whether the robot is preparing to shoot based on driver inputs. This can be used to start spinning up the shooter and calculating the shooting trajectory before the robot is actually ready to shoot to help improve accuracy and reduce the amount of time it takes for the robot to start shooting once the driver wants to shoot.
   private boolean lastRT = false; // Stores the value of prepareToShoot from the previous iteration of the teleop periodic loop to detect when the driver has just started preparing to shoot.
   private boolean RTPressed = false; // Stores whether the right trigger is currently pressed. This is used to control when the robot is preparing to shoot based on driver inputs.
-  private boolean RTReleased = false; 
+  private boolean RTReleased = false;
   private boolean isPreparingToShoot = false;
 
   // LED Variables
@@ -63,6 +63,11 @@ public class Robot extends TimedRobot {
   private static final String auto4 = "Troll Auto";
   private static final String auto5 = "Left Side Start, Double Swipe. (Bashayer)";
   private static final String auto6 = "Right Side Start, Double Swipe. (Bashayer)";
+
+  // Movement Test Autos
+  private static final String autoStraight = "Straight Movement Test";
+  private static final String autoCircle = "Circle Movement Test";
+  
   private String autoSelected;
   private int autoStage = 1;
   private boolean autoCompleted = false;
@@ -84,18 +89,21 @@ public class Robot extends TimedRobot {
   private double targetY; // The y-position of the point that the robot is aiming at when shooting in meters. This will either be the position of the hub or the position of the passing point, depending on whether the robot is passing or shooting directly at the hub. Includes an offset to lead shots while shooting on the move based on airtime and velocity.
   
   // Sim Variables
-  public static final double dTime = 0.020;  // units: seconds
+  public final static double dTime = 0.020; // units: seconds
   private final double startingXPosSim = 3.725;  // m
   private final double startingYPosSim = 0.900;  // m
 
   public void robotInit() { 
     // Configures the auto chooser on the dashboard.
-    autoChooser.setDefaultOption(auto1, auto1);
+    autoChooser.addOption(auto1, auto1);
     autoChooser.addOption(auto2, auto2);
     autoChooser.addOption(auto3, auto3);
     autoChooser.addOption(auto4, auto4);
     autoChooser.addOption(auto5, auto5);
     autoChooser.addOption(auto6, auto6);
+    autoChooser.addOption(autoStraight, autoStraight);
+    autoChooser.addOption(autoCircle, autoCircle);
+    autoChooser.setDefaultOption(auto1, auto1);
     SmartDashboard.putData("Autos", autoChooser);
 
     // Auto  6 Paths : Double Swipe, Right Starting Position. 0-3
@@ -111,9 +119,21 @@ public class Robot extends TimedRobot {
     // Auto 4 Path : Troll Auto. 
     swerve.loadPath("Troll Auto", 0.0, 0.0, 0.0, 90.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     // Auto 1 passing
+
     swerve.loadPath("pass auto - first half", 0.0, 0.0, 0.0, 90.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     swerve.loadPath("pass auto - second half", 0.0, 0.0, 0.0, 0.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     swerve.loadPath("pass auto - third half",0,0,0.0 , 0.0 ); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+
+    // Load Straight Path
+    swerve.loadPath("right_move_test", 0.0, 0.0, 0.0, 0.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+    swerve.loadPath("left_move_test", 0.0, 0.0, 0.0, 0.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+    swerve.loadPath("down_move_test", 0.0, 0.0, 0.0, 0.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+    swerve.loadPath("up_move_test", 0.0, 0.0, 0.0, 0.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+    
+    // Load Circle path
+    swerve.loadPath("circle_test_right", 0.0, 0.0, 0.0, 0.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+    swerve.loadPath("circle_test_left", 0.0, 0.0, 0.0, 0.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+
     runAll(); // Helps prevent loop overruns on startup by running every command before the match starts.
     SignalLogger.setPath("/media/sda1/");
     SignalLogger.enableAutoLogging(true);
@@ -187,6 +207,18 @@ public class Robot extends TimedRobot {
         swerve.pushCalibration(true, 90.0); // Updates the robot's position on the field.
         swerve.resetDriveController(calcHubHeading(3.5, 0.79));
       break;
+
+      case autoStraight:
+        // AutoInit 4 code goes here.
+        swerve.pushCalibration(true, 0.0); // Updates the robot's position on the field.
+        swerve.resetPathController(11); 
+      break;
+
+      case autoCircle:
+        // AutoInit 4 code goes here.
+        swerve.pushCalibration(true, 0.0); // Updates the robot's position on the field.
+        swerve.resetPathController(15); 
+      break;
     }
 
     if (Robot.isSimulation()) {
@@ -201,6 +233,12 @@ public class Robot extends TimedRobot {
         case auto3:
           swerve.initPathPose(6);
         break;
+        case autoStraight:
+          swerve.initPathPose(11);
+          break;
+        case autoCircle:
+          swerve.initPathPose(15);
+          break;
         default:
           swerve.initPathPose(0);
       }
@@ -795,6 +833,29 @@ public class Robot extends TimedRobot {
               indexer.index(); // Turns on the indexer.
             }
           break;
+        }
+      break;
+      case autoStraight:
+        swerve.followPath(autoStage+10);
+        if (swerve.atPathEndpoint(autoStage+10)) {
+          autoStage ++;
+          if (autoStage > 4) {
+            autoStage = 1;
+          }
+          
+          swerve.resetPathController(autoStage+10); 
+        }
+      break;
+      case autoCircle:
+        swerve.followPath(autoStage+14);
+        if (swerve.atPathEndpoint(autoStage+14)) {
+          if (autoStage == 2) {
+            autoStage = 1;
+          } else {
+            autoStage = 2;
+          }
+          swerve.resetPathController(autoStage+14);
+
         }
       break;
     }
