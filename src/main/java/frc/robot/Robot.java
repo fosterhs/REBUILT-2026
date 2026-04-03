@@ -959,6 +959,78 @@ public class Robot extends TimedRobot {
         }
       break; 
 
+      case auto8:
+        switch (autoStage) {
+          case 1:
+            // Auto 8, Stage 1 code goes here : Intake testing.
+            swerve.drive(0.0, 0.0, 0.0); // Holds the robot still.
+            intake.rightIntake(); // Deploys the right intake.
+            if (shootingTimer.get() > 1.0) {
+              intake.leftIntake(); // Deploys the left intake.
+            }
+            if (shootingTimer.get() > 2.0) {
+              intake.stow(); // Stows the intake.
+            }
+            if (shootingTimer.get() > 2.5) {
+              intake.leftIntake(); // Deploys the left intake.
+            }
+            if (shootingTimer.get() > 2.0) {
+              intake.rightIntake(); // Deploys the right intake.
+            }
+            if (shootingTimer.get() > 2.5) {
+              intake.stow(); // Stows the intake.
+            }
+            if (shootingTimer.get() > 3.0) {
+              intake.rightIntake(); // Deploys the right intake.
+            }
+            if (shootingTimer.get() > 3.5) {
+              intake.leftIntake(); // Deploys the left intake.
+            }
+            if (shootingTimer.get() > 4.0) {
+              intake.rightIntake(); // Deploys the right intake.
+            }
+            if (shootingTimer.get() > 4.5) {
+              intake.stow(); // Stows the intake.
+            }
+            if (shootingTimer.get() > 5.5)
+              shootingTimer.restart(); // Restarts the shooting timer.
+              autoStage = 2; // Advances to the next stage when intakes have been tested.
+            }
+          break;
+
+          case 2:
+            // Auto 8, Stage 2 code goes here : Hood testing.
+            swerve.drive(0.0, 0.0, 0.0); // Holds the robot still.
+            shooter.setHoodPosition(shooter.hoodMaxPosition) // Sets the shooter hood at its furthest position.
+            if (shooterTimer.get() > 1.0) {
+              shooter.setHoodPosition(shooter.hoodMinPosition) // Sets the shooter hood at its lowest position.
+            }
+            if (shooterTimer.get() > 1.5) {
+              shooter.setHoodPosition(shooter.hoodMaxPosition) // Sets the shooter hood at its furthest position.
+            }
+            if (shooterTimer.get() > 2.0) {
+              shooter.setHoodPosition(shooter.hoodMinPosition) // Sets the shooter hood at its lowest position.
+            }
+            if (shooterTimer.get() > 2.5) {
+              shooter.lowerHood(); // Lowers the hood of the shooter.
+              shootingTimer.restart(); // Restarts the shooting timer.
+              autoStage = 3; // Advances to the next stage when the hood has been tested.
+            }
+          break;
+
+          case 3:
+            // Auto 8, Stage 3 code goes here : Indexer testing. i did NOT know what i was doing here
+            swerve.drive(0.0, 0.0, 0.0); // Holds the robot still.
+            indexer.index(); // Turns on the indexer.
+            if (shootingTimer.get() > 2.0) {
+              indexer.idle() // Turns the indexer off.
+              shootingTimer.restart(); // Restarts the shooting timer.
+              autoStage = 4; // Advances to the next stage when the indexer has been tested.
+            }
+          break;
+        }
+      break;
+
       case autoStraight:
         swerve.followPath(autoStage+10);
         if (swerve.atPathEndpoint(autoStage+10)) {
