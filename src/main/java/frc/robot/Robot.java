@@ -908,6 +908,7 @@ public class Robot extends TimedRobot {
               shootingTimer.restart(); // Restarts the shooting timer.
               indexer.index(); // Turns on the indexer.
               autoStage = 6; // Advances to the next stage once the robot is ready to shoot.
+            }
           break;
 
           case 6:
@@ -920,6 +921,7 @@ public class Robot extends TimedRobot {
               indexer.idle(); // Turns the indexer off.
               swerve.resetDriveController(-90.0);
               autoStage = 7; // Advances to the next stage once the robot has finished shooting.
+            }
           break;
 
           case 7:
@@ -992,7 +994,7 @@ public class Robot extends TimedRobot {
             if (shootingTimer.get() > 4.5) {
               intake.stow(); // Stows the intake.
             }
-            if (shootingTimer.get() > 5.5)
+            if (shootingTimer.get() > 5.5) {
               shootingTimer.restart(); // Restarts the shooting timer.
               autoStage = 2; // Advances to the next stage when intakes have been tested.
             }
@@ -1001,17 +1003,17 @@ public class Robot extends TimedRobot {
           case 2:
             // Auto 8, Stage 2 code goes here : Hood testing.
             swerve.drive(0.0, 0.0, 0.0); // Holds the robot still.
-            shooter.setHoodPosition(shooter.hoodMaxPosition) // Sets the shooter hood at its furthest position.
-            if (shooterTimer.get() > 1.0) {
-              shooter.setHoodPosition(shooter.hoodMinPosition) // Sets the shooter hood at its lowest position.
+            shooter.setHoodPosition(shooter.hoodMaxPosition); // Sets the shooter hood at its furthest position.
+            if (shootingTimer.get() > 1.0) {
+              shooter.setHoodPosition(shooter.hoodMinPosition); // Sets the shooter hood at its lowest position.
             }
-            if (shooterTimer.get() > 1.5) {
-              shooter.setHoodPosition(shooter.hoodMaxPosition) // Sets the shooter hood at its furthest position.
+            if (shootingTimer.get() > 1.5) {
+              shooter.setHoodPosition(shooter.hoodMaxPosition); // Sets the shooter hood at its furthest position.
             }
-            if (shooterTimer.get() > 2.0) {
-              shooter.setHoodPosition(shooter.hoodMinPosition) // Sets the shooter hood at its lowest position.
+            if (shootingTimer.get() > 2.0) {
+              shooter.setHoodPosition(shooter.hoodMinPosition); // Sets the shooter hood at its lowest position.
             }
-            if (shooterTimer.get() > 2.5) {
+            if (shootingTimer.get() > 2.5) {
               shooter.lowerHood(); // Lowers the hood of the shooter.
               shootingTimer.restart(); // Restarts the shooting timer.
               autoStage = 3; // Advances to the next stage when the hood has been tested.
@@ -1023,7 +1025,7 @@ public class Robot extends TimedRobot {
             swerve.drive(0.0, 0.0, 0.0); // Holds the robot still.
             indexer.index(); // Turns on the indexer.
             if (shootingTimer.get() > 2.0) {
-              indexer.idle() // Turns the indexer off.
+              indexer.idle(); // Turns the indexer off.
               shootingTimer.restart(); // Restarts the shooting timer.
               autoStage = 4; // Advances to the next stage when the indexer has been tested.
             }
