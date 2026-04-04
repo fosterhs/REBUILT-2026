@@ -67,8 +67,8 @@ public class Intake {
 
   // Constructor for the Intake class. This will be called when we create a new instance of the Intake in our Robot class. In the constructor, we will configure the motors with the appropriate settings for our robot, initialize the status signals for the arm positions and velocities, set the update frequency for those signals, and optimize the CAN bus utilization for all the motors to ensure that we are getting timely updates from all of them without overloading the CAN bus.
   public Intake() {
-    configArmMotor(leftArmMotor, leftArmEncoder, true, 38.0);
-    configArmMotor(rightArmMotor, rightArmEncoder, false, 30.0);
+    configArmMotor(leftArmMotor, leftArmEncoder, true);
+    configArmMotor(rightArmMotor, rightArmEncoder, false);
     configRollerMotor(leftRollerMotor, false);
     configRollerMotor(rightRollerMotor, true);
     configCenteringMotor(leftCenteringMotor, true);
@@ -337,7 +337,7 @@ public class Intake {
   }
 
   // This method configures the settings for the arm motors. The configuration includes setting the neutral mode to brake, configuring the motor direction based on the invert parameter, setting up the PIDF constants for MotionMagicTorqueFOC closed-loop control, and configuring current limits to protect the motors and mechanical components of the intake mechanism. Finally, it applies the configuration to the motor controller with a specified timeout.
-  private void configArmMotor(TalonFX motor, CANcoder encoder, boolean invert, double statorLimit) {
+  private void configArmMotor(TalonFX motor, CANcoder encoder, boolean invert) {
     TalonFXConfiguration motorConfigs = new TalonFXConfiguration(); // Start with a new configuration object for the arm motors.
 
     motorConfigs.MotorOutput.NeutralMode = NeutralModeValue.Brake; // Set the neutral mode to brake so that the motors will resist movement when no power is applied. This can help hold the arms in position when we want them to stay still.
@@ -345,20 +345,20 @@ public class Intake {
 
     motorConfigs.Feedback.FeedbackRemoteSensorID = encoder.getDeviceID(); // Sets the ID of the remote sensor that will be used for feedback in closed-loop control. In this case, we are using the hood encoder as the feedback device for the hood motor, so we set this to the device ID of the hood encoder.
     motorConfigs.Feedback.FeedbackSensorSource = FeedbackSensorSourceValue.FusedCANcoder; // Sets the source of the feedback sensor for closed-loop control. Since we are using the hood encoder as the feedback device, we set this to FusedCANcoder, which means that the motor will use both the integrated sensor and the remote CANcoder sensor for feedback.
-    motorConfigs.Feedback.RotorToSensorRatio = 25.0; // The ratio of motor rotations to sensor rotations. This should be set based on the gearing between the motor and the hood mechanism.
+    motorConfigs.Feedback.RotorToSensorRatio = 18.75; // The ratio of motor rotations to sensor rotations. This should be set based on the gearing between the motor and the hood mechanism.
 
     // MotionMagicTorqueFOC closed-loop control configuration.
     motorConfigs.Slot0.kP = 1000.0; // Units: amperes per 1 swerve wheel rotation of error.
     motorConfigs.Slot0.kI = 2600.0; // Units: amperes per 1 swerve wheel rotation * 1 second of error.
     motorConfigs.Slot0.kD = 100.0; // Units: amperes per 1 swerve wheel rotation / 1 second of error.
-    motorConfigs.MotionMagic.MotionMagicAcceleration = 1.0*5800.0/(60.0*25.0); // Units: rotations per second per second.
-    motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 2.0*5800.0/(60.0*25.0); // Units: roations per second.
+    motorConfigs.MotionMagic.MotionMagicAcceleration = 1.0*5800.0/(60.0*18.75); // Units: rotations per second per second.
+    motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 2.0*5800.0/(60.0*18.75); // Units: roations per second.
 
     // Current limits configuration. These limits can help protect the motors and the mechanical components of the intake from drawing too much current and potentially causing damage. Adjust these values as needed based on the performance of your specific robot's intake mechanism and the capabilities of your motors.
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
-    motorConfigs.CurrentLimits.SupplyCurrentLimit = 20.0;
-    motorConfigs.CurrentLimits.StatorCurrentLimit = statorLimit;
+    motorConfigs.CurrentLimits.SupplyCurrentLimit = 70.0;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 40.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03); // Apply the configuration to the motor with a timeout of 0.03 seconds (30 milliseconds). This will send the configuration settings to the motor controller so that it can use them for controlling the motor.
   }

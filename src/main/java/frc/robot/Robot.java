@@ -945,9 +945,9 @@ public class Robot extends TimedRobot {
     if (isShooting || isPreparingToShoot) {
       swerve.setLimits(0.2, 1.0, 0.4, 1.0);
     } else if (boostMode) {
-      swerve.setLimits(1.0, 0.3, 1.0, 1.0);
+      swerve.setLimits(1.0, 0.4, 1.0, 1.0);
     } else {
-      swerve.setLimits(0.6, 0.3, 1.0, 1.0);
+      swerve.setLimits(1.0, 0.4, 1.0, 1.0);
     }
 
     // The following code controls the swerve lock. If the Y button is pressed, the swerve modules will lock for defense. If any of the joysticks are moved more than 5%, the swerve modules will unlock and the robot will be able to drive again.
