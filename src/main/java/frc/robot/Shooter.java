@@ -21,7 +21,6 @@ import com.ctre.phoenix6.sim.TalonFXSimState;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Shooter {
   private final CANBus canivore = new CANBus("canivore"); // Creates a new CAN bus called "canivore". This is the name of the CAN bus that the shooter motors and hood encoder are connected to. Make sure to set this correctly based on your robot's wiring.
@@ -163,12 +162,12 @@ public class Shooter {
   public void updateDash() {
     //SmartDashboard.putNumber("Shooter getRightShooterRPM", getRightFlywheelMotorRPM());
     //SmartDashboard.putNumber("Shooter getLeftShooterRPM", getLeftFlywheelMotorRPM());
-    SmartDashboard.putBoolean("Shooter shooterIsAtSpeed", flywheelIsAtSpeed());
+    //SmartDashboard.putBoolean("Shooter shooterIsAtSpeed", flywheelIsAtSpeed());
     //SmartDashboard.putNumber("Shooter shootingRPM", shootingRPM);
     //SmartDashboard.putNumber("Shooter getHoodPosition", getHoodPosition());
-    SmartDashboard.putBoolean("Shooter hoodIsInPosition", hoodIsInPosition());
+    //SmartDashboard.putBoolean("Shooter hoodIsInPosition", hoodIsInPosition());
     //SmartDashboard.putNumber("Shooter desiredHoodPosition", desiredHoodPosition);
-    SmartDashboard.putBoolean("Shooter isReady", isReady());
+    //SmartDashboard.putBoolean("Shooter isReady", isReady());
     //SmartDashboard.putBoolean("Shooter flywheelIsReady", flywheelIsReady());
     //SmartDashboard.putBoolean("Shooter flywheelIsAtSpeed", flywheelIsAtSpeed());
     //SmartDashboard.putString("Shooter getMode", getMode().toString());

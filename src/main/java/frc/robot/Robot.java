@@ -45,8 +45,8 @@ public class Robot extends TimedRobot {
   private boolean currRT = false; // Stores whether the robot is preparing to shoot based on driver inputs. This can be used to start spinning up the shooter and calculating the shooting trajectory before the robot is actually ready to shoot to help improve accuracy and reduce the amount of time it takes for the robot to start shooting once the driver wants to shoot.
   private boolean lastRT = false; // Stores the value of prepareToShoot from the previous iteration of the teleop periodic loop to detect when the driver has just started preparing to shoot.
   private boolean RTPressed = false; // Stores whether the right trigger is currently pressed. This is used to control when the robot is preparing to shoot based on driver inputs.
-  private boolean RTReleased = false;
-  private boolean isPreparingToShoot = false;
+  private boolean RTReleased = false; // Stores whether the right trigger is currently released. This is used to control when the robot is preparing to shoot based on driver inputs.
+  private boolean isPreparingToShoot = false; // Stores whether the robot is preparing to shoot based on driver inputs. This can be used to start spinning up the shooter and calculating the shooting trajectory before the robot is actually ready to shoot to help improve accuracy and reduce the amount of time it takes for the robot to start shooting once the driver wants to shoot.
 
   // LED Variables
   private final CANBus canivore = new CANBus("canivore"); // Initializes the CANivore CAN Bus for controlling the CANdle.
@@ -136,10 +136,12 @@ public class Robot extends TimedRobot {
     swerve.loadPath("circle_test_left", 0.0, 0.0, 0.0, 0.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     // Auto 8 Path : Neutral and Depot Collection, Center Start Position. 18-19
     swerve.loadPath("center pt. 1", 0.0, 0.0, 0.0, -42.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
-
-    runAll(); // Helps prevent loop overruns on startup by running every command before the match starts.
+    swerve.loadPath("center pt. 2", 0.0, 0.0, 0.0, -25.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+    
     SignalLogger.setPath("/media/sda1/");
     SignalLogger.enableAutoLogging(true);
+
+    runAll(); // Helps prevent loop overruns on startup by running every command before the match starts.
   }
 
   public void robotPeriodic() {
@@ -1135,7 +1137,6 @@ public class Robot extends TimedRobot {
         swerve.resetDriveController(calcShotHeading()); // Resets the drive controller to the current optimal shooting heading to prepare for rotation.
       }
     }
-    
 
     // The following code allows the driver to toggle between boost mode and default mode with the A and B buttons. In boost mode, the robot will drive at 60% of its maximum speed. In default mode, the robot will drive at 40% of its maximum speed.
     if (driver.getRawButtonPressed(2)) boostMode = true; // A button sets boost mode. (100% speed up from default of 60%).
@@ -1193,14 +1194,15 @@ public class Robot extends TimedRobot {
     // Applies a deadband to controller inputs. Also limits the acceleration of controller inputs.
     double xDemand = MathUtil.applyDeadband(-driver.getLeftY(), 0.05);
     double yDemand = MathUtil.applyDeadband(-driver.getLeftX(), 0.05);
-    double totalDemand = Math.sqrt(Math.pow(xDemand, 2) + Math.pow(yDemand, 2));
-    xVelTeleop = xDemand*swerve.maxVelSet;
-    yVelTeleop = yDemand*swerve.maxVelSet;
-    if (totalDemand > 1.0) {
-      xVelTeleop = xVelTeleop/totalDemand;
-      yVelTeleop = yVelTeleop/totalDemand;
+    xVelTeleop = Math.signum(xDemand)*Math.pow(xDemand, 2)*swerve.maxVelSet; // Squaring the total demand allows for finer control at lower speeds while still allowing for full speed at maximum joystick input.
+    yVelTeleop = Math.signum(yDemand)*Math.pow(yDemand, 2)*swerve.maxVelSet; // Squaring the total demand allows for finer control at lower speeds while still allowing for full speed at maximum joystick input.
+    double totalVel = Math.hypot(xVelTeleop, yVelTeleop);
+    if (totalVel > swerve.maxVelSet) { // If the total velocity is greater than the maximum velocity, the velocities are scaled down to maintain the direction of the input while limiting the speed.
+      xVelTeleop = xVelTeleop/totalVel;
+      yVelTeleop = yVelTeleop/totalVel;
     }
-    angVelTeleop = MathUtil.applyDeadband(-driver.getRightX(), 0.05)*swerve.maxAngVelSet;
+    double angDemand = MathUtil.applyDeadband(-driver.getRightX(), 0.05);
+    angVelTeleop = Math.signum(angDemand)*Math.pow(angDemand, 2)*swerve.maxAngVelSet; // Squaring the total demand allows for finer control at lower speeds while still allowing for full speed at maximum joystick input.
 
     if (swerveLock) {
       swerve.xLock(); // Locks the swerve modules (for defense).
@@ -1427,7 +1429,7 @@ public class Robot extends TimedRobot {
 
   // Publishes information to the dashboard.
   private void updateDash() {
-    SmartDashboard.putBoolean("Boost Mode", boostMode);
+    //SmartDashboard.putBoolean("Boost Mode", boostMode);
     if (Robot.isSimulation()) {
       SmartDashboard.putNumber("sim/Auto Stage", autoStage);
       SmartDashboard.putBoolean("sim/At Drive Goal", swerve.atDriveGoal());
