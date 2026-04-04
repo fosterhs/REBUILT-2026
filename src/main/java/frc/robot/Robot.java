@@ -136,7 +136,6 @@ public class Robot extends TimedRobot {
     swerve.loadPath("circle_test_left", 0.0, 0.0, 0.0, 0.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     // Auto 8 Path : Neutral and Depot Collection, Center Start Position. 18-19
     swerve.loadPath("center pt. 1", 0.0, 0.0, 0.0, -42.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
-    swerve.loadPath("center pt. 2", 0.0, 0.0, 0.0, -25.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
 
     runAll(); // Helps prevent loop overruns on startup by running every command before the match starts.
     SignalLogger.setPath("/media/sda1/");
@@ -1281,8 +1280,8 @@ public class Robot extends TimedRobot {
   // This method calculates the amount of time the fuel will be in the air based on the distance to the hub and the velocity of the robot. It uses an iterative approach to account for the fact that the aim point changes based on the velocity of the robot and the air time, which changes the distance to the hub, which changes the air time, which changes the aim point, etc. After 10 iterations, the change in air time should be negligible.
   private double[] scoringAirTimeCalibrationDistances = {2.0, 3.0, 4.0, 5.0, 6.0}; // Represents the distance to the hub in meters for each air time calibration value.
   private double[] scoringAirTimeCalibrationValues = {1.1, 1.22, 1.26, 1.46, 1.66}; // Represents the amount of time the fuel will be in the air in seconds for each distance to the hub in the airTimeCalibrationDistances array. The values in this array should correspond to the distances in the airTimeCalibrationDistances array (i.e. the first value in this array is the air time for the first distance in the airTimeCalibrationDistances array, etc.). These values are used to calculate the aim point of the robot based on its velocity and distance to the hub.
-  private double[] passingAirTimeCalibrationDistances = {4.0, 6.0, 8.0, 10.0, 12.0}; // Represents the distance to the hub in meters for each air time calibration value.
-  private double[] passingAirTimeCalibrationValues = {1.3, 1.6, 1.9, 2.2, 2.5}; // Represents the amount of time the fuel will be in the air in seconds for each distance to the hub in the airTimeCalibrationDistances array. The values in this array should correspond to the distances in the airTimeCalibrationDistances array (i.e. the first value in this array is the air time for the first distance in the airTimeCalibrationDistances array, etc.). These values are used to calculate the aim point of the robot based on its velocity and distance to the hub.
+  private double[] passingAirTimeCalibrationDistances = {4.0, 6.0, 8.0, 9.0, 11.0}; // 🦎🦎Represents the distance to the hub in meters for each air time calibration value.
+  private double[] passingAirTimeCalibrationValues = {1.7, 1.8, 1.82, 1.82, 1.85}; // 🦎🦎Represents the amount of time the fuel will be in the air in seconds for each distance to the hub in the airTimeCalibrationDistances array. The values in this array should correspond to the distances in the airTimeCalibrationDistances array (i.e. the first value in this array is the air time for the first distance in the airTimeCalibrationDistances array, etc.). These values are used to calculate the aim point of the robot based on its velocity and distance to the hub.
   private void updateTrajectory() {
     robotX = swerve.getXPos(); // The current x-position of the robot on the field in meters.
     robotY = swerve.getYPos(); // The current y-position of the robot on the field in meters.
@@ -1321,8 +1320,8 @@ public class Robot extends TimedRobot {
   // This method calculates the RPM the shooter needs to be at to shoot accurately based on the distance to the target. It uses a calibration array to return RPM values based on distance to the target.
   private double[] scoringFlywheelCalibrationDistances = {2.0, 6.0};
   private double[] scoringFlywheelCalibrationValues = {2500.0, 3800.0};
-  private double[] passingFlywheelCalibrationDistances = {2.0, 6.0};
-  private double[] passingFlywheelCalibrationValues = {2500.0, 3800.0};
+  private double[] passingFlywheelCalibrationDistances = {2.0, 6.0, 10.0};//🦎🦎
+  private double[] passingFlywheelCalibrationValues = {2500.0, 3800.0, 5100.0};//🦎🦎
   private double calcFlywheelRPM() {
     if (isScoring) {
       return interpolate(distanceToTarget, scoringFlywheelCalibrationDistances, scoringFlywheelCalibrationValues);
@@ -1334,8 +1333,8 @@ public class Robot extends TimedRobot {
   // This method calculates the position the hood needs to be at to shoot accurately based on the distance to the target. It uses a calibration array to return hood position values based on distance to the target.
   private double[] scoringHoodCalibrationDistances = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0, 7.0}; 
   private double[] scoringHoodCalibrationValues = {0.02, 0.035, 0.0545, 0.0575, 0.062, 0.065, 0.068, 0.06895, 0.06, 0.045}; 
-  private double[] passingHoodCalibrationDistances = {4.0, 6.0, 8.0, 10.0};
-  private double[] passingHoodCalibrationValues = {0.06, 0.066, 0.092, 0.115};
+  private double[] passingHoodCalibrationDistances = {4.0, 6.0, 8.0, 9.0, 11.0}; //{4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0};//🦎🦎
+  private double[] passingHoodCalibrationValues = {0.05, 0.06, 0.072, 0.085, 0.12}; //{0.06, 0.066, 0.092, 0.115, 0.06, 0.066, 0.092};//🦎🦎
   private double calcHoodPosition() {
     if (isScoring) {
       return interpolate(distanceToTarget, scoringHoodCalibrationDistances, scoringHoodCalibrationValues);

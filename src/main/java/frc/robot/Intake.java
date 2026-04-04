@@ -358,7 +358,7 @@ public class Intake {
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.SupplyCurrentLimit = 70.0;
-    motorConfigs.CurrentLimits.StatorCurrentLimit = 40.0;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 100.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03); // Apply the configuration to the motor with a timeout of 0.03 seconds (30 milliseconds). This will send the configuration settings to the motor controller so that it can use them for controlling the motor.
   }
