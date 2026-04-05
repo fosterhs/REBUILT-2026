@@ -1283,6 +1283,128 @@ public class Robot extends TimedRobot {
     shooter.simulationPeriodic();
   }
 
+  public void testInit() {
+    indexer.init();
+    intake.init();
+    shooter.init();
+  }
+
+  double flywheelRPM = 3000.0;
+  double hoodPosition = 0.06;
+  double indexerSpeed = 3600.0;
+  public void testPeriodic() {
+    /* 
+    double x = MathUtil.applyDeadband(-driver.getRightY(), 0.05);
+    double y = MathUtil.applyDeadband(-driver.getRightX(), 0.05);
+    double angle;
+    if (x > 0.0) {
+      angle = Math.toDegrees(Math.atan(y/x));
+    } else if (x < 0.0) {
+      if (y >= 0.0) {
+        angle = Math.toDegrees(Math.atan(y/x)) + 180.0;
+      } else {
+        angle = Math.toDegrees(Math.atan(y/x)) - 180.0;
+      }
+    } else {
+      if (y > 0.0) {
+        angle = 90.0;
+      } else if (y < 0.0) {
+        angle = -90.0;
+      } else {
+        angle = 0.0;
+      }
+    }
+    swerve.test(-driver.getLeftY(), angle);
+
+    if (driver.getLeftBumperButtonPressed()) {
+      if (intake.getMode() == Intake.Mode.LEFT) {
+        intake.stow();
+      } else {
+        intake.leftIntake();
+      }
+    } else if (driver.getRightBumperButtonPressed()) {
+      if (intake.getMode() == Intake.Mode.RIGHT) {
+        intake.stow();
+      } else {
+        intake.rightIntake();
+      }
+    }
+
+    double leftTrigger = MathUtil.applyDeadband(driver.getLeftTriggerAxis(), 0.05);
+    shooter.setHoodPosition(shooter.hoodMinPosition + (shooter.hoodMaxPosition-shooter.hoodMinPosition)*MathUtil.applyDeadband(driver.getRightTriggerAxis(), 0.05));
+    shooter.setShootingRPM(shooter.maxFlywheelRPM*leftTrigger);
+    if (Math.abs(leftTrigger) > 0.05) {
+      shooter.spinUp();
+    } else {
+      shooter.spinDown();
+    } 
+
+    indexer.setSpeeds(4000.0);
+    if (driver.getRawButton(1)) {
+      indexer.index();
+    } else {
+      indexer.idle();
+    }
+
+    shooter.periodic();
+    indexer.periodic();
+    intake.periodic();
+    */
+
+    if (driver.getRawButton(1)) {
+     if (driver.getPOV() == 0) {
+      flywheelRPM += 1.0;
+     }
+     if (driver.getPOV() == 180) {
+      flywheelRPM -= 1.0;
+     }
+    }
+
+    if (driver.getRawButton(2)) {
+     if (driver.getPOV() == 0) {
+      hoodPosition += 0.0001;
+     }
+     if (driver.getPOV() == 180) {
+      hoodPosition -= 0.0001;
+     }
+    }
+
+    if (driver.getRawButton(3)) {
+     if (driver.getPOV() == 0) {
+      indexerSpeed += 1.0;
+     }
+     if (driver.getPOV() == 180) {
+      indexerSpeed -= 1.0;
+     }
+    }
+
+    shooter.setShootingRPM(flywheelRPM);
+    shooter.setHoodPosition(hoodPosition);
+    indexer.setSpeeds(indexerSpeed);
+
+    if (driver.getRightBumperButton()) {
+      shooter.spinUp();
+      if (driver.getLeftBumperButton()) {
+        indexer.index(); 
+      } else {
+        indexer.spinUp();
+      }
+    } else {
+      shooter.spinDown();
+      indexer.idle();
+    }
+
+    shooter.periodic();
+    indexer.periodic();
+    intake.periodic();
+
+    SmartDashboard.putNumber("Flywheel DesiredRPM", flywheelRPM);
+    SmartDashboard.putNumber("Hood DesiredPosition", hoodPosition);
+    SmartDashboard.putNumber("Indexer DesiredSpeed", indexerSpeed);
+    SmartDashboard.putNumber("Flywheel CurrentSpeed", shooter.getLeftFlywheelMotorRPM());
+    SmartDashboard.putNumber("Hood CurrentPosition", shooter.getHoodPosition());
+  }
+
   // This method calculates the amount of time the fuel will be in the air based on the distance to the hub and the velocity of the robot. It uses an iterative approach to account for the fact that the aim point changes based on the velocity of the robot and the air time, which changes the distance to the hub, which changes the air time, which changes the aim point, etc. After 10 iterations, the change in air time should be negligible.
   private double[] scoringAirTimeCalibrationDistances = {2.0, 3.0, 4.0, 5.0, 6.0}; // Represents the distance to the hub in meters for each air time calibration value.
   private double[] scoringAirTimeCalibrationValues = {1.1, 1.22, 1.26, 1.46, 1.66}; // Represents the amount of time the fuel will be in the air in seconds for each distance to the hub in the airTimeCalibrationDistances array. The values in this array should correspond to the distances in the airTimeCalibrationDistances array (i.e. the first value in this array is the air time for the first distance in the airTimeCalibrationDistances array, etc.). These values are used to calculate the aim point of the robot based on its velocity and distance to the hub.

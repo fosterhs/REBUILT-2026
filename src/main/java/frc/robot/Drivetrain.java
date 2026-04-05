@@ -237,6 +237,14 @@ class Drivetrain {
     }
   }
 
+  public void test(double speed, double angle) {
+    for (int moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {
+      demandedModuleStates[moduleIndex].speedMetersPerSecond = speed;
+      demandedModuleStates[moduleIndex].angle = Rotation2d.fromDegrees(angle);
+      modules[moduleIndex].setSMS(demandedModuleStates[moduleIndex]);
+    }
+  }
+
   // Sets the maximum velocity and acceleration of the drivetrain in teleop. Takes a fraction from 0 to 1, where 1 represents full velocity and acceleration and 0 represents no motion.
   public void setLimits(double maxVelFraction, double maxAngVelFraction, double maxAccFraction, double maxAngAccFraction) {
     // Input Sterilization. Only accepts percents between 0 and 1.
