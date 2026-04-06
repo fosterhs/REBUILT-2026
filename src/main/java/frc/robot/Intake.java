@@ -351,14 +351,14 @@ public class Intake {
     motorConfigs.Slot0.kP = 1000.0; // Units: amperes per 1 swerve wheel rotation of error.
     motorConfigs.Slot0.kI = 2600.0; // Units: amperes per 1 swerve wheel rotation * 1 second of error.
     motorConfigs.Slot0.kD = 100.0; // Units: amperes per 1 swerve wheel rotation / 1 second of error.
-    motorConfigs.MotionMagic.MotionMagicAcceleration = 1.0*5800.0/(60.0*18.75); // Units: rotations per second per second.
-    motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 2.0*5800.0/(60.0*18.75); // Units: roations per second.
+    motorConfigs.MotionMagic.MotionMagicAcceleration = 1.2*5800.0/(60.0*18.75); // Units: rotations per second per second.
+    motorConfigs.MotionMagic.MotionMagicCruiseVelocity = 5800.0/(60.0*18.75); // Units: roations per second.
 
     // Current limits configuration. These limits can help protect the motors and the mechanical components of the intake from drawing too much current and potentially causing damage. Adjust these values as needed based on the performance of your specific robot's intake mechanism and the capabilities of your motors.
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.SupplyCurrentLimit = 70.0;
-    motorConfigs.CurrentLimits.StatorCurrentLimit = 100.0;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 180.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03); // Apply the configuration to the motor with a timeout of 0.03 seconds (30 milliseconds). This will send the configuration settings to the motor controller so that it can use them for controlling the motor.
   }

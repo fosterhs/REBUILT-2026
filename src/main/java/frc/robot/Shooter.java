@@ -40,8 +40,8 @@ public class Shooter {
 
   private final double rpmTol = 300.0; // Tolerance for checking if the shooter motors are at the desired RPM. This can be adjusted based on the performance of the motors and the requirements of the shooter.
   private final double hoodTol = 0.010; // Tolerance for checking if the hood is at the desired position. This can be adjusted based on the performance of the hood mechanism and the requirements of the shooter.
-  public final double hoodMinPosition = 0.020; // The minimum position of the hood in hood rotations.
-  public final double hoodMaxPosition = 0.115; // The maximum position of the hood in hood rotations.
+  public final double hoodMinPosition = 0.010; // The minimum position of the hood in hood rotations.
+  public final double hoodMaxPosition = 0.112; // The maximum position of the hood in hood rotations.
   public final double maxFlywheelRPM = 5800.0; // The maximum RPM of the flywheel.
   private double shootingRPM = 3000.0; // Initializes the desired shooting RPM of the shooter motors. 
   private double desiredHoodPosition = hoodMinPosition; // Initializes the desired position of the hood. 

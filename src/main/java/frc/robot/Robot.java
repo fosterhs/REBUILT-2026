@@ -1198,8 +1198,8 @@ public class Robot extends TimedRobot {
     yVelTeleop = Math.signum(yDemand)*Math.pow(yDemand, 2)*swerve.maxVelSet; // Squaring the total demand allows for finer control at lower speeds while still allowing for full speed at maximum joystick input.
     double totalVel = Math.hypot(xVelTeleop, yVelTeleop);
     if (totalVel > swerve.maxVelSet) { // If the total velocity is greater than the maximum velocity, the velocities are scaled down to maintain the direction of the input while limiting the speed.
-      xVelTeleop = xVelTeleop/totalVel;
-      yVelTeleop = yVelTeleop/totalVel;
+      xVelTeleop = xVelTeleop/totalVel*swerve.maxVelSet;
+      yVelTeleop = yVelTeleop/totalVel*swerve.maxVelSet;
     }
     double angDemand = MathUtil.applyDeadband(-driver.getRightX(), 0.05);
     angVelTeleop = Math.signum(angDemand)*Math.pow(angDemand, 2)*swerve.maxAngVelSet; // Squaring the total demand allows for finer control at lower speeds while still allowing for full speed at maximum joystick input.
@@ -1289,11 +1289,12 @@ public class Robot extends TimedRobot {
     shooter.init();
   }
 
+  /*
   double flywheelRPM = 3000.0;
   double hoodPosition = 0.06;
   double indexerSpeed = 3600.0;
+  */
   public void testPeriodic() {
-    /* 
     double x = MathUtil.applyDeadband(-driver.getRightY(), 0.05);
     double y = MathUtil.applyDeadband(-driver.getRightX(), 0.05);
     double angle;
@@ -1314,7 +1315,7 @@ public class Robot extends TimedRobot {
         angle = 0.0;
       }
     }
-    swerve.test(-driver.getLeftY(), angle);
+    swerve.test(-driver.getLeftY()*swerve.maxVel, angle);
 
     if (driver.getLeftBumperButtonPressed()) {
       if (intake.getMode() == Intake.Mode.LEFT) {
@@ -1349,8 +1350,9 @@ public class Robot extends TimedRobot {
     shooter.periodic();
     indexer.periodic();
     intake.periodic();
-    */
-
+    SmartDashboard.putNumber("Flywheel CurrentSpeed", shooter.getLeftFlywheelMotorRPM());
+    
+    /* 
     if (driver.getRawButton(1)) {
      if (driver.getPOV() == 0) {
       flywheelRPM += 1.0;
@@ -1403,6 +1405,7 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Indexer DesiredSpeed", indexerSpeed);
     SmartDashboard.putNumber("Flywheel CurrentSpeed", shooter.getLeftFlywheelMotorRPM());
     SmartDashboard.putNumber("Hood CurrentPosition", shooter.getHoodPosition());
+    */
   }
 
   // This method calculates the amount of time the fuel will be in the air based on the distance to the hub and the velocity of the robot. It uses an iterative approach to account for the fact that the aim point changes based on the velocity of the robot and the air time, which changes the distance to the hub, which changes the air time, which changes the aim point, etc. After 10 iterations, the change in air time should be negligible.
@@ -1446,10 +1449,10 @@ public class Robot extends TimedRobot {
   }
 
   // This method calculates the RPM the shooter needs to be at to shoot accurately based on the distance to the target. It uses a calibration array to return RPM values based on distance to the target.
-  private double[] scoringFlywheelCalibrationDistances = {2.0, 6.0};
-  private double[] scoringFlywheelCalibrationValues = {2500.0, 3800.0};
-  private double[] passingFlywheelCalibrationDistances = {2.0, 6.0, 10.0};//🦎🦎
-  private double[] passingFlywheelCalibrationValues = {2500.0, 3800.0, 5100.0};//🦎🦎
+  private double[] scoringFlywheelCalibrationDistances = {2.0, 6.0, 10.0};
+  private double[] scoringFlywheelCalibrationValues = {2500.0, 3800.0, 5100.0};
+  private double[] passingFlywheelCalibrationDistances = {2.0, 6.0, 10.0, 11.5, 11.50001};//🦎🦎
+  private double[] passingFlywheelCalibrationValues = {2500.0, 3800.0, 5100.0, 5100.0, 5600.0};//🦎🦎
   private double calcFlywheelRPM() {
     if (isScoring) {
       return interpolate(distanceToTarget, scoringFlywheelCalibrationDistances, scoringFlywheelCalibrationValues);
@@ -1460,9 +1463,9 @@ public class Robot extends TimedRobot {
 
   // This method calculates the position the hood needs to be at to shoot accurately based on the distance to the target. It uses a calibration array to return hood position values based on distance to the target.
   private double[] scoringHoodCalibrationDistances = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0, 7.0}; 
-  private double[] scoringHoodCalibrationValues = {0.02, 0.035, 0.0545, 0.0575, 0.062, 0.065, 0.068, 0.06895, 0.06, 0.045}; 
-  private double[] passingHoodCalibrationDistances = {4.0, 6.0, 8.0, 9.0, 11.0}; //{4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0};//🦎🦎
-  private double[] passingHoodCalibrationValues = {0.05, 0.06, 0.072, 0.085, 0.12}; //{0.06, 0.066, 0.092, 0.115, 0.06, 0.066, 0.092};//🦎🦎
+  private double[] scoringHoodCalibrationValues = {0.02, 0.035, 0.0545, 0.0575, 0.062, 0.065, 0.068, 0.06895, 0.06, 0.078}; 
+  private double[] passingHoodCalibrationDistances = {2.0, 4.0, 6.0, 8.0, 10.0, 11.5}; //{4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0};//🦎🦎
+  private double[] passingHoodCalibrationValues = {0.04, 0.055, 0.065, 0.075, 0.085, 0.112}; //{0.06, 0.066, 0.092, 0.115, 0.06, 0.066, 0.092};//🦎🦎
   private double calcHoodPosition() {
     if (isScoring) {
       return interpolate(distanceToTarget, scoringHoodCalibrationDistances, scoringHoodCalibrationValues);
