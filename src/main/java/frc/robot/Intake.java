@@ -13,7 +13,6 @@ import com.ctre.phoenix6.signals.FeedbackSensorSourceValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
-import com.ctre.phoenix6.sim.TalonFXSimState;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.CANBus;
 import edu.wpi.first.units.measure.Angle;
@@ -25,17 +24,17 @@ public class Intake {
   private final TalonFX rightArmMotor = new TalonFX(16, canivore); // Creates a new TalonFX motor controller for the right intake arm motor. The motor is assigned an ID of 16 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
   private final TalonFX rightRollerMotor = new TalonFX(15, canivore); // Creates a new TalonFXS motor controller for the right intake roller motor. The motor is assigned an ID of 15 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
   private final TalonFX rightCenteringMotor = new TalonFX(20, canivore); // Creates a new TalonFX motor controller for the right intake centering motor. The motor is assigned an ID of 20 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
-  private final CANcoder rightArmEncoder = new CANcoder(2, canivore);
+  private final CANcoder rightArmEncoder = new CANcoder(2, canivore); // Creates a new CANcoder encoder for the right intake arm motor. The encoder is assigned an ID of 2 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
   private final TalonFX leftArmMotor = new TalonFX(14, canivore); // Creates a new TalonFX motor controller for the left intake arm motor. The motor is assigned an ID of 14 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
   private final TalonFX leftRollerMotor = new TalonFX(17, canivore); // Creates a new TalonFXS motor controller for the left intake roller motor. The motor is assigned an ID of 17 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
   private final TalonFX leftCenteringMotor = new TalonFX(13, canivore); // Creates a new TalonFX motor controller for the left intake centering motor. The motor is assigned an ID of 13 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
-  private final CANcoder leftArmEncoder = new CANcoder(1, canivore);
+  private final CANcoder leftArmEncoder = new CANcoder(1, canivore); // Creates a new CANcoder encoder for the left intake arm motor. The encoder is assigned an ID of 1 on the CAN bus. Make sure to set this correctly based on your robot's wiring.
 
   // Control Requests
   private final MotionMagicTorqueCurrentFOC rightArmPositionRequest = new MotionMagicTorqueCurrentFOC(0.0); // Creates a new MotionMagicTorqueCurrentFOC control request for the right intake arm motor. This will allow us to set a desired position for the motor. 
   private final MotionMagicTorqueCurrentFOC leftArmPositionRequest = new MotionMagicTorqueCurrentFOC(0.0); // Creates a new MotionMagicTorqueCurrentFOC control request for the left intake arm motor. This will allow us to set a desired position for the motor.
-  private final MotionMagicVelocityVoltage rightRollerVelocityRequest = new MotionMagicVelocityVoltage(0.0).withEnableFOC(true);
-  private final MotionMagicVelocityVoltage leftRollerVelocityRequest = new MotionMagicVelocityVoltage(0.0).withEnableFOC(true);
+  private final MotionMagicVelocityVoltage rightRollerVelocityRequest = new MotionMagicVelocityVoltage(0.0).withEnableFOC(true); // Creates a new MotionMagicVelocityVoltage control mode for the right intake roller motor. This will allow us to set a desired velocity for the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
+  private final MotionMagicVelocityVoltage leftRollerVelocityRequest = new MotionMagicVelocityVoltage(0.0).withEnableFOC(true); // Creates a new MotionMagicVelocityVoltage control mode for the left intake roller motor. This will allow us to set a desired velocity for the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
   private final VoltageOut rightCenteringVoltageRequest = new VoltageOut(0.0).withEnableFOC(true); // Creates a new VoltageOut control mode for the right intake centering motor. This will allow us to set the voltage that we want to apply to the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
   private final VoltageOut leftCenteringVoltageRequest = new VoltageOut(0.0).withEnableFOC(true); // Creates a new VoltageOut control mode for the left intake centering motor. This will allow us to set the voltage that we want to apply to the motor when it is running. The withEnableFOC(true) part enables field-oriented control, which can help improve the performance of the motor.
 
@@ -48,22 +47,14 @@ public class Intake {
   private final double centeringVoltage = 6.0; // Initializes a variable to keep track of the voltage that we want to run the left intake centering motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the centering motors to position the intake arm.
   public enum Mode {LEFT, RIGHT, STOW} // HOME mode runs the homing procedure to find the zero position of the intake arms. LEFT mode moves the left arm to the intake position and the right arm to the stow position. RIGHT mode moves the right arm to the intake position and the left arm to the stow position. STOW mode moves both arms to the stow position.
   private Mode currMode = Mode.STOW; // Initializes the current mode of the intake to HOME. This means that when the robot is first turned on, the intake will be in the process of homing to find the zero position of the arms. After homing is complete, it will switch to STOW mode.
-  private Mode lastMode = Mode.STOW;
+  private Mode lastMode = Mode.STOW; // Initializes a variable to keep track of the last mode that the intake was in. This will be used to detect when the mode changes so that we can restart the jam timer when we switch modes.
   private double desiredLeftArmPosition = armStowPosition; // Initializes a variable to keep track of the desired position for the left intake arm. This will be updated based on the current mode of the intake (LEFT, RIGHT, or STOW) to determine where we want the left arm to move to.
   private double desiredRightArmPosition = armStowPosition; // Initializes a variable to keep track of the desired position for the right intake arm. This will be updated based on the current mode of the intake (LEFT, RIGHT, or STOW) to determine where we want the right arm to move to.
   private boolean leftArmIsStowed = true; // Initializes a boolean variable to keep track of whether the left intake arm is currently in the stowed position. This will be used to determine whether we should run the intake rollers and centering motors, since we only want to run those when the arm is out of the way and ready to intake fuel.
   private boolean rightArmIsStowed = true; // Initializes a boolean variable to keep track of whether the right intake arm is currently in the stowed position. This will be used to determine whether we should run the intake rollers and centering motors, since we only want to run those when the arm is out of the way and ready to intake fuel.
   private double leftIntakeRPM = 5800.0; // The RPM that the left intake is running at.
   private double rightIntakeRPM = 5800.0; // The RPM that the right intake is running at.
-  private final Timer jamTimer = new Timer();
-
-  // Simulation
-  private final TalonFXSimState rightArmMotorSim = rightArmMotor.getSimState();
-  private final TalonFXSimState rightRollerMotorSim = rightRollerMotor.getSimState();
-  private final TalonFXSimState rightCenteringMotorSim = rightCenteringMotor.getSimState();
-  private final TalonFXSimState leftArmMotorSim = leftArmMotor.getSimState();
-  private final TalonFXSimState leftRollerMotorSim = leftRollerMotor.getSimState();
-  private final TalonFXSimState leftCenteringMotorSim = leftCenteringMotor.getSimState();
+  private final Timer jamTimer = new Timer(); // Timer to keep track of how long the arm has been trying to move to its desired position. This will be used to implement a simple anti-jamming mechanism where if the arm has been trying to move to its desired position for too long without success, we will briefly run the rollers and centering motors in reverse to try to unjam any stuck fuel before trying again.
 
   // Constructor for the Intake class. This will be called when we create a new instance of the Intake in our Robot class. In the constructor, we will configure the motors with the appropriate settings for our robot, initialize the status signals for the arm positions and velocities, set the update frequency for those signals, and optimize the CAN bus utilization for all the motors to ensure that we are getting timely updates from all of them without overloading the CAN bus.
   public Intake() {
@@ -280,19 +271,6 @@ public class Intake {
     //SmartDashboard.putBoolean("Intake rightArmInPosition", rightArmInPosition());
     //SmartDashboard.putBoolean("Intake isReady", isReady());
     //SmartDashboard.putNumber("jamTimer", jamTimer.get());
-  }
-
-  public void simulationPeriodic() {
-    // TODO: update this code
-    // TalonFX Motor Sims
-    // rightArmMotorSim
-    // rightRollerMotorSim
-    // rightCenteringMotorSim
-    // leftArmMotorSim
-    // leftRollerMotorSim
-    // leftCenteringMotorSim
-
-    // Simulate homing, simulate fully extended
   }
 
   // This method configures the settings for the roller motors. The configuration includes setting the commutation settings specific to the TalonFXS, setting the neutral mode to brake, configuring the motor direction based on the invert parameter, and configuring current limits to protect the motors and mechanical components of the intake mechanism. Finally, it applies the configuration to the motor controller with a specified timeout.

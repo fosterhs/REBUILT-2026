@@ -6,7 +6,6 @@ import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.Pigeon2;
-import com.ctre.phoenix6.sim.Pigeon2SimState;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.path.PathPlannerPath;
 import com.pathplanner.lib.trajectory.PathPlannerTrajectory;
@@ -38,7 +37,7 @@ class Drivetrain {
   public final double maxAcc = 1.0*9.80665; // The maximum acceleration of the robot, typically limited by the coefficient of friction between the swerve wheels and the field.
   public final double wheelbaseX = (24.0-2*2.625)*0.0254; // The length of the robot from front to back in units of meters. Measured from the centers of each swerve wheel.
   public final double wheelbaseY = (31.0-2*2.625)*0.0254; // The length of the robot from left to right in units of meters. Measured from the centers of each swerve wheel.
-  public final double wheelbaseR = Math.sqrt(Math.pow(wheelbaseX/2.0, 2) + Math.pow(wheelbaseY/2.0, 2)); // The "radius" of the robot from robot center to the center of the swerve wheel in units of meters.
+  public final double wheelbaseR = Math.hypot(wheelbaseX/2.0, wheelbaseY/2.0); // The "radius" of the robot from robot center to the center of the swerve wheel in units of meters.
   public final double robotMass = 70.0; // Robot mass in kg with batteries and bumper.
   public final double robotMOI = 7.0; // Robot moment of inertia in kg*m^ with batteries and bumper.
   public final double maxAngVel = maxVel/wheelbaseR; // The physics-limited maximum angular velocity of the robot in rad/s.
@@ -75,7 +74,6 @@ class Drivetrain {
   private final StatusSignal<AngularVelocity> pigeonYawRate; // Stores the yaw velocity measured by the pigeon.
   private final StatusSignal<AngularVelocity> pigeonPitchRate; // Stores the pitch velocity measured by the pigeon.
   private final StatusSignal<AngularVelocity> pigeonRollRate; // Stores the roll velocity measured by the pigeon.
-  private final Pigeon2SimState pigeonSim = new Pigeon2SimState(pigeon);
 
   // Limelight Variables
   public final String[] limelights = {"limelight-shooter", "limelight-back"}; // Stores the names of all limelights on the robot.
@@ -102,8 +100,8 @@ class Drivetrain {
   private boolean atDriveGoal = false; // Whether the robot is at the target within the tolerance specified by posTol and angTol when controlled by aimDrive() or moveToTarget()
   private double posTol = 0.10; // The allowable error in the x and y position of the robot in meters.
   private double angTol = 3.0; // The allowable error in the angle of the robot in degrees.
-  private double minVel = 0.05; // The minimum velocity that the robot will be commanded to move at when it is not at the target in meters per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
-  private double minAngVel = 0.05; // The minimum velocity that the robot will be commanded to rotate at when it is not at the target in radians per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
+  private double minVel = 0.03; // The minimum velocity that the robot will be commanded to move at when it is not at the target in meters per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
+  private double minAngVel = 0.03; // The minimum velocity that the robot will be commanded to rotate at when it is not at the target in radians per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
 
   // These variables are updated each period so they can be passed along to the user or the dashboard.
   private ChassisSpeeds currSpeeds = new ChassisSpeeds(); // Stores the velocity and angular velocity of the drivetrain.
@@ -127,6 +125,10 @@ class Drivetrain {
 
   // Simulation
   private final Field2d robotField = new Field2d();
+  private double robotXPosSim = 0.0;
+  private double robotYPosSim = 0.0;
+  private double robotAngPosSim = 0.0;
+  private Pose2d robotPoseSim = new Pose2d();
 
   // Constructor for the drivetrain. Initializes the gyro, resets the PID controllers, and sets up the dashboard.
   public Drivetrain() {
@@ -148,37 +150,6 @@ class Drivetrain {
     xPathController.setIntegratorRange(-maxVel*0.6, maxVel*0.6);
     yPathController.setIntegratorRange(-maxVel*0.6, maxVel*0.6);
     anglePathController.setIntegratorRange(-maxAngVel*0.6, maxAngVel*0.6);
-
-    if (Robot.isSimulation()) {
-      robotField.getObject("targetPath").setPose(0,0,new Rotation2d());
-      robotField.setRobotPose(0, 0, new Rotation2d(Math.toRadians(90)));
-
-      setPosTol(0);
-      setAngTol(0);
-
-      // Configure the Drive Controllers for Simulation
-      // !!! DO NOT USE THESE VALUES FOR THE REAL ROBOT, IT WILL NOT BE GOOD !!!
-      xDriveController.setP(5);
-      xDriveController.setI(0.0);
-      xDriveController.setD(0.0);
-
-      yDriveController.setP(5);
-      yDriveController.setI(0.0);
-      yDriveController.setD(0.0);
-
-      // Configure the Path Controllers for Simulation
-      // !!! DO NOT USE THESE VALUES FOR THE REAL ROBOT, IT WILL NOT BE GOOD !!!
-      xPathController.setP(18);
-      xPathController.setI(3.5);
-      xPathController.setD(3);
-
-      yPathController.setP(18);
-      yPathController.setI(4.5);
-      yPathController.setD(3);
-      
-    }
-
-    SmartDashboard.putData("Field", robotField);
   }
 
   // Drives the robot at a certain speed and rotation rate. Units: meters per second for xVel and yVel, radians per second for angVel. 
@@ -189,26 +160,26 @@ class Drivetrain {
     lastYVelDemanded = yVelDemanded;
     lastAngVelDemanded = angVelDemanded;
 
-    double velDemanded = Math.sqrt(Math.pow(_xVel, 2) + Math.pow(_yVel, 2));
+    double velDemanded = Math.abs(Math.hypot(_xVel, _yVel));
     if (velDemanded > maxVelSet) {
       _xVel = _xVel/velDemanded*maxVelSet;
       _yVel = _yVel/velDemanded*maxVelSet;
-    }
-    double accDemanded = Math.sqrt(Math.pow(_xVel - lastXVelDemanded, 2) + Math.pow(_yVel - lastYVelDemanded, 2))/(currTime - lastTime);
-    if (accDemanded > maxAccSet) {
-      _xVel = lastXVelDemanded + maxAccSet/accDemanded*(_xVel - lastXVelDemanded);
-      _yVel = lastYVelDemanded + maxAccSet/accDemanded*(_yVel - lastYVelDemanded);
     }
     if (velDemanded < minVel) {
       _xVel = 0.0;
       _yVel = 0.0;
     }
+    double accDemanded = Math.abs(Math.hypot(_xVel - lastXVelDemanded, _yVel - lastYVelDemanded)/(currTime - lastTime));
+    if (accDemanded > maxAccSet) {
+      _xVel = lastXVelDemanded + maxAccSet/accDemanded*(_xVel - lastXVelDemanded);
+      _yVel = lastYVelDemanded + maxAccSet/accDemanded*(_yVel - lastYVelDemanded);
+    }
 
     if (Math.abs(_angVel) > maxAngVelSet) _angVel = _angVel > 0.0 ? maxAngVelSet : -maxAngVelSet;
+    if (Math.abs(_angVel) < minAngVel) _angVel = 0.0;
     if (Math.abs(_angVel-lastAngVelDemanded*Math.PI/180.0) > Math.abs(maxAngAccSet*(currTime-lastTime))) {
       _angVel = _angVel > lastAngVelDemanded*Math.PI/180.0 ? lastAngVelDemanded*Math.PI/180.0 + maxAngAccSet*(currTime-lastTime) : lastAngVelDemanded*Math.PI/180.0 - maxAngAccSet*(currTime-lastTime);
     }
-    if (Math.abs(_angVel) < minAngVel) _angVel = 0.0;
 
     xVelDemanded = _xVel;
     yVelDemanded = _yVel;
@@ -219,6 +190,8 @@ class Drivetrain {
     for (int moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {
       modules[moduleIndex].setSMS(demandedModuleStates[moduleIndex]); // Sets the module angles and velocities.
     }
+
+    if (Robot.isSimulation()) setSimPose(robotXPosSim + xVelDemanded*(currTime - lastTime), robotYPosSim + yVelDemanded*(currTime - lastTime), robotAngPosSim + angVelDemanded*(currTime - lastTime));
   }
 
   // Forces the swerve modules into an x-lock pattern to resist movement. Useful for defense or if the robot must remain stationary. 
@@ -237,6 +210,7 @@ class Drivetrain {
     }
   }
 
+  // A method used for testing the drivetrain. Sets all modules to the same speed and angle. Speed is in meters per second and angle is in degrees.
   public void test(double speed, double angle) {
     for (int moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {
       demandedModuleStates[moduleIndex].speedMetersPerSecond = speed;
@@ -245,22 +219,31 @@ class Drivetrain {
     }
   }
 
-  // Sets the maximum velocity and acceleration of the drivetrain in teleop. Takes a fraction from 0 to 1, where 1 represents full velocity and acceleration and 0 represents no motion.
-  public void setLimits(double maxVelFraction, double maxAngVelFraction, double maxAccFraction, double maxAngAccFraction) {
-    // Input Sterilization. Only accepts percents between 0 and 1.
-    if (maxVelFraction < 0.0) maxVelFraction = 0.0;
-    if (maxVelFraction > 1.0) maxVelFraction = 1.0;
-    if (maxAngVelFraction < 0.0) maxAngVelFraction = 0.0;
-    if (maxAngVelFraction > 1.0) maxAngVelFraction = 1.0;
-    if (maxAccFraction < 0.0) maxAccFraction = 0.0;
-    if (maxAccFraction > 1.0) maxAccFraction = 1.0;
-    if (maxAngAccFraction < 0.0) maxAngAccFraction = 0.0;
-    if (maxAngAccFraction > 1.0) maxAngAccFraction = 1.0;
+  // Used for simulation. Sets the position of the robot on the field. Units: meters for x and y, degrees for angle.
+  public void setSimPose(double x, double y, double angle) {
+    robotXPosSim = x;
+    robotYPosSim = y;
+    robotAngPosSim = angle;
+    robotPoseSim = new Pose2d(robotXPosSim, robotYPosSim, Rotation2d.fromDegrees(robotAngPosSim));
+    robotField.setRobotPose(robotPoseSim);
+  }
 
-    maxVelSet = maxVel*maxVelFraction; 
-    maxAngVelSet = maxAngVel*maxAngVelFraction; 
-    maxAccSet = maxAcc*maxAccFraction; 
-    maxAngAccSet = maxAngAcc*maxAngAccFraction; 
+  // Sets the maximum velocity and acceleration of the drivetrain in teleop. Takes a fraction from 0 to 1, where 1 represents full velocity and acceleration and 0 represents no motion.
+  public void setLimits(double velFactor, double angVelFactor, double accFactor, double angAccFactor) {
+    // Input Sterilization. Only accepts percents between 0 and 1.
+    if (velFactor < 0.0) velFactor = 0.0;
+    if (velFactor > 1.0) velFactor = 1.0;
+    if (angVelFactor < 0.0) angVelFactor = 0.0;
+    if (angVelFactor > 1.0) angVelFactor = 1.0;
+    if (accFactor < 0.0) accFactor = 0.0;
+    if (accFactor > 1.0) accFactor = 1.0;
+    if (angAccFactor < 0.0) angAccFactor = 0.0;
+    if (angAccFactor > 1.0) angAccFactor = 1.0;
+
+    maxVelSet = maxVel*velFactor; 
+    maxAngVelSet = maxAngVel*angVelFactor; 
+    maxAccSet = maxAcc*accFactor; 
+    maxAngAccSet = maxAngAcc*angAccFactor; 
   }
 
   // Should be called immediately prior to aimDrive() or driveTo(). Resets the PID controllers. Target angle specifies the first angle that will be demanded.
@@ -290,11 +273,7 @@ class Drivetrain {
   // Should be called periodically to move the robot to a specified position and angle. Units are meters and degrees.
   public void driveTo(double targetX, double targetY, double targetAngle) {
     atDriveGoal = Math.abs(getFusedAng() - targetAngle) < angTol 
-      && Math.sqrt(Math.pow(targetY - getYPos(), 2) + Math.pow(targetX - getXPos(), 2)) < posTol;
-
-    if (Robot.isSimulation()) {
-      robotField.getObject("targetPath").setPose(targetX, targetY, new Rotation2d(Math.toRadians(targetAngle)));
-    }
+      && Math.hypot(targetY - getYPos(), targetX - getXPos()) < posTol;
 
     drive(xDriveController.calculate(getXPos(), targetX), 
       yDriveController.calculate(getYPos(), targetY), 
@@ -336,12 +315,6 @@ class Drivetrain {
       pathAngPos = currGoal.pose.getRotation().getDegrees();
       atDriveGoal = atPathEndpoint(pathIndex);
 
-      if (Robot.isSimulation()) {
-        // Located here because we're not *always* following a path
-        robotField.getObject("targetPath").setPose(new Pose2d(pathXPos, pathYPos, new Rotation2d(Math.toRadians(pathAngPos))));
-      }
-
-
       drive(currGoal.fieldSpeeds.vxMetersPerSecond + xPathController.calculate(getXPos(), pathXPos), 
         currGoal.fieldSpeeds.vyMetersPerSecond + yPathController.calculate(getYPos(), pathYPos),
         currGoal.fieldSpeeds.omegaRadiansPerSecond + anglePathController.calculate(getAngleDistance(getFusedAng(), pathAngPos)*Math.PI/180.0, 0.0));
@@ -355,7 +328,7 @@ class Drivetrain {
   public boolean atPathEndpoint(int pathIndex) {
     if (paths.size() > pathIndex) {
       return Math.abs(getFusedAng() - paths.get(pathIndex).getEndState().pose.getRotation().getDegrees()) < angTol 
-        && Math.sqrt(Math.pow(paths.get(pathIndex).getEndState().pose.getY() - getYPos(), 2) + Math.pow(paths.get(pathIndex).getEndState().pose.getX() - getXPos(), 2)) < posTol;
+        && Math.hypot(paths.get(pathIndex).getEndState().pose.getY() - getYPos(), paths.get(pathIndex).getEndState().pose.getX() - getXPos()) < posTol;
     } else {
       return false;
     }
@@ -439,10 +412,10 @@ class Drivetrain {
       if (botpose != null) {
         double SD = 0.5; // How much variance there is in the LL vision information. Lower numbers indicate more trustworthy data.
         if (botpose.tagCount >= 1) { // At least 1 AprilTag is detected.
-          if (botpose.avgTagArea*botpose.tagCount > 2.0 && Math.sqrt(Math.pow(getXVelMeasured(), 2) + Math.pow(getYVelMeasured(), 2)) < 0.5 && Math.abs(getAngVelMeasured()) < 45.0) { // The robot is relatively stationary and 1 AprilTag is visible very close to the robot.
+          if (botpose.avgTagArea*botpose.tagCount > 2.0 && Math.hypot(getXVelMeasured(), getYVelMeasured()) < 0.5 && Math.abs(getAngVelMeasured()) < 45.0) { // The robot is relatively stationary and 1 AprilTag is visible very close to the robot.
             SD = 0.3; // Reduces the standard deviation of the vision estimate.
           }
-          if (botpose.tagCount >= 2 && botpose.avgTagArea*botpose.tagCount > 1.0 && Math.sqrt(Math.pow(getXVelMeasured(), 2) + Math.pow(getYVelMeasured(), 2)) < 0.5 && Math.abs(getAngVelMeasured()) < 45.0) { // The robot is relatively stationary and 2 AprilTags are visible close to the robot.
+          if (botpose.tagCount >= 2 && botpose.avgTagArea*botpose.tagCount > 1.0 && Math.hypot(getXVelMeasured(), getYVelMeasured()) < 0.5 && Math.abs(getAngVelMeasured()) < 45.0) { // The robot is relatively stationary and 2 AprilTags are visible close to the robot.
             SD = 0.1; // Reduces the standard deviation of the vision estimate.
             accurateVisionTimer.restart();
           }
@@ -503,20 +476,6 @@ class Drivetrain {
       odometry.resetPosition(Rotation2d.fromDegrees(getGyroAng()), getModulePositions(), new Pose2d(calibrationSum[0]/calibrationFrames, calibrationSum[1]/calibrationFrames, Rotation2d.fromRadians(calibrationAng))); // Averages the values in the calibrationPosition Array and sets the robot position based on the averages.
       visionTimer.restart();
     }
-  }
-
-  public void setPoseSim(Pose2d newPose) {
-    // Used in simulation to reset the "known" pose of the robot. 
-    pigeon.setYaw(newPose.getRotation().getDegrees());
-    pigeonYaw.refresh();
-    odometry.resetPosition(Rotation2d.fromDegrees(getGyroAng()), getModulePositions(), newPose);
-    
-  }
-
-  public void initPathPose(int pathIndex) {
-    // Used in simulation to overwrite the starting location of the robot based on the path provided
-    System.out.println(paths.size());
-    setPoseSim(paths.get(pathIndex).sample(0).pose);
   }
 
   // Returns the amount of time that has elapsed since the robot has updated its position on the field using vision.
@@ -585,16 +544,19 @@ class Drivetrain {
 
   // Returns the last measured x-velocity of the robot in meters per second.
   public double getXVelMeasured() {
+    if (Robot.isSimulation()) return xVelDemanded;
     return xVelMeasured;
   }
 
   // Returns the last measured y-velocity of the robot in meters per second.
   public double getYVelMeasured() {
+    if (Robot.isSimulation()) return yVelDemanded;
     return yVelMeasured;
   }
 
   // Returns the last measured angular-velocity of the robot in degrees per second.
   public double getAngVelMeasured() {
+    if (Robot.isSimulation()) return angVelDemanded;
     return angVelMeasured;
   }
 
@@ -615,22 +577,25 @@ class Drivetrain {
 
   // Returns the odometry calculated x position of the robot in meters. This is based on vision and gyro data combined.
   public double getXPos() {
+    if (Robot.isSimulation()) return robotXPosSim;
     return odometry.getEstimatedPosition().getX();
   }
 
   // Returns the odometry calculated y position of the robot in meters. This is based on vision and gyro data combined.
   public double getYPos() {
+    if (Robot.isSimulation()) return robotYPosSim;
     return odometry.getEstimatedPosition().getY();
   }
 
   // Returns the odometry calcualted angle of the robot in degrees. This is based on vision and gyro data combined.
   public double getFusedAng() {
+    if (Robot.isSimulation()) return robotAngPosSim;
     return odometry.getEstimatedPosition().getRotation().getDegrees();
   }
 
   // The distance between the robot's current position and the current trajectory position. Units: meters
   public double getPathPosError() {
-    return Math.sqrt(Math.pow(pathYPos - getYPos(), 2) + Math.pow(pathXPos - getXPos(), 2));
+    return Math.hypot(pathYPos - getYPos(), pathXPos - getXPos());
   }
 
   // The angular distance to the current trajectory point. Units: degrees
@@ -673,21 +638,7 @@ class Drivetrain {
     //SmartDashboard.putBoolean("Path At Endpoint", atPathEndpoint(0));
     //SmartDashboard.putBoolean("isRedAllaince", isRedAlliance());
     //SmartDashboard.putBoolean("isBlueAllaince", isBlueAlliance());   
-    if (Robot.isSimulation()) {
-      // Update the current pose of the robot in the visualized field with placeholder to offset rotation if needed
-      Pose2d curPose = odometry.getEstimatedPosition();
-      curPose = curPose.rotateAround(curPose.getTranslation(), new Rotation2d(0));
-      robotField.setRobotPose(curPose);
-
-      // publish the desired pose to compare against
-      SmartDashboard.putNumber("sim/debug/pathXPos", pathXPos);
-      SmartDashboard.putNumber("sim/debug/pathYPos", pathYPos);
-      SmartDashboard.putNumber("sim/debug/pathAngPos", pathAngPos);
-
-      // Plot (goal - current) to look at controller response
-      SmartDashboard.putNumber("sim/debug/deltaX", pathXPos - curPose.getX());
-      SmartDashboard.putNumber("sim/debug/deltaY", pathYPos - curPose.getY());     
-    }
+    if (Robot.isSimulation()) SmartDashboard.putData("Field", robotField);
   }
 
   // Calculates the shortest distance between two points on a 360 degree circle. CW is + and CCW is -
@@ -708,23 +659,5 @@ class Drivetrain {
       modulePositions[moduleIndex] = modules[moduleIndex].getSMP();
     }
     return modulePositions;
-  }
-
-  public void simulationPeriodic() {
-    // Update gyro (pigeon) simulation via pigeonSim
-    pigeonSim.addYaw(angVelDemanded * Robot.dTime);
-    pigeonSim.setRoll(0);
-    pigeonSim.setPitch(0);
-
-    // TODO: all robot relative
-    // [] Forward-Right drift when going JUST forward
-    // [] Backward-Left drift when going JUST backward
-    // [] Backward-Right drift when going JUST right
-    // [] Forward-Left drift when going JUST left
-
-    // Position is updated via the SwerveModule
-    for (int moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {
-      modules[moduleIndex].simulationPeriodic();
-    }
   }
 }

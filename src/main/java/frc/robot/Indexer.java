@@ -7,7 +7,6 @@ import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
-import com.ctre.phoenix6.sim.TalonFXSimState;
 import edu.wpi.first.wpilibj.Timer;
 import com.ctre.phoenix6.CANBus;
 
@@ -22,11 +21,6 @@ public class Indexer {
   private Mode currMode = Mode.IDLE; // Initializes the current mode of the indexer to IDLE. This means that when the robot is first turned on, the indexer will be in the IDLE state and will not be running.
   private double shooterIndexRPM = 4000.0; // Initializes the rpm that the shooter indexer motor will run at when the indexer is running. This can be adjusted.
   private double hopperIndexVoltage = 12.0; // Initializes the voltage that the hopper indexer motor will run at when the indexer is running. This can be adjusted.
-
-  // Simulation
-  private final TalonFXSimState hopperIndexMotorSim = hopperIndexMotor.getSimState();
-  private final TalonFXSimState shooterIndexMotorSim = shooterIndexMotor.getSimState();
-  private boolean hopperSimHasFuel = false;
   
   // Constructor for the Indexer class. This is where we will configure the indexer motors with the appropriate settings for our robot. We will set the neutral mode to brake, set the motor direction based on the invert parameter, and configure current limits for the motor. We will also optimize bus utilization for the motors to improve performance.
   public Indexer() {
@@ -99,10 +93,6 @@ public class Indexer {
   public void updateDash() {
     //SmartDashboard.putString("Indexer getMode", getMode().toString());
     //SmartDashboard.putNumber("Indexer voltage", indexVoltage);
-  }
-
-  public void simulationPeriodic() {
-    
   }
 
   // Configures the indexer motors with the appropriate settings for our robot. Sets the neutral mode to brake, sets the motor direction based on the invert parameter, and configures current limits for the motor.
