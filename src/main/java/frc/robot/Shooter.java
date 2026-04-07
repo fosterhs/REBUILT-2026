@@ -19,6 +19,7 @@ import com.ctre.phoenix6.signals.SensorDirectionValue;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Shooter {
   private final CANBus canivore = new CANBus("canivore"); // Creates a new CAN bus called "canivore". This is the name of the CAN bus that the shooter motors and hood encoder are connected to. Make sure to set this correctly based on your robot's wiring.
@@ -56,7 +57,7 @@ public class Shooter {
     hoodPosition = hoodEncoder.getAbsolutePosition();
     shooterVoltageRight = shootMotorRight.getMotorVoltage();
     BaseStatusSignal.setUpdateFrequencyForAll(250.0, shooterVelocityRight, shooterVelocityLeft, hoodPosition, shooterVoltageRight);
-    ParentDevice.optimizeBusUtilizationForAll(shootMotorLeft, hoodMotor, hoodEncoder);
+    ParentDevice.optimizeBusUtilizationForAll(shootMotorLeft, shootMotorRight, hoodMotor, hoodEncoder);
   }
 
   // Resets the shooter to the default state: sets the current mode to IDLE, stops the shooter motors, and lowers the hood. Should be called when the robot is enabled to ensure that the shooter starts in a known state.
@@ -158,6 +159,7 @@ public class Shooter {
     //SmartDashboard.putBoolean("Shooter flywheelIsReady", flywheelIsReady());
     //SmartDashboard.putBoolean("Shooter flywheelIsAtSpeed", flywheelIsAtSpeed());
     //SmartDashboard.putString("Shooter getMode", getMode().toString());
+    if (Robot.isSimulation()) SmartDashboard.putBoolean("Shooter isReady", isReady());
   }
 
   // Configures the shooter motors with the appropriate settings for our robot. Sets the neutral mode to brake, sets the motor direction based on the invert parameter, configures current limits for the motor, and configures the PID values for velocity control. These settings are important to ensure that the shooter motors perform well and are protected from damage.

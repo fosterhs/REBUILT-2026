@@ -8,6 +8,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import com.ctre.phoenix6.CANBus;
 
 public class Indexer {
@@ -93,6 +94,7 @@ public class Indexer {
   public void updateDash() {
     //SmartDashboard.putString("Indexer getMode", getMode().toString());
     //SmartDashboard.putNumber("Indexer voltage", indexVoltage);
+    if (Robot.isSimulation()) SmartDashboard.putString("Indexer getMode", getMode().toString());
   }
 
   // Configures the indexer motors with the appropriate settings for our robot. Sets the neutral mode to brake, sets the motor direction based on the invert parameter, and configures current limits for the motor.

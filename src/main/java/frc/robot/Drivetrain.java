@@ -100,8 +100,8 @@ class Drivetrain {
   private boolean atDriveGoal = false; // Whether the robot is at the target within the tolerance specified by posTol and angTol when controlled by aimDrive() or moveToTarget()
   private double posTol = 0.10; // The allowable error in the x and y position of the robot in meters.
   private double angTol = 3.0; // The allowable error in the angle of the robot in degrees.
-  private double minVel = 0.03; // The minimum velocity that the robot will be commanded to move at when it is not at the target in meters per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
-  private double minAngVel = 0.03; // The minimum velocity that the robot will be commanded to rotate at when it is not at the target in radians per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
+  private double minVel = 0.05; // The minimum velocity that the robot will be commanded to move at when it is not at the target in meters per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
+  private double minAngVel = 0.05; // The minimum velocity that the robot will be commanded to rotate at when it is not at the target in radians per second. Used to prevent the swerve modules from becoming unstable at very low speeds.
 
   // These variables are updated each period so they can be passed along to the user or the dashboard.
   private ChassisSpeeds currSpeeds = new ChassisSpeeds(); // Stores the velocity and angular velocity of the drivetrain.
@@ -160,7 +160,7 @@ class Drivetrain {
     lastYVelDemanded = yVelDemanded;
     lastAngVelDemanded = angVelDemanded;
 
-    double velDemanded = Math.abs(Math.hypot(_xVel, _yVel));
+    double velDemanded = Math.hypot(_xVel, _yVel);
     if (velDemanded > maxVelSet) {
       _xVel = _xVel/velDemanded*maxVelSet;
       _yVel = _yVel/velDemanded*maxVelSet;
@@ -169,7 +169,7 @@ class Drivetrain {
       _xVel = 0.0;
       _yVel = 0.0;
     }
-    double accDemanded = Math.abs(Math.hypot(_xVel - lastXVelDemanded, _yVel - lastYVelDemanded)/(currTime - lastTime));
+    double accDemanded = Math.hypot(_xVel - lastXVelDemanded, _yVel - lastYVelDemanded)/(currTime - lastTime);
     if (accDemanded > maxAccSet) {
       _xVel = lastXVelDemanded + maxAccSet/accDemanded*(_xVel - lastXVelDemanded);
       _yVel = lastYVelDemanded + maxAccSet/accDemanded*(_yVel - lastYVelDemanded);
@@ -221,9 +221,35 @@ class Drivetrain {
 
   // Used for simulation. Sets the position of the robot on the field. Units: meters for x and y, degrees for angle.
   public void setSimPose(double x, double y, double angle) {
+    if (x < 0.0) {
+      x = 0.0;
+      xVelDemanded = 0.0;
+      lastXVelDemanded = 0.0;
+    }
+    if (x > fieldLength) {
+      x = fieldLength;
+      xVelDemanded = 0.0;
+      lastXVelDemanded = 0.0;
+    }
     robotXPosSim = x;
+
+    if (y < 0.0) {
+      y = 0.0;
+      yVelDemanded = 0.0;
+      lastYVelDemanded = 0.0;
+    } 
+    if (y > fieldWidth) {
+      y = fieldWidth;
+      yVelDemanded = 0.0;
+      lastYVelDemanded = 0.0;
+    }
     robotYPosSim = y;
+
+    angle = angle % 360.0;
+    if (angle > 180.0) angle = angle - 360.0;
+    if (angle <= -180.0) angle = angle + 360.0;
     robotAngPosSim = angle;
+
     robotPoseSim = new Pose2d(robotXPosSim, robotYPosSim, Rotation2d.fromDegrees(robotAngPosSim));
     robotField.setRobotPose(robotPoseSim);
   }

@@ -980,7 +980,7 @@ public class Robot extends TimedRobot {
     if (driver.getRawButtonPressed(2)) boostMode = true; // A button sets boost mode. (100% speed up from default of 60%).
     if (driver.getRawButtonPressed(3)) boostMode = false; // B Button sets default mode (60% of full speed).
     if (isShooting || isPreparingToShoot) {
-      swerve.setLimits(1.0, 1.0, 0.3, 1.0);
+      swerve.setLimits(0.4, 1.0, 0.3, 1.0);
     } else if (boostMode) {
       swerve.setLimits(1.0, 0.4, 1.0, 1.0);
     } else {
@@ -1389,13 +1389,17 @@ public class Robot extends TimedRobot {
   }
 
   // Publishes information to the dashboard.
-  private void updateDash() {}
+  private void updateDash() {
+    if (Robot.isSimulation()) SmartDashboard.putNumber("autoStage", autoStage);
+  }
 
   // Helps prevent loop overruns on startup by running every user created command in every class before the match starts. Not sure why this helps, but it does.
   private void runAll() { 
     swerve.resetDriveController(0.0);
     swerve.setLimits(1.0, 1.0, 1.0, 1.0);
     swerve.xLock();
+    swerve.test(0.0, 0.0);
+    swerve.setSimPose(0.0, 0.0, 0.0);
     swerve.aimDrive(-3.0, 2.0, 105.0);
     swerve.driveTo(1.0, -2.0, -75.0);
     swerve.resetPathController(0);
