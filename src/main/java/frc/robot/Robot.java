@@ -1132,6 +1132,8 @@ public class Robot extends TimedRobot {
   double indexerSpeed = 3600.0;
   */
   public void testPeriodic() {
+    swerve.updateOdometry();
+
     double x = MathUtil.applyDeadband(-driver.getRightY(), 0.05);
     double y = MathUtil.applyDeadband(-driver.getRightX(), 0.05);
     double angle;

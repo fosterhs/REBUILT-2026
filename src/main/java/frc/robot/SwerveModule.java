@@ -60,15 +60,10 @@ class SwerveModule {
 
   // Sets the swerve module to the given state (velocity and angle).
   public void setSMS(SwerveModuleState desiredState) {
-    double desiredAngle = Drivetrain.sterilizeAngle(desiredState.angle.getDegrees());
-    double angleDistance = Math.abs(Drivetrain.getAngleDistance(getWheelAngle(), desiredAngle));
-    if (angleDistance > 90.0) {
-      desiredState.speedMetersPerSecond = -desiredState.speedMetersPerSecond;
-      desiredAngle = Drivetrain.sterilizeAngle(desiredAngle + 180.0);
-      angleDistance = 180.0 - angleDistance;
-    }
-    desiredState.speedMetersPerSecond = desiredState.speedMetersPerSecond * Math.cos(Math.toRadians(angleDistance));
-    setAngle(desiredAngle);
+    SMP.angle = Rotation2d.fromDegrees(getWheelAngle());
+    desiredState.optimize(SMP.angle); // Minimizes the amount a wheel needs to rotate by inverting the direction of the drive motor in some situations. 
+    desiredState.cosineScale(SMP.angle); // Cosine compensation. If a wheel is not at its angular setpoint, its velocity setpoint is reduced.
+    setAngle(desiredState.angle.getDegrees());
     setVel(desiredState.speedMetersPerSecond);
   }
 
