@@ -244,12 +244,8 @@ class Drivetrain {
       lastYVelDemanded = 0.0;
     }
     robotYPosSim = y;
-
-    angle = angle % 360.0;
-    if (angle > 180.0) angle = angle - 360.0;
-    if (angle <= -180.0) angle = angle + 360.0;
+    
     robotAngPosSim = angle;
-
     robotPoseSim = new Pose2d(robotXPosSim, robotYPosSim, Rotation2d.fromDegrees(robotAngPosSim));
     robotField.setRobotPose(robotPoseSim);
   }
@@ -668,7 +664,9 @@ class Drivetrain {
   }
 
   // Calculates the shortest distance between two points on a 360 degree circle. CW is + and CCW is -
-  public double getAngleDistance(double currAngle, double targetAngle) {
+  public static double getAngleDistance(double currAngle, double targetAngle) {
+    currAngle = sterilizeAngle(currAngle);
+    targetAngle = sterilizeAngle(targetAngle);
     double directDistance = Math.abs(currAngle - targetAngle);
     double wraparoundDistance = 360.0 - directDistance;
     double minimumDistance = Math.min(directDistance, wraparoundDistance);
@@ -677,6 +675,14 @@ class Drivetrain {
       minimumDistance = -minimumDistance;
     }
     return minimumDistance;
+  }
+
+  // Converts any angle to an equivalent angle between -180 and 180 degrees. Useful for sterilizing user input.
+  public static double sterilizeAngle(double angle) {
+    angle = angle % 360.0;
+    if (angle > 180.0) angle = angle - 360.0;
+    if (angle <= -180.0) angle = angle + 360.0;
+    return angle;
   }
 
   // Returns an array that contains each swerve module's drive motor position and swerve wheel position.

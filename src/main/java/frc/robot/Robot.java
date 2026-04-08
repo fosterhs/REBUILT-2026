@@ -1438,9 +1438,10 @@ public class Robot extends TimedRobot {
     System.out.println("swerve isBlueAlliance: " + swerve.isBlueAlliance());
     System.out.println("swerve isRedAlliance: " + swerve.isRedAlliance());
     System.out.println("swerve getGyroPitch: " + swerve.getGyroPitch());
-    System.out.println("swerve getAngleDist: " + swerve.getAngleDistance(30.0, -120.0));
+    System.out.println("swerve getAngleDist: " + Drivetrain.getAngleDistance(30.0, -120.0));
     swerve.calcPriorityLimelightIndex();
     System.out.println("swerve getPriorityLimelightIndex: " + swerve.getPriorityLimelightIndex());
+    System.out.println("swerve sterilizeAngle: " + Drivetrain.sterilizeAngle(450.0));
     swerve.updateDash();
 
     shooter.init();
