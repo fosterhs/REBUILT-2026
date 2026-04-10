@@ -124,7 +124,7 @@ class SwerveModule {
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.SupplyCurrentLimit = 55.0;
-    motorConfigs.CurrentLimits.StatorCurrentLimit = 80.0;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 75.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03); // Applies the configuration to the motor. 
   }

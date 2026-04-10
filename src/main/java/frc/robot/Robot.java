@@ -5,6 +5,7 @@ import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.controls.SolidColor;
 import com.ctre.phoenix6.hardware.CANdle;
 import com.ctre.phoenix6.signals.RGBWColor;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -45,6 +46,8 @@ public class Robot extends TimedRobot {
   private boolean RTPressed = false; // Stores whether the right trigger is currently pressed. This is used to control when the robot is preparing to shoot based on driver inputs.
   private boolean RTReleased = false; // Stores whether the right trigger is currently released. This is used to control when the robot is preparing to shoot based on driver inputs.
   private boolean isPreparingToShoot = false; // Stores whether the robot is preparing to shoot based on driver inputs. This can be used to start spinning up the shooter and calculating the shooting trajectory before the robot is actually ready to shoot to help improve accuracy and reduce the amount of time it takes for the robot to start shooting once the driver wants to shoot.
+  private boolean aButtonFilter = false; //tracks for shooting delay in teleop
+  private final Timer aButtonTimer = new Timer(); // Tracks time since A button was pressed.
 
   // LED Variables
   private final CANBus canivore = new CANBus("canivore"); // Initializes the CANivore CAN Bus for controlling the CANdle.
@@ -1000,6 +1003,7 @@ public class Robot extends TimedRobot {
     isReadyToShoot = false;
     isReadyToShootTimer.restart();
     isNotReadyToShootTimer.restart();
+    aButtonTimer.restart();
   }
 
   public void teleopPeriodic() {
@@ -1022,6 +1026,10 @@ public class Robot extends TimedRobot {
     if (isReadyToShootTimer.get() > readyOnDelay && !isReadyToShoot) isReadyToShoot = true; // If the robot has been ready to shoot for longer than the ready on delay, the isReadyToShoot variable is set to true, allowing the indexer to run.
     if (isNotReadyToShootTimer.get() > readyOffDelay && isReadyToShoot) isReadyToShoot = false; // If the robot has not been ready to shoot for longer than the ready off delay, the isReadyToShoot variable is set to false, preventing the indexer from running.
 
+    if (driver.getRawButtonPressed(1)) {
+      aButtonTimer.restart();
+    }
+    
     lastRT = currRT;
     if (driver.getRightTriggerAxis() > 0.30) {
       currRT = true;
@@ -1084,23 +1092,45 @@ public class Robot extends TimedRobot {
         indexer.spinUp();
       }
     } else {
-      shooter.spinDown();
-      shooter.lowerHood();
-      indexer.idle();
+      if (aButtonTimer.get() < 1.0 && !isNearTrench) {
+        shooter.spinUp();
+        indexer.spinUp();
+        shooter.setHoodPosition(calcHoodPosition() - swerve.getGyroPitch()/360.0);
+      } else {
+        shooter.spinDown();
+        shooter.lowerHood();
+        indexer.idle();
+      }
     }
 
     // The following code allows the driver to control the intake with the bumper buttons. If the left bumper is pressed, the intake will deploy and run on the left side. If the right bumper is pressed, the intake will deploy and run on the right side. If either bumper is pressed while that side of the intake is already deployed, the intake will stow.
-    if (driver.getLeftBumperButtonPressed()) {
-      if (intake.getMode() == Intake.Mode.LEFT) {
-        intake.stow();
-      } else {
-        intake.leftIntake();
-      }
-    } else if (driver.getRightBumperButtonPressed()) {
-      if (intake.getMode() == Intake.Mode.RIGHT) {
-        intake.stow();
-      } else {
-        intake.rightIntake();
+    if (Math.abs(Drivetrain.sterilizeAngle(swerve.getFusedAng())) >= 90.0) {
+      if (driver.getLeftBumperButtonPressed()) {
+        if (intake.getMode() == Intake.Mode.RIGHT) {
+          intake.stow();
+        } else {
+          intake.rightIntake();
+        }
+      } else if (driver.getRightBumperButtonPressed()) {
+        if (intake.getMode() == Intake.Mode.LEFT) {
+          intake.stow();
+        } else {
+          intake.leftIntake();
+        }
+      } 
+    } else { 
+      if (driver.getLeftBumperButtonPressed()) {
+        if (intake.getMode() == Intake.Mode.LEFT) {
+          intake.stow();
+        } else {
+          intake.leftIntake();
+        }
+      } else if (driver.getRightBumperButtonPressed()) {
+        if (intake.getMode() == Intake.Mode.RIGHT) {
+          intake.stow();
+        } else {
+          intake.rightIntake();
+        }
       }
     }
 
