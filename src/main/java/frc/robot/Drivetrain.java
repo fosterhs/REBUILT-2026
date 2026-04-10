@@ -288,13 +288,13 @@ class Drivetrain {
 
   // Should be called periodically to rotate the robot to the demanded angle in degrees while translating the robot at the specified speed in meter per second.
   public void aimDrive(double _xVel, double _yVel, double targetAngle) {
-    atDriveGoal = Math.abs(getFusedAng() - targetAngle) < angTol;
+    atDriveGoal = Math.abs(sterilizeAngle(getFusedAng()) - targetAngle) < angTol;
     drive(_xVel, _yVel, angleDriveController.calculate(getAngleDistance(getFusedAng(), targetAngle)*Math.PI/180.0, 0.0));
   }
 
   // Should be called periodically to move the robot to a specified position and angle. Units are meters and degrees.
   public void driveTo(double targetX, double targetY, double targetAngle) {
-    atDriveGoal = Math.abs(getFusedAng() - targetAngle) < angTol 
+    atDriveGoal = Math.abs(sterilizeAngle(getFusedAng()) - targetAngle) < angTol 
       && Math.hypot(targetY - getYPos(), targetX - getXPos()) < posTol;
 
     drive(xDriveController.calculate(getXPos(), targetX), 
@@ -349,7 +349,7 @@ class Drivetrain {
   // pathIndex: Which path to check, pathXTol and pathYTol: the allowable difference in position in meters, pathAngTol: the allowable difference in angle in degrees
   public boolean atPathEndpoint(int pathIndex) {
     if (paths.size() > pathIndex) {
-      return Math.abs(getFusedAng() - paths.get(pathIndex).getEndState().pose.getRotation().getDegrees()) < angTol 
+      return Math.abs(sterilizeAngle(getFusedAng()) - sterilizeAngle(paths.get(pathIndex).getEndState().pose.getRotation().getDegrees())) < angTol 
         && Math.hypot(paths.get(pathIndex).getEndState().pose.getY() - getYPos(), paths.get(pathIndex).getEndState().pose.getX() - getXPos()) < posTol;
     } else {
       return false;
@@ -637,8 +637,8 @@ class Drivetrain {
     //SmartDashboard.putNumber("Front Right Swerve Module Wheel Encoder Angle", frontRightModule.getWheelAngle());
     //SmartDashboard.putNumber("Back Right Swerve Module Wheel Encoder Angle", backRightModule.getWheelAngle());
     //SmartDashboard.putNumber("Back Left Swerve Module Wheel Encoder Angle", backLeftModule.getWheelAngle());
-    SmartDashboard.putNumber("Robot X Position", getXPos());
-    SmartDashboard.putNumber("Robot Y Position", getYPos());
+    //SmartDashboard.putNumber("Robot X Position", getXPos());
+    //SmartDashboard.putNumber("Robot Y Position", getYPos());
     //SmartDashboard.putNumber("Robot Angular Position (Fused)", getFusedAng());
     //SmartDashboard.putNumber("Robot Angular Position (Gyro)", getGyroAng());
     //SmartDashboard.putNumber("Robot Pitch", getGyroPitch());

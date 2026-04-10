@@ -5,7 +5,6 @@ import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.controls.SolidColor;
 import com.ctre.phoenix6.hardware.CANdle;
 import com.ctre.phoenix6.signals.RGBWColor;
-
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -46,8 +45,9 @@ public class Robot extends TimedRobot {
   private boolean RTPressed = false; // Stores whether the right trigger is currently pressed. This is used to control when the robot is preparing to shoot based on driver inputs.
   private boolean RTReleased = false; // Stores whether the right trigger is currently released. This is used to control when the robot is preparing to shoot based on driver inputs.
   private boolean isPreparingToShoot = false; // Stores whether the robot is preparing to shoot based on driver inputs. This can be used to start spinning up the shooter and calculating the shooting trajectory before the robot is actually ready to shoot to help improve accuracy and reduce the amount of time it takes for the robot to start shooting once the driver wants to shoot.
-  private boolean aButtonFilter = false; //tracks for shooting delay in teleop
-  private final Timer aButtonTimer = new Timer(); // Tracks time since A button was pressed.
+  private final Timer AButtonPressedTimer = new Timer();
+  private boolean AButtonFilter = false;
+  private boolean AButtonPressed = false;
 
   // LED Variables
   private final CANBus canivore = new CANBus("canivore"); // Initializes the CANivore CAN Bus for controlling the CANdle.
@@ -1003,7 +1003,8 @@ public class Robot extends TimedRobot {
     isReadyToShoot = false;
     isReadyToShootTimer.restart();
     isNotReadyToShootTimer.restart();
-    aButtonTimer.restart();
+    AButtonPressedTimer.restart();
+    AButtonFilter = false;
   }
 
   public void teleopPeriodic() {
@@ -1025,10 +1026,6 @@ public class Robot extends TimedRobot {
     if (isCurrentyReadyToShoot) isNotReadyToShootTimer.restart(); // If the robot is currently ready to shoot, the timer that tracks how long the robot has not been ready to shoot is restarted.
     if (isReadyToShootTimer.get() > readyOnDelay && !isReadyToShoot) isReadyToShoot = true; // If the robot has been ready to shoot for longer than the ready on delay, the isReadyToShoot variable is set to true, allowing the indexer to run.
     if (isNotReadyToShootTimer.get() > readyOffDelay && isReadyToShoot) isReadyToShoot = false; // If the robot has not been ready to shoot for longer than the ready off delay, the isReadyToShoot variable is set to false, preventing the indexer from running.
-
-    if (driver.getRawButtonPressed(1)) {
-      aButtonTimer.restart();
-    }
     
     lastRT = currRT;
     if (driver.getRightTriggerAxis() > 0.30) {
@@ -1041,10 +1038,14 @@ public class Robot extends TimedRobot {
     RTPressed = currRT && !lastRT;
     RTReleased = !currRT && lastRT;
 
+    AButtonPressed = driver.getRawButtonPressed(1);
+    if (AButtonPressed) AButtonPressedTimer.restart();
+    AButtonFilter = driver.getRawButton(1) || AButtonPressedTimer.get() < 3.0;
+
     // Holding the A button will cause the robot to shoot if it's not in near the trench.
-    if (isNearTrench || driver.getRawButtonReleased(1)) {
+    if (isNearTrench || !AButtonFilter) {
       isShooting = false; // Releasing the A button or being near the trench will cause the robot to stop shooting.
-    } else if (!isNearTrench && driver.getRawButtonPressed(1)) {
+    } else if (!isNearTrench && AButtonPressed) {
       isShooting = true; // Pressing the A button will cause the robot to start shooting if it's not near the trench.
       if (!isPreparingToShoot) {
         swerve.resetDriveController(calcShotHeading()); // Resets the drive controller to the current optimal shooting heading to prepare for rotation.
@@ -1086,21 +1087,15 @@ public class Robot extends TimedRobot {
     if (isShooting || isPreparingToShoot) {
       shooter.spinUp(); 
       shooter.setHoodPosition(calcHoodPosition() - swerve.getGyroPitch()/360.0);
-      if (isReadyToShoot && driver.getRawButton(1)) {
+      if (isReadyToShoot && (driver.getRawButton(1) || AButtonFilter)) {
         indexer.index();
       } else {
         indexer.spinUp();
       }
     } else {
-      if (aButtonTimer.get() < 1.0 && !isNearTrench) {
-        shooter.spinUp();
-        indexer.spinUp();
-        shooter.setHoodPosition(calcHoodPosition() - swerve.getGyroPitch()/360.0);
-      } else {
-        shooter.spinDown();
-        shooter.lowerHood();
-        indexer.idle();
-      }
+      shooter.spinDown();
+      shooter.lowerHood();
+      indexer.idle();
     }
 
     // The following code allows the driver to control the intake with the bumper buttons. If the left bumper is pressed, the intake will deploy and run on the left side. If the right bumper is pressed, the intake will deploy and run on the right side. If either bumper is pressed while that side of the intake is already deployed, the intake will stow.
@@ -1502,7 +1497,6 @@ public class Robot extends TimedRobot {
 
   // Publishes information to the dashboard.
   private void updateDash() {
-    SmartDashboard.putNumber("distance", distanceToTarget);
     if (Robot.isSimulation()) SmartDashboard.putNumber("autoStage", autoStage);
   }
 
