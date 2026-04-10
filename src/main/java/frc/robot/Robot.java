@@ -58,7 +58,7 @@ public class Robot extends TimedRobot {
   private static final String auto1 = "Right pass auto (Manqi)"; 
   private static final String auto2 = "Left Side Start, Neutral Zone then Depot collection. (Bashayer)"; 
   private static final String auto3 = "Center Start, fuel shoot, collect from depot, shoot (Kyle)"; 
-  private static final String auto4 = "Troll Auto";
+  private static final String auto4 = "Troll Auto (Mr. P)";
   private static final String auto5 = "Left Side Start, Double Swipe. (Bashayer)";
   private static final String auto6 = "Right Side Start, Double Swipe. (Bashayer)";
   private static final String auto7 = "Center Start, Center then Depot. (Bashayer)";
@@ -113,6 +113,9 @@ public class Robot extends TimedRobot {
     // Auto 8 Path : Neutral and Depot Collection, Center Start Position. 12-13
     swerve.loadPath("center pt. 1", 0.0, 0.0, 0.0, -42.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     swerve.loadPath("center pt. 2", 0.0, 0.0, 0.0, -25.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+    // Auto 3 Path : kyle center auto. 14-15
+    swerve.loadPath("center pt. 2 Kyle", 0.0, 0.0, 0.0, -25.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
+    swerve.loadPath("center pt. 3", 0.0, 0.0, 0.0, -42.0); // Loads a Path Planner generated path into the path follower code in the drivetrain.
     
     SignalLogger.setPath("/media/sda1/");
     SignalLogger.enableAutoLogging(true);
@@ -168,7 +171,7 @@ public class Robot extends TimedRobot {
       case auto3:
         // AutoInit 3 code goes here.
         swerve.pushCalibration(true, -90.0); // Updates the robot's position on the field.
-        swerve.resetDriveController(calcHubHeading(2.2, 4.7));
+        swerve.resetDriveController(calcHubHeading(3.0, 5.9));
       break;
 
       case auto4:
@@ -493,11 +496,11 @@ public class Robot extends TimedRobot {
         switch (autoStage) {
           case 1:
             // Auto 3, Stage 1 code goes here.
-            swerve.driveTo(2.2, 4.7, calcHubHeading(2.2, 4.7)); // Brings the robot to a shooting position.
+            swerve.driveTo(3.0, 5.9, calcHubHeading(3.0, 5.9)); // Brings the robot to a shooting position.
             shooter.spinUp(); // Turns the shooter on.
             indexer.spinUp();
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
-            if (swerve.atDriveGoal()) {
+            if (isReadyToShoot) {
               indexer.index(); // Turns on the indexer.
               shootingTimer.restart(); // Restarts the shooting timer.
               autoStage = 2; // Advances to the next stage once the robot has gotten to the shooting position.
@@ -506,9 +509,9 @@ public class Robot extends TimedRobot {
 
           case 2:
             // Auto 3, Stage 2 code goes here.
-            swerve.driveTo(2.2, 4.7, calcHubHeading(2.2, 4.7)); // Brings the robot to a shooting position.
+            swerve.driveTo(3.0, 5.9, calcHubHeading(3.0, 5.9)); // Brings the robot to a shooting position.
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
-            if (shootingTimer.get() > 4.0) {
+            if (shootingTimer.get() > 1.5) {
               shooter.spinDown(); // Turns the shooter off.
               shooter.lowerHood(); // Lowers the hood of the shooter.
               indexer.idle();
@@ -519,7 +522,7 @@ public class Robot extends TimedRobot {
 
           case 3:
             // Auto 3, Stage 3 code goes here.
-            swerve.driveTo(1.195, 6.000, -90.0); // Brings the robot to the depot.
+            swerve.driveTo(0.95, 5.95, -90.0); // Brings the robot to the depot.
 
             if (swerve.getXPos() < 2.2) {
               intake.rightIntake(); // When the X position is less than 1.8, the right intake will deploy.
@@ -533,10 +536,10 @@ public class Robot extends TimedRobot {
 
           case 4:
             // Auto 3, Stage 4 code goes here.
-            swerve.aimDrive(-0.3, 0.0, -90.0); // Moves the robot in the depot, collecting fuel.
-            if (swerve.getXPos() <= 0.56) {
+            swerve.aimDrive(-0.8, 0.0, -90.0); // Moves the robot in the depot, collecting fuel.
+            if (swerve.getXPos() <= 0.35) {
               intake.stow(); // Stows the intake.
-              swerve.resetDriveController(calcHubHeading(2.0, 4.7));
+              swerve.resetDriveController(calcHubHeading(3.0, 5.5));
               shooter.spinUp(); // Turns the shooter on.
               indexer.spinUp();
               autoStage = 5; // Advances to the next stage once the robot has finished intaking.
@@ -545,13 +548,82 @@ public class Robot extends TimedRobot {
 
           case 5:
             // Auto 3, Stage 6 code goes here.
-            swerve.driveTo(2.0, 4.7, calcHubHeading(2.0, 4.7)); // Brings the robot to a shooting position.
+            swerve.driveTo(3.0, 5.5, calcHubHeading(3.0, 5.5)); // Brings the robot to a shooting position.
             shooter.spinUp(); // Turns the shooter on.
             indexer.spinUp();
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
-            if (isReadyToShoot && swerve.atDriveGoal()) {
+            if (isReadyToShoot) {
+              shootingTimer.restart();
               indexer.index(); // Turns on the indexer.
+              autoStage = 6;
             }
+          break;
+
+          case 6:
+            // Auto 3, Stage 6 code goes here.
+            swerve.driveTo(3.0, 5.5, calcHubHeading(3.0, 5.5)); // Brings the robot to a shooting position.
+            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+            if (shootingTimer.get() > 2.0) {
+              shooter.spinDown(); // Turns the shooter off.
+              shooter.lowerHood(); // Lowers the hood of the shooter.
+              indexer.idle(); // Turns the indexer off.
+              swerve.resetPathController(12); 
+              intake.rightIntake(); // When the robot has started moving, the right intake will deploy.
+              autoStage = 7; // Advances to the next stage once the robot has finished shooting.
+            }
+          break;
+
+          case 7:
+            // Auto 3, Stage 7 code goes here.
+            swerve.followPath(12); // Brings the robot to the neutral zone to collect fuel.
+            if (swerve.getYPos() < 4.4) {
+              swerve.resetPathController(14);
+              intake.stow(); // Stows the intake.
+              autoStage = 8; // Advances to the next stage once the robot has finished intaking.
+            }
+          break;
+
+          case 8:
+            // Auto 3, Stage 7 code goes here.
+            swerve.followPath(14); // Brings the robot to a shooting position.
+            if (swerve.getXPos() < 4.0) {
+              shooter.spinUp(); // Turns the shooter on.
+              indexer.spinUp();
+            }
+            if (swerve.getXPos() < 3.2) {
+              swerve.resetDriveController(calcHubHeading(3.0, 5.5));
+              autoStage = 9; // Advances to the next stage once the robot has gotten to the shooting position.
+            }
+          break;
+
+          case 9:
+            // Auto 3, Stage 9 code goes here.
+            swerve.driveTo(3.0, 5.5, calcHubHeading(3.0, 5.5)); // Brings the robot to a shooting position.
+            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+            if (isReadyToShoot) {
+              shootingTimer.restart();
+              indexer.index(); // Turns on the indexer.
+              autoStage = 10;
+            }
+          break;
+
+          case 10:
+            // Auto 3, Stage 10 code goes here.
+            swerve.driveTo(3.0, 5.5, calcHubHeading(3.0, 5.5)); // Brings the robot to a shooting position.
+            shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
+            if (shootingTimer.get() > 2.0) {
+              shooter.spinDown(); // Turns the shooter off.
+              shooter.lowerHood(); // Lowers the hood of the shooter.
+              indexer.idle();
+              swerve.resetPathController(15);
+              autoStage = 11; // Advances to the next stage once the robot has finished shooting.
+            }
+          break;
+
+          case 11:
+              // Auto 3, Stage 11 code goes here.
+              swerve.followPath(15); // Brings the robot to the neutral zone to prepare for the teleop period.
+              intake.rightIntake(); // Deploys the right intake.
           break;
         }
       break; 
@@ -599,7 +671,7 @@ public class Robot extends TimedRobot {
               intake.leftIntake(); // When the X position is greater than 6, the left intake will deploy.
             }
             if (swerve.getYPos() < 4.7) {
-              intake.stow(); // Stows the intake.
+              intake.rightIntake(); // Deploys the right intake.
               swerve.resetPathController(5);
               shooter.spinUp(); // Turns the shooter on.
               indexer.spinUp(); // Spins the indexer forward.
@@ -621,6 +693,7 @@ public class Robot extends TimedRobot {
             swerve.driveTo(3.5, 7.31, calcHubHeading(3.5, 7.31)); // Brings the robot slightly backwards.
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
             if (isReadyToShoot) {
+              intake.stow(); // Stows the intake.
               shootingTimer.restart(); // Restarts the shooting timer.
               indexer.index(); // Turns on the indexer.
               autoStage = 6; // Advances to the next stage once the robot has gotten to the shooting position.
@@ -647,7 +720,7 @@ public class Robot extends TimedRobot {
               intake.leftIntake(); // When the X position is greater than 6.0, the left intake will deploy.
             }
             if (swerve.getYPos() < 4.7) {
-              intake.stow(); // Stows the intake.
+              intake.rightIntake(); // Deploys the right intake.
               swerve.resetPathController(7);
               shooter.spinUp(); // Turns the shooter on.
               indexer.spinUp(); // Spins the indexer forward.
@@ -670,6 +743,7 @@ public class Robot extends TimedRobot {
             swerve.aimDrive(0.0, 0.0, calcShotHeading()); // Rotates the robot to a rotation where it'll have the least misses.
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
             if (isReadyToShoot) {
+              intake.stow(); // Stows the intake.
               indexer.index(); // Turns the indexer on.
             }
           break;
@@ -711,7 +785,7 @@ public class Robot extends TimedRobot {
               intake.rightIntake(); // When the X position is greater than 6, the right intake will deploy.
             }
             if (swerve.getYPos() > 3.4) {
-              intake.stow(); // Stows the intake.
+              intake.leftIntake(); // Deploys the left intake.
               swerve.resetPathController(1);
               shooter.spinUp(); // Turns on the shooter.
               indexer.spinUp(); // Spins the indexer forward.
@@ -733,6 +807,7 @@ public class Robot extends TimedRobot {
             swerve.driveTo(3.5, 0.79, calcHubHeading(3.5, 0.79)); // Brings the robot slightly backwards.
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
             if (isReadyToShoot) {
+              intake.stow(); // Stows the intake.
               shootingTimer.restart(); // Restarts the shooting timer.
               indexer.index(); // Turns on the indexer.
               autoStage = 6; // Advances to the next stage once the robot has gotten to the shooting position.
@@ -759,7 +834,7 @@ public class Robot extends TimedRobot {
               intake.rightIntake(); // When the X position is greater than 6.0, the left intake will deploy.
             }
             if (swerve.getYPos() > 3.4) {
-              intake.stow(); // Stows the intake.
+              intake.leftIntake(); // Deploys the left intake.
               swerve.resetPathController(3);
               shooter.spinUp(); // Turns the shooter on.
               indexer.spinUp(); // Spins the indexer forward.
@@ -782,6 +857,7 @@ public class Robot extends TimedRobot {
             swerve.aimDrive(0.0, 0.0, calcShotHeading()); // Rotates the robot to a rotation where it'll have the least misses.
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
             if (isReadyToShoot) {
+              intake.stow(); // Stows the intake.
               indexer.index(); // Turns on the indexer.
             }
           break;
@@ -864,7 +940,7 @@ public class Robot extends TimedRobot {
 
           case 7:
             // Auto 7, Stage 7 code goes here.
-            swerve.driveTo(1.195, 6.0, -90.0); // Brings the robot to the depot.
+            swerve.driveTo(1.195, 5.965, -90.0); // Brings the robot to the depot.
             if (swerve.getXPos() < 2.2) {
               intake.rightIntake(); // When the X position is less than 1.8, the right intake will deploy.
             }
@@ -980,7 +1056,11 @@ public class Robot extends TimedRobot {
     if (driver.getRawButtonPressed(2)) boostMode = true; // A button sets boost mode. (100% speed up from default of 60%).
     if (driver.getRawButtonPressed(3)) boostMode = false; // B Button sets default mode (60% of full speed).
     if (isShooting || isPreparingToShoot) {
-      swerve.setLimits(0.4, 1.0, 0.3, 1.0);
+      if (isScoring) {
+        swerve.setLimits(0.4, 1.0, 0.3, 1.0);
+      } else {
+        swerve.setLimits(0.4, 1.0, 0.3, 1.0);
+      }
     } else if (boostMode) {
       swerve.setLimits(1.0, 0.4, 1.0, 1.0);
     } else {
@@ -997,7 +1077,7 @@ public class Robot extends TimedRobot {
     // The following code controls the shooter and indexer. If the robot is in shooting mode, the shooter will spin up and the hood will move to the calculated position. If the shooter is up to speed and the robot is at the shooting position, the indexer will start. If the robot is not in shooting mode, the shooter will spin down, the hood will lower, and the indexer will stop.
     if (isShooting || isPreparingToShoot) {
       shooter.spinUp(); 
-      shooter.setHoodPosition(calcHoodPosition());
+      shooter.setHoodPosition(calcHoodPosition() - swerve.getGyroPitch()/360.0);
       if (isReadyToShoot && driver.getRawButton(1)) {
         indexer.index();
       } else {
@@ -1126,11 +1206,11 @@ public class Robot extends TimedRobot {
     shooter.init();
   }
 
-  /*
+  
   double flywheelRPM = 3000.0;
   double hoodPosition = 0.06;
   double indexerSpeed = 3600.0;
-  */
+  
   public void testPeriodic() {
     swerve.updateOdometry();
 
@@ -1191,7 +1271,7 @@ public class Robot extends TimedRobot {
     intake.periodic();
     
     /* 
-    if (driver.getRawButton(1)) {
+    if (driver.getRawButton(1)) {// Button 1 is "A", the bottom button on the controller. Holding this button and pressing up on the D-pad will increase the flywheel RPM by 100, while holding this button and pressing down on the D-pad will decrease the flywheel RPM by 100.
      if (driver.getPOV() == 0) {
       flywheelRPM += 1.0;
      }
@@ -1200,7 +1280,7 @@ public class Robot extends TimedRobot {
      }
     }
 
-    if (driver.getRawButton(2)) {
+    if (driver.getRawButton(2)) {// Button 2 is "B", the right button on the controller. Holding this button and pressing up on the D-pad will increase the hood position by 0.01, while holding this button and pressing down on the D-pad will decrease the hood position by 0.01.
      if (driver.getPOV() == 0) {
       hoodPosition += 0.0001;
      }
@@ -1209,7 +1289,7 @@ public class Robot extends TimedRobot {
      }
     }
 
-    if (driver.getRawButton(3)) {
+    if (driver.getRawButton(3)) {// Button 3 is "X", the left button on the controller. Holding this button and pressing up on the D-pad will increase the indexer speed by 100, while holding this button and pressing down on the D-pad will decrease the indexer speed by 100.
      if (driver.getPOV() == 0) {
       indexerSpeed += 1.0;
      }
@@ -1300,8 +1380,8 @@ public class Robot extends TimedRobot {
   }
 
   // This method calculates the position the hood needs to be at to shoot accurately based on the distance to the target. It uses a calibration array to return hood position values based on distance to the target.
-  private double[] scoringHoodCalibrationDistances = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0, 7.0}; 
-  private double[] scoringHoodCalibrationValues = {0.02, 0.035, 0.0545, 0.0575, 0.062, 0.065, 0.068, 0.06895, 0.06, 0.078}; 
+  private double[] scoringHoodCalibrationDistances = {1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0, 7.0}; //{1.0, 1.59, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0, 6.0, 7.0}; 
+  private double[] scoringHoodCalibrationValues = {0.02, 0.035, 0.0545, 0.0575, 0.062, 0.065, 0.068, 0.069, 0.061, 0.078};//{0.02, 0.035, 0.05, 0.0575, 0.062, 0.065, 0.068, 0.06895, 0.06, 0.078};         
   private double[] passingHoodCalibrationDistances = {2.0, 4.0, 6.0, 8.0, 10.0, 11.5}; //{4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0};//🦎🦎
   private double[] passingHoodCalibrationValues = {0.04, 0.055, 0.065, 0.075, 0.085, 0.112}; //{0.06, 0.066, 0.092, 0.115, 0.06, 0.066, 0.092};//🦎🦎
   private double calcHoodPosition() {
@@ -1392,6 +1472,7 @@ public class Robot extends TimedRobot {
 
   // Publishes information to the dashboard.
   private void updateDash() {
+    SmartDashboard.putNumber("distance", distanceToTarget);
     if (Robot.isSimulation()) SmartDashboard.putNumber("autoStage", autoStage);
   }
 
