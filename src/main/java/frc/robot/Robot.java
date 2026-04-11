@@ -959,6 +959,7 @@ public class Robot extends TimedRobot {
             if (swerve.getXPos() < 0.56) {
               intake.stow(); // Stows the intake.
               swerve.resetDriveController(calcHubHeading(2.0, 4.7));
+              shootingTimer.restart();
               shooter.spinUp(); // Turns the shooter on.
               indexer.spinUp(); // Spins the indexer forward.
               autoStage = 9; // Advances to the next stage once the robot has finished intaking.
@@ -969,10 +970,21 @@ public class Robot extends TimedRobot {
             // Auto 7, Stage 9 code goes here.
             swerve.driveTo(2.0, 4.7, calcHubHeading(2.0, 4.7)); // Brings the robot to a shooting position.
             shooter.setHoodPosition(calcHoodPosition()); // Sets the hood position to shoot as accurately as possible.
-            if (isReadyToShoot) {
+            if (shootingTimer.get() > 2.0) {
               indexer.index(); // Turns on the indexer.
+              swerve.resetPathController(15);
+              autoStage = 10;
             }
           break;
+
+          case 10:
+              // Auto 7, Stage 10 code goes here.
+              swerve.followPath(15); // Brings the robot to the neutral zone to prepare for the teleop period.
+              if (swerve.atDriveGoal()) {
+                intake.rightIntake(); // Deploys the right intake.
+              }
+          break;
+          
         }
       break; 
     }
@@ -1047,7 +1059,7 @@ public class Robot extends TimedRobot {
       isShooting = false; // Releasing the A button or being near the trench will cause the robot to stop shooting.
     } else if (!isNearTrench && AButtonPressed) {
       isShooting = true; // Pressing the A button will cause the robot to start shooting if it's not near the trench.
-      if (!isPreparingToShoot) {
+      if (!isPreparingToShoot) {    
         swerve.resetDriveController(calcShotHeading()); // Resets the drive controller to the current optimal shooting heading to prepare for rotation.
       }
     }

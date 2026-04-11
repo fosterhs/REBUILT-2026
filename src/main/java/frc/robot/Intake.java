@@ -42,10 +42,10 @@ public class Intake {
   // Status Signals
   private final StatusSignal<Angle> leftArmPosition; // Creates a new StatusSignal for the position of the left intake arm motor. This will allow us to read the current position of the motor in units of rotations. The TalonFX's integrated encoder provides position feedback that we can use to determine the angle of the intake arm.
   private final StatusSignal<Angle> rightArmPosition; // Creates a new StatusSignal for the position of the right intake arm motor. This will allow us to read the current position of the motor in units of rotations. The TalonFX's integrated encoder provides position feedback that we can use to determine the angle of the intake arm.
-  private final double armPosTol = 0.10; // Tolerance for considering the intake arms to be in position at their desired angles. This is in units of motor rotations, so 0.5 means that if the arm is within 0.5 rotations of the desired position, we will consider it to be in position. Adjust this value as needed based on the performance of your specific robot's intake mechanism and how precise you want the positioning to be.
+  private final double armPosTol = 0.08; // Tolerance for considering the intake arms to be in position at their desired angles. This is in units of motor rotations, so 0.5 means that if the arm is within 0.5 rotations of the desired position, we will consider it to be in position. Adjust this value as needed based on the performance of your specific robot's intake mechanism and how precise you want the positioning to be.
   private final double armStowPosition = 0.02;  // The position that we want to stow the intake arms at when they are not in use. This is in units of motor rotations, so 0.4 means that the arms will be stowed at a position that is 0.4 rotations away from the zero position. Adjust this value as needed based on the physical configuration of your robot's intake mechanism and how you want it to be positioned when stowed.
-  private final double armIntakePosition = 0.46; // The position that we want to move the intake arms to when we are intaking fuel. This is in units of motor rotations, so 10.5 means that the arms will move to a position that is 10.5 rotations away from the zero position when intaking. Adjust this value as needed based on the physical configuration of your robot's intake mechanism and how you want it to be positioned when intaking.
-  private final double centeringVoltage = 4.0; // Initializes a variable to keep track of the voltage that we want to run the left intake centering motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the centering motors to position the intake arm.
+  private final double armIntakePosition = 0.455; // The position that we want to move the intake arms to when we are intaking fuel. This is in units of motor rotations, so 10.5 means that the arms will move to a position that is 10.5 rotations away from the zero position when intaking. Adjust this value as needed based on the physical configuration of your robot's intake mechanism and how you want it to be positioned when intaking.
+  private final double centeringVoltage = 6.0; // Initializes a variable to keep track of the voltage that we want to run the left intake centering motor at when intaking fuel. This can be adjusted based on the performance of your specific robot's intake mechanism and how aggressively you want to run the centering motors to position the intake arm.
   public enum Mode {LEFT, RIGHT, STOW} // HOME mode runs the homing procedure to find the zero position of the intake arms. LEFT mode moves the left arm to the intake position and the right arm to the stow position. RIGHT mode moves the right arm to the intake position and the left arm to the stow position. STOW mode moves both arms to the stow position.
   private Mode currMode = Mode.STOW; // Initializes the current mode of the intake to HOME. This means that when the robot is first turned on, the intake will be in the process of homing to find the zero position of the arms. After homing is complete, it will switch to STOW mode.
   private Mode lastMode = Mode.STOW; // Initializes a variable to keep track of the last mode that the intake was in. This will be used to detect when the mode changes so that we can restart the jam timer when we switch modes.
@@ -65,7 +65,7 @@ public class Intake {
     configRollerMotor(rightRollerMotor, true);
     configCenteringMotor(leftCenteringMotor, true);
     configCenteringMotor(rightCenteringMotor, false);
-    configArmEncoder(leftArmEncoder, -0.2893, true);
+    configArmEncoder(leftArmEncoder, -0.2783, true);
     configArmEncoder(rightArmEncoder, 0.0573, true);
     leftArmPosition = leftArmEncoder.getAbsolutePosition();
     rightArmPosition = rightArmEncoder.getAbsolutePosition();
@@ -294,8 +294,8 @@ public class Intake {
     // Current limits configuration. These limits can help protect the motors and the mechanical components of the intake from drawing too much current and potentially causing damage. Adjust these values as needed based on the performance of your specific robot's intake mechanism and the capabilities of your motors.
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
-    motorConfigs.CurrentLimits.SupplyCurrentLimit = 50.0;
-    motorConfigs.CurrentLimits.StatorCurrentLimit = 80.0;
+    motorConfigs.CurrentLimits.SupplyCurrentLimit = 60.0;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 100.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03); // Apply the configuration to the motor with a timeout of 0.03 seconds (30 milliseconds). This will send the configuration settings to the motor controller so that it can use them for controlling the motor.
   }
@@ -310,8 +310,8 @@ public class Intake {
     // Current limits configuration. These limits can help protect the motors and the mechanical components of the intake from drawing too much current and potentially causing damage. Adjust these values as needed based on the performance of your specific robot's intake mechanism and the capabilities of your motors.
     motorConfigs.CurrentLimits.SupplyCurrentLimitEnable = true;
     motorConfigs.CurrentLimits.StatorCurrentLimitEnable = true;
-    motorConfigs.CurrentLimits.SupplyCurrentLimit = 15.0;
-    motorConfigs.CurrentLimits.StatorCurrentLimit = 40.0;
+    motorConfigs.CurrentLimits.SupplyCurrentLimit = 50.0;
+    motorConfigs.CurrentLimits.StatorCurrentLimit = 80.0;
 
     motor.getConfigurator().apply(motorConfigs, 0.03); // Apply the configuration to the motor with a timeout of 0.03 seconds (30 milliseconds). This will send the configuration settings to the motor controller so that it can use them for controlling the motor.
   }
