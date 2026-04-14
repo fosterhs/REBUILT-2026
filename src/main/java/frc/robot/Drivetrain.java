@@ -175,11 +175,9 @@ class Drivetrain {
       _yVel = lastYVelDemanded + maxAccSet/accDemanded*(_yVel - lastYVelDemanded);
     }
 
-    if (Math.abs(_angVel) > maxAngVelSet) _angVel = _angVel > 0.0 ? maxAngVelSet : -maxAngVelSet;
+    if (Math.abs(_angVel) > maxAngVelSet) _angVel = Math.signum(_angVel)*maxAngVelSet;
     if (Math.abs(_angVel) < minAngVel) _angVel = 0.0;
-    if (Math.abs(_angVel-lastAngVelDemanded*Math.PI/180.0) > Math.abs(maxAngAccSet*(currTime-lastTime))) {
-      _angVel = _angVel > lastAngVelDemanded*Math.PI/180.0 ? lastAngVelDemanded*Math.PI/180.0 + maxAngAccSet*(currTime-lastTime) : lastAngVelDemanded*Math.PI/180.0 - maxAngAccSet*(currTime-lastTime);
-    }
+    if (Math.abs(_angVel-lastAngVelDemanded*Math.PI/180.0) > Math.abs(maxAngAccSet*(currTime-lastTime))) _angVel = lastAngVelDemanded*Math.PI/180.0 + Math.signum(_angVel - lastAngVelDemanded*Math.PI/180.0)*maxAngAccSet*(currTime-lastTime);
 
     xVelDemanded = _xVel;
     yVelDemanded = _yVel;
@@ -663,6 +661,7 @@ class Drivetrain {
     if (Robot.isSimulation()) SmartDashboard.putData("Field", robotField);
     if (Robot.isSimulation()) SmartDashboard.putNumber("Xpos", getXPos());
     if (Robot.isSimulation()) SmartDashboard.putNumber("Ypos", getYPos());
+    if (Robot.isSimulation()) SmartDashboard.putNumber("AngPos", getFusedAng());
   }
 
   // Calculates the shortest distance between two points on a 360 degree circle. CW is + and CCW is -

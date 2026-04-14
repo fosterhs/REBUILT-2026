@@ -45,9 +45,9 @@ public class Robot extends TimedRobot {
   private boolean RTPressed = false; // Stores whether the right trigger is currently pressed. This is used to control when the robot is preparing to shoot based on driver inputs.
   private boolean RTReleased = false; // Stores whether the right trigger is currently released. This is used to control when the robot is preparing to shoot based on driver inputs.
   private boolean isPreparingToShoot = false; // Stores whether the robot is preparing to shoot based on driver inputs. This can be used to start spinning up the shooter and calculating the shooting trajectory before the robot is actually ready to shoot to help improve accuracy and reduce the amount of time it takes for the robot to start shooting once the driver wants to shoot.
-  private final Timer AButtonPressedTimer = new Timer();
+  private final Timer APressedTimer = new Timer();
   private boolean AButtonFilter = false;
-  private boolean AButtonPressed = false;
+  private boolean APressed = false;
 
   // LED Variables
   private final CANBus canivore = new CANBus("canivore"); // Initializes the CANivore CAN Bus for controlling the CANdle.
@@ -1015,7 +1015,7 @@ public class Robot extends TimedRobot {
     isReadyToShoot = false;
     isReadyToShootTimer.restart();
     isNotReadyToShootTimer.restart();
-    AButtonPressedTimer.restart();
+    APressedTimer.restart();
     AButtonFilter = false;
   }
 
@@ -1050,14 +1050,14 @@ public class Robot extends TimedRobot {
     RTPressed = currRT && !lastRT;
     RTReleased = !currRT && lastRT;
 
-    AButtonPressed = driver.getRawButtonPressed(1);
-    if (AButtonPressed) AButtonPressedTimer.restart();
-    AButtonFilter = driver.getRawButton(1) || AButtonPressedTimer.get() < 3.0;
+    APressed = driver.getRawButtonPressed(1);
+    if (APressed) APressedTimer.restart();
+    AButtonFilter = driver.getRawButton(1) || APressedTimer.get() < 3.0;
 
     // Holding the A button will cause the robot to shoot if it's not in near the trench.
     if (isNearTrench || !AButtonFilter) {
       isShooting = false; // Releasing the A button or being near the trench will cause the robot to stop shooting.
-    } else if (!isNearTrench && AButtonPressed) {
+    } else if (!isNearTrench && APressed) {
       isShooting = true; // Pressing the A button will cause the robot to start shooting if it's not near the trench.
       if (!isPreparingToShoot) {    
         swerve.resetDriveController(calcShotHeading()); // Resets the drive controller to the current optimal shooting heading to prepare for rotation.
@@ -1242,12 +1242,10 @@ public class Robot extends TimedRobot {
     intake.init();
     shooter.init();
   }
-
   
   double flywheelRPM = 3000.0;
   double hoodPosition = 0.06;
   double indexerSpeed = 3600.0;
-  
   public void testPeriodic() {
     swerve.updateOdometry();
 
