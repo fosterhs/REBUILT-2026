@@ -124,6 +124,9 @@ public class Robot extends TimedRobot {
       swerve.addVisionEstimate(limelightIndex, true); // Checks to see if there are reliable April Tags in sight of the Limelight and updates the robot position on the field.
     }
 
+    // Teleop control code goes here. This is where you would read the controller inputs and set the desired states for the subsystems based on those inputs. 
+
+    
     // The following calls are used to update the subsystems and should be called every period.
     indexer.periodic();
     intake.periodic();
@@ -138,7 +141,6 @@ public class Robot extends TimedRobot {
     if (driver.getRawButtonReleased(7)) swerve.pushCalibration(false, 0.0); // Pushes the calculated position of the robot on the field to the drivetrain's odometry once calibration is complete.
 
     if (driver.getRawButtonPressed(8)) swerve.resetGyro(); // Button 8 is "Menu", the right center button. Sets the current heading of the robot as the new zero. Useful if no April Tags are available, such as driving around the shop.
-
   }
   
   public void disabledInit() { 
