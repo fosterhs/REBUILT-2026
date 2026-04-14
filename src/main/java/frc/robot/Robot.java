@@ -816,7 +816,7 @@ public class Robot extends TimedRobot {
               autoStage = 6; // Advances to the next stage once the robot has gotten to the shooting position.
             }
           break;
-
+ 
           case 6:
             // Auto 6, Stage 6 code goes here.
             swerve.driveTo(3.5, 0.79, calcHubHeading(3.5, 0.79)); // Brings the robot slightly backwards.
