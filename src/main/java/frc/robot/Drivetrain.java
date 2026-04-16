@@ -686,6 +686,50 @@ class Drivetrain {
     return angle;
   }
 
+  // This is a general interpolation method that takes in an x value and two arrays representing points on a graph and returns an interpolated y value based on the x value. 
+  public static double interpolate(double x, double[] xArray, double[] yArray) {
+    if (xArray.length != yArray.length) { // Checks to make sure the x and y arrays are the same length. If not, it prints an error and returns 0.
+      System.out.println("Error: xArray and yArray must be the same length.");
+      return 0.0;
+    } else if (xArray.length == 0) { // Checks to make sure the x and y arrays have at least one element. If not, it prints an error and returns 0.
+      System.out.println("Error: xArray and yArray must have at least one element.");
+      return 0.0;
+    } else if (x >= xArray[xArray.length - 1]) { // If x is greater than the largest x value in the x array, it returns the corresponding y value for the largest x value (i.e. it assumes the y value stays constant after the largest x value).
+      return yArray[yArray.length - 1]; // Return y for largest x
+    } else if (x <= xArray[0]) {
+      return yArray[0]; // Return y for smallest x
+    } else {
+      int lowerIndex = -1; // Index for x immediately smaller than current x
+      for (int i = 0; i < xArray.length - 1; i++) { 
+        if (xArray[i + 1] > x && lowerIndex == -1) {
+          lowerIndex = i; // This will be used as the lower point for interpolation.
+        }
+      } 
+      return yArray[lowerIndex] + ((yArray[lowerIndex + 1] - yArray[lowerIndex]) / (xArray[lowerIndex + 1] - xArray[lowerIndex])) * (x - xArray[lowerIndex]);
+    }
+  }
+
+  // Calculates the heading of a target based on the current position of the robot. This is used for target tracking to determine the angle the robot needs to turn to face the target. It uses basic trigonometry to calculate the angle between the robot and the target, and then adjusts that angle based on which quadrant the target is in relative to the robot.
+  public static double calcHeading(double robotXPos, double robotYPos, double targetXPos, double targetYPos) {
+    if (robotXPos < targetXPos) { // If the target is in front of the robot (i.e. the x position of the target is greater than the x position of the robot), the heading can be calculated directly using the arctangent of the difference in y positions divided by the difference in x positions.
+      return Math.toDegrees(Math.atan((targetYPos - robotYPos) / (targetXPos - robotXPos))); 
+    } else if (robotXPos > targetXPos) { // If the target is behind the robot (i.e. the x position of the target is less than the x position of the robot), 180 degrees must be added or subtracted from the heading calculated using the arctangent to account for the fact that the robot needs to turn around to face the target. Whether 180 degrees is added or subtracted depends on whether the target is above or below the robot (i.e. whether the y position of the target is greater than or less than the y position of the robot).
+      if (robotYPos <= targetYPos) {
+        return Math.toDegrees(Math.atan((targetYPos - robotYPos) / (targetXPos - robotXPos))) + 180.0; 
+      } else {
+        return Math.toDegrees(Math.atan((targetYPos - robotYPos) / (targetXPos - robotXPos))) - 180.0; 
+      }
+    } else { // If the robot and the target are in the same vertical line (i.e. they have the same x position), the heading is either 90 or -90 degrees depending on whether the target is above or below the robot. If the target is exactly on top of the robot, the heading doesn't matter, so it returns 0.
+      if (robotYPos > targetYPos) {
+        return -90.0;
+      } else if (robotYPos < targetYPos) {
+        return 90.0;
+      } else {
+        return 0.0; 
+      }
+    }
+  }
+
   // Returns an array that contains each swerve module's drive motor position and swerve wheel position.
   private SwerveModulePosition[] getModulePositions() {
     for (int moduleIndex = 0; moduleIndex < modules.length; moduleIndex++) {

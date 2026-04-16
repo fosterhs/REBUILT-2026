@@ -39,7 +39,6 @@ class SwerveModule {
   private SwerveModulePosition SMP = new SwerveModulePosition(); // Stores the current wheel position and drive motor position of the swerve module.
   private SwerveModuleState SMS = new SwerveModuleState(); // Stores the current velocity and angle of the swerve module.
 
-
   // Constructor for the SwerveModule class. Initializes the CANcoder, drive motor, and turn motor with the given IDs and configurations. Also sets up the status signals for the drive motor and wheel encoder, and optimizes bus utilization for the motors and encoder. The wheelEncoderZero parameter is used to set the zero position of the wheel encoder, which corresponds to the angle at which the swerve wheel is facing straight forward.
   public SwerveModule(int turnID, int driveID, int encoderID, boolean invertDrive, double wheelEncoderZero, String canbus) {
     bus = new CANBus(canbus);
