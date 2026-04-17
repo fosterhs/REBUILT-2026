@@ -129,7 +129,7 @@ public class Robot extends TimedRobot {
       xVelTeleop = xVelTeleop/totalVel*swerve.maxVelSet;
       yVelTeleop = yVelTeleop/totalVel*swerve.maxVelSet;
     }
-    double angDemand = MathUtil.applyDeadband(-driver.getRightX(), 0.05);
+    double angDemand = Robot.isSimulation() ? MathUtil.applyDeadband(-driver.getRawAxis(2), 0.05) : MathUtil.applyDeadband(-driver.getRightX(), 0.05); 
     angVelTeleop = Math.signum(angDemand)*Math.pow(angDemand, 2)*swerve.maxAngVelSet; // Squaring the total demand allows for finer control at lower speeds while still allowing for full speed at maximum joystick input.
 
     swerve.drive(xVelTeleop, yVelTeleop, angVelTeleop); // Drive at the velocity demanded by the controller.
@@ -181,7 +181,7 @@ public class Robot extends TimedRobot {
 
   // Publishes information to the dashboard.
   private void updateDash() {
-    if (Robot.isSimulation()) SmartDashboard.putNumber("autoStage", autoStage);
+    if (Robot.isSimulation()) SmartDashboard.putNumber("Auto Stage", autoStage);
   }
 
   // Helps prevent loop overruns on startup by running every user created command in every class before the match starts. Not sure why this helps, but it does.
