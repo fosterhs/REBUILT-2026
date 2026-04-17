@@ -159,7 +159,7 @@ public class Shooter {
     //SmartDashboard.putBoolean("Shooter flywheelIsReady", flywheelIsReady());
     //SmartDashboard.putBoolean("Shooter flywheelIsAtSpeed", flywheelIsAtSpeed());
     //SmartDashboard.putString("Shooter getMode", getMode().toString());
-    if (Robot.isSimulation()) SmartDashboard.putBoolean("Shooter isReady", isReady());
+    if (Robot.isSimulation()) SmartDashboard.putBoolean("Shooter Ready", isReady());
   }
 
   // Configures the shooter motors with the appropriate settings for our robot. Sets the neutral mode to brake, sets the motor direction based on the invert parameter, configures current limits for the motor, and configures the PID values for velocity control. These settings are important to ensure that the shooter motors perform well and are protected from damage.

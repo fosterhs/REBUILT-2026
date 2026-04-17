@@ -172,6 +172,6 @@ public class Robot extends TimedRobot {
 
   // Publishes information to the dashboard.
   private void updateDash() {
-    if (Robot.isSimulation()) SmartDashboard.putNumber("autoStage", autoStage);
+    if (Robot.isSimulation()) SmartDashboard.putNumber("Auto Stage", autoStage);
   }
 }

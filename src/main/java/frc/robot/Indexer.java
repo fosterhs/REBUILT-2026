@@ -94,7 +94,7 @@ public class Indexer {
   public void updateDash() {
     //SmartDashboard.putString("Indexer getMode", getMode().toString());
     //SmartDashboard.putNumber("Indexer voltage", indexVoltage);
-    if (Robot.isSimulation()) SmartDashboard.putString("Indexer getMode", getMode().toString());
+    if (Robot.isSimulation()) SmartDashboard.putString("Indexer Mode", getMode().toString());
   }
 
   // Configures the indexer motors with the appropriate settings for our robot. Sets the neutral mode to brake, sets the motor direction based on the invert parameter, and configures current limits for the motor.
