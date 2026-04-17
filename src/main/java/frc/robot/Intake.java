@@ -272,7 +272,7 @@ public class Intake {
     //SmartDashboard.putBoolean("Intake rightArmInPosition", rightArmInPosition());
     //SmartDashboard.putBoolean("Intake isReady", isReady());
     //SmartDashboard.putNumber("jamTimer", jamTimer.get());
-    if (Robot.isSimulation()) SmartDashboard.putString("Intake getMode", currMode.toString());
+    if (Robot.isSimulation()) SmartDashboard.putString("Intake Mode", currMode.toString());
   }
 
   // This method configures the settings for the roller motors. The configuration includes setting the commutation settings specific to the TalonFXS, setting the neutral mode to brake, configuring the motor direction based on the invert parameter, and configuring current limits to protect the motors and mechanical components of the intake mechanism. Finally, it applies the configuration to the motor controller with a specified timeout.

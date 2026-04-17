@@ -94,7 +94,7 @@ public class Robot extends TimedRobot {
     autoChooser.addOption(auto5, auto5);
     autoChooser.addOption(auto6, auto6);
     autoChooser.addOption(auto7, auto7);
-    autoChooser.setDefaultOption(auto1, auto1);
+    autoChooser.setDefaultOption(auto3, auto3);
     SmartDashboard.putData("Autos", autoChooser);
 
     // Auto 6 Paths : Double Swipe, Right Starting Position. 0-3
@@ -1040,12 +1040,22 @@ public class Robot extends TimedRobot {
     if (isNotReadyToShootTimer.get() > readyOffDelay && isReadyToShoot) isReadyToShoot = false; // If the robot has not been ready to shoot for longer than the ready off delay, the isReadyToShoot variable is set to false, preventing the indexer from running.
     
     lastRT = currRT;
-    if (driver.getRightTriggerAxis() > 0.30) {
-      currRT = true;
-    } else if (driver.getRightTriggerAxis() < 0.20) {
-      currRT = false;
+    if (Robot.isSimulation()) {
+      if (driver.getRawAxis(5) > 0.30) {
+        currRT = true;
+      } else if (driver.getRawAxis(5) < 0.20) {
+        currRT = false;
+      } else {
+        currRT = lastRT;
+      }
     } else {
-      currRT = lastRT;
+      if (driver.getRightTriggerAxis() > 0.30) {
+        currRT = true;
+      } else if (driver.getRightTriggerAxis() < 0.20) {
+        currRT = false;
+      } else {
+        currRT = lastRT;
+      }
     }
     RTPressed = currRT && !lastRT;
     RTReleased = !currRT && lastRT;
@@ -1156,7 +1166,7 @@ public class Robot extends TimedRobot {
       xVelTeleop = xVelTeleop/totalVel*swerve.maxVelSet;
       yVelTeleop = yVelTeleop/totalVel*swerve.maxVelSet;
     }
-    double angDemand = MathUtil.applyDeadband(-driver.getRightX(), 0.05);
+    double angDemand = Robot.isSimulation() ? MathUtil.applyDeadband(-driver.getRawAxis(2), 0.05) : MathUtil.applyDeadband(-driver.getRightX(), 0.05);
     angVelTeleop = Math.signum(angDemand)*Math.pow(angDemand, 2)*swerve.maxAngVelSet; // Squaring the total demand allows for finer control at lower speeds while still allowing for full speed at maximum joystick input.
 
     if (swerveLock) {
@@ -1507,7 +1517,7 @@ public class Robot extends TimedRobot {
 
   // Publishes information to the dashboard.
   private void updateDash() {
-    if (Robot.isSimulation()) SmartDashboard.putNumber("autoStage", autoStage);
+    if (Robot.isSimulation()) SmartDashboard.putNumber("Auto Stage", autoStage);
   }
 
   // Helps prevent loop overruns on startup by running every user created command in every class before the match starts. Not sure why this helps, but it does.

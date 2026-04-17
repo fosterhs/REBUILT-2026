@@ -659,9 +659,9 @@ class Drivetrain {
     //SmartDashboard.putBoolean("isRedAllaince", isRedAlliance());
     //SmartDashboard.putBoolean("isBlueAllaince", isBlueAlliance());   
     if (Robot.isSimulation()) SmartDashboard.putData("Field", robotField);
-    if (Robot.isSimulation()) SmartDashboard.putNumber("Xpos", getXPos());
-    if (Robot.isSimulation()) SmartDashboard.putNumber("Ypos", getYPos());
-    if (Robot.isSimulation()) SmartDashboard.putNumber("AngPos", getFusedAng());
+    if (Robot.isSimulation()) SmartDashboard.putNumber("Robot X", getXPos());
+    if (Robot.isSimulation()) SmartDashboard.putNumber("Robot Y", getYPos());
+    if (Robot.isSimulation()) SmartDashboard.putNumber("Robot Angle", sterilizeAngle(getFusedAng()));
   }
 
   // Calculates the shortest distance between two points on a 360 degree circle. CW is + and CCW is -
