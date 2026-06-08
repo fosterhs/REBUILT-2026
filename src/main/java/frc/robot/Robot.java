@@ -1,20 +1,31 @@
 package frc.robot;
 
+import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.SignalLogger;
+import com.ctre.phoenix6.controls.SolidColor;
+import com.ctre.phoenix6.hardware.CANdle;
+import com.ctre.phoenix6.signals.RGBWColor;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Robot extends TimedRobot {
   private final XboxController driver = new XboxController(0); // Initializes the driver controller.
-
 // Initializes the different subsystems of the robot.
   private final Drivetrain swerve = new Drivetrain(); // Contains the Swerve Modules, Gyro, Path Follower, Target Tracking, Odometry, and Vision Calibration.
   private final Shooter shooter = new Shooter(); // Initializes the Shooter subsystem.
   private final Indexer indexer = new Indexer(); // Initializes the Indexer subsystem.
   private final Intake intake = new Intake(); // Initializes the Intake subsystem.
-
+//teleop
+  private double xVelTeleop = 0.0; // The x-velocity of the robot that results from controller inputs after being processed by the slew rate limiters. This is used to control the drivetrain during teleop.
+  private double yVelTeleop = 0.0; // The y-velocity of the robot that results from controller inputs after being processed by the slew rate limiters. This is used to control the drivetrain during teleop.
+  private double angVelTeleop = 0.0; // The angular velocity of the robot that results from controller inputs after being processed by the slew rate limiters. This is used to control the drivetrain during teleop.
+  private boolean boostMode = false; // Stores whether the robot is at 100% speed (boost mode), or at ~65% speed (normal mode).
+  private boolean swerveLock = false;
   // Auto Variables
   private final SendableChooser<String> autoChooser = new SendableChooser<>();
   private static final String auto1 = "Auto 1"; 
@@ -22,7 +33,6 @@ public class Robot extends TimedRobot {
   private String autoSelected;
   private int autoStage = 1;
   private boolean autoCompleted = false;
-  
   public void robotInit() { 
     // Configures the auto chooser on the dashboard.
     autoChooser.addOption(auto1, auto1);
@@ -125,7 +135,81 @@ public class Robot extends TimedRobot {
     }
 
     // Teleop control code goes here. This is where you would read the controller inputs and set the desired states for the subsystems based on those inputs. 
+    //project 1👇
+    if (driver.getRawButton(1)) {//a
+      indexer.spinUp(); // Spin the indexer forward to feed notes into the shooter
+    } else {
+      indexer.idle(); // Stop the indexer when button is released
+    }
+    //project 1👆
 
+    // project 2👇
+    if (driver.getRightTriggerAxis() > 0.1) {
+      shooter.setHoodPosition(0.05);
+      shooter.spinUp();
+    } else {
+      shooter.lowerHood();
+      shooter.spinDown(); // Stop the flywheel when trigger released
+    }
+    //project 2👆
+
+    // project 3👇
+    if (driver.getPOV() == 0) { // D-pad up
+      shooter.setShootingRPM(5000.0);
+      shooter.spinUp();
+    } 
+    else if (driver.getPOV() == 90) { // D-pad right
+      shooter.setShootingRPM(3500.0);
+      shooter.spinUp();
+    }
+    else if (driver.getPOV() == 180) { // D-pad down
+      shooter.setShootingRPM(2000.0);
+      shooter.spinUp();
+    }
+    //project 3👆
+
+    // project 4👇
+    if (driver.getLeftBumperButtonPressed()) {
+      if (intake.getMode() == Intake.Mode.LEFT) {
+        intake.stow();
+      } else {
+        intake.leftIntake();
+      }
+    } else if (driver.getRightBumperButtonPressed()) {
+      if (intake.getMode() == Intake.Mode.RIGHT) {
+        intake.stow();
+      } else {
+        intake.rightIntake();
+      }
+    }
+    //project 4👆
+
+    //project 5👇
+    if (driver.getRightTriggerAxis() > 0.05) { 
+      double targetRPM = 1000.0 + (driver.getRightTriggerAxis() * 4800.0); // 1000 to 5800 RPM
+      if (targetRPM < 1500.0) {
+        targetRPM = 1500.0;
+      }
+    }
+    //project 5👆
+    
+    // //project 6👇
+    // double xVel = xVelTeleop.calculate(MathUtil.applyDeadband(-driver.getLeftY(), 0.05)*speedScaleFactor)*Drivetrain.maxVelTeleop;
+    // double yVel = yVelTeleop.calculate(MathUtil.applyDeadband(-driver.getLeftX(), 0.05)*speedScaleFactor)*Drivetrain.maxVelTeleop;
+    // double angVel = angVelTeleop.calculate(MathUtil.applyDeadband(-driver.getRightX(), 0.05)*rotationScaleFactor)*Drivetrain.maxAngVelTeleop;
+
+    // if (driver.getRawButton(3)) { // X button
+    //   swerveLock = true; // Pressing the X-button causes the swerve modules to lock (for defense).
+    // } else if (driver.getRawButton(4)){//Y button
+    //   swerveLock = false;//pressing the Y-button can get rid of the swervelock allowing the robot to move.
+    // }
+
+    // if (swerveLock) {
+    //   swerve.xLock(); // Locks the swerve modules (for defense).
+    // } else {
+    //   swerve.drive(xVel, yVel, angVel, true, 0.0, 0.0); // Drive at the velocity demanded by the controller.
+    // }
+    // //project 6
     
     // The following calls are used to update the subsystems and should be called every period.
     indexer.periodic();
@@ -172,6 +256,6 @@ public class Robot extends TimedRobot {
 
   // Publishes information to the dashboard.
   private void updateDash() {
-    if (Robot.isSimulation()) SmartDashboard.putNumber("Auto Stage", autoStage);
+    if (Robot.isSimulation()) SmartDashboard.putNumber("autoStage", autoStage);
   }
 }
