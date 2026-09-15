@@ -125,7 +125,13 @@ public class Robot extends TimedRobot {
     }
 
     // Teleop control code goes here. This is where you would read the controller inputs and set the desired states for the subsystems based on those inputs. 
+    if (driver.getRawButtonPressed(1)) {
+      indexer.index();
+    }
 
+    if (driver.getRawButtonPressed(2)) {
+      shooter.spinUp();
+    }
     
     // The following calls are used to update the subsystems and should be called every period.
     indexer.periodic();
